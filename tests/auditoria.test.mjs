@@ -1,94 +1,142 @@
+/**
+ * Auditoria de entrada / classificação por IA / relatório.
+ * Estes testes chamam o CÓDIGO REAL (lib/ai/*, lib/relatorio.ts) com o ncm.json real.
+ * Nada de "simular a lógica" dentro do teste: se a lógica quebrar, o teste quebra.
+ */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { getMapaD8 } from '../lib/ai/ncm-server.js';
 import { validarNcmIA } from '../lib/ai/validar.js';
+import { sanearClassificacao } from '../lib/ai/sanear-classificacao.js';
+import { reconciliarItens } from '../lib/ai/reconciliar.js';
+import { esc, renderRelatorioHtml, renderRelatorioTxt } from '../lib/relatorio.js';
 
-test('getMapaD8 size and validation', (t) => {
-  const map = getMapaD8();
-  assert.equal(map.size, 10515, 'Mapa deve ter exatamente 10515 itens');
+const mapa = getMapaD8();
+const NCM_OK = '96071100'; // existe na tabela oficial
 
-  assert.ok(map.has('96071100'), 'Deve conter d8 válido existente');
-
-  const invalidResult = validarNcmIA({ ncm: '99999999' }, map);
-  assert.equal(invalidResult.valido, false, 'Deve rejeitar NCM 99999999');
-  assert.equal(invalidResult.ncm, '99999999');
-  assert.equal(invalidResult.confianca, 'BAIXA');
-
-  const validResult = validarNcmIA({ ncm: '96071100' }, map);
-  assert.equal(validResult.valido, true, 'Deve aceitar NCM 96071100');
-  assert.ok(validResult.descricaoNcm, 'Deve preencher descricaoNcm');
+test('getMapaD8: 10515 NCMs reais, por d8', () => {
+  assert.equal(mapa.size, 10515);
+  assert.ok(mapa.has(NCM_OK));
+  assert.ok(!mapa.has('99999999'));
 });
 
-test('classificar-ia with mocked SDK invalid NCM', async (t) => {
-  // We simulate the logic directly since we cannot easily start a Next.js server with mocked AI inside this test runner without setup
-  const map = getMapaD8();
-  const simulatedAiResponse = {
-    ncm: "99999999",
-    descricaoNcm: "Inventado",
-    confianca: "ALTA"
-  };
-
-  const result = validarNcmIA(simulatedAiResponse, map);
-  if (!result.valido) {
-      simulatedAiResponse.ncm = "";
-      simulatedAiResponse.confianca = "BAIXA";
-      simulatedAiResponse.descricaoNcm = "";
-  }
-
-  assert.equal(simulatedAiResponse.ncm, "", "NCM inventado resulta em ncm vazio");
-  assert.equal(simulatedAiResponse.confianca, "BAIXA", "Confianca BAIXA para NCM invalido");
+test('validarNcmIA: válido, com pontos, 7 dígitos, inexistente e nulos', () => {
+  assert.equal(validarNcmIA({ ncm: NCM_OK }, mapa).valido, true);
+  assert.equal(validarNcmIA({ ncm: '9607.11.00' }, mapa).valido, true);
+  assert.equal(validarNcmIA({ ncm: '9607110' }, mapa).valido, false);
+  assert.equal(validarNcmIA({ ncm: '99999999' }, mapa).valido, false);
+  assert.equal(validarNcmIA({ ncm: undefined }, mapa).valido, false);
+  assert.equal(validarNcmIA({ ncm: null }, mapa).valido, false);
 });
 
-test('auditoria-entrada NCM preservation', async (t) => {
-  const map = getMapaD8();
-
-  // Simulate the XML reconciliation logic
-  const originalItens = { "PROD123": { NCM: "84713012" } };
-
-  const item = { cProd: "PROD123", ncm: "11111111", cClassTrib: "123" };
-
-  // Reconcile NCM from XML
-  if (item.cProd && originalItens[item.cProd.toString()]) {
-    const originalNcm = originalItens[item.cProd.toString()].NCM;
-    if (originalNcm) {
-       item.ncm = originalNcm.toString();
-    }
-  }
-
-  assert.equal(item.ncm, "84713012", "NCM do XML deve ser preservado");
-
-  // Validate NCM
-  const validacao = validarNcmIA({ ncm: item.ncm }, map);
-  if (!validacao.valido) {
-    item.ncmValidado = false;
-    item.confianca = "BAIXA";
-  } else {
-    item.ncmValidado = true;
-    item.confianca = validacao.confianca || "MEDIA";
-  }
-
-  assert.equal(item.ncmValidado, true, "NCM do XML preservado deve ser validado");
+// ---------------------------------------------------------------- sanearClassificacao
+test('sanearClassificacao: NCM inventado => ncm "" e BAIXA, nunca chega ao front', () => {
+  const r = sanearClassificacao({ ncm: '99999999', descricaoNcm: 'Inventado', confianca: 'ALTA' }, mapa);
+  assert.equal(r.ncm, '');
+  assert.equal(r.confianca, 'BAIXA');
+  assert.equal(r.valido, false);
+  assert.equal(r.descricaoNcm, '');
+  assert.ok(r.aviso && r.aviso.length > 0);
 });
 
-test('auditoria-relatorio HTML escaping', async (t) => {
-  // Simulate the esc function
-  function esc(str) {
-    if (str === null || str === undefined) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+test('sanearClassificacao: válido => descrição OFICIAL e confiança do modelo preservada', () => {
+  const oficial = mapa.get(NCM_OK);
+  const r = sanearClassificacao({ ncm: NCM_OK, descricaoNcm: 'texto inventado pelo modelo', confianca: 'ALTA' }, mapa);
+  assert.equal(r.valido, true);
+  assert.equal(r.descricaoNcm, oficial.desc);
+  assert.notEqual(r.descricaoNcm, 'texto inventado pelo modelo');
+  assert.equal(r.confianca, 'ALTA');
+  assert.equal(sanearClassificacao({ ncm: NCM_OK, confianca: 'BAIXA' }, mapa).confianca, 'BAIXA');
+});
+
+test('sanearClassificacao: entrada nula ou sem ncm não derruba', () => {
+  assert.equal(sanearClassificacao(null, mapa).ncm, '');
+  assert.equal(sanearClassificacao(undefined, mapa).valido, false);
+  assert.equal(sanearClassificacao({}, mapa).confianca, 'BAIXA');
+});
+
+// ---------------------------------------------------------------- reconciliarItens
+test('reconciliarItens: NCM do XML vence o do modelo (por cProd)', () => {
+  const itens = [{ cProd: 'P1', ncm: '11111111', confianca: 'ALTA' }];
+  const [r] = reconciliarItens(itens, { P1: { NCM: NCM_OK } }, mapa, true);
+  assert.equal(r.ncm, NCM_OK);
+  assert.equal(r.ncmValidado, true);
+});
+
+test('reconciliarItens: NCM do XML inexistente => mantido, ncmValidado false e BAIXA', () => {
+  const itens = [{ cProd: 'P1', ncm: NCM_OK, confianca: 'ALTA' }];
+  const [r] = reconciliarItens(itens, { P1: { NCM: '99999999' } }, mapa, true);
+  assert.equal(r.ncm, '99999999');
+  assert.equal(r.ncmValidado, false);
+  assert.equal(r.confianca, 'BAIXA');
+});
+
+test('reconciliarItens: repassa a confiança do modelo (ALTA fica ALTA, BAIXA fica BAIXA)', () => {
+  const orig = { P1: { NCM: NCM_OK } };
+  assert.equal(reconciliarItens([{ cProd: 'P1', confianca: 'ALTA' }], orig, mapa, true)[0].confianca, 'ALTA');
+  assert.equal(reconciliarItens([{ cProd: 'P1', confianca: 'BAIXA' }], orig, mapa, true)[0].confianca, 'BAIXA');
+  assert.equal(reconciliarItens([{ cProd: 'P1' }], orig, mapa, true)[0].confianca, 'MEDIA');
+  assert.equal(reconciliarItens([{ cProd: 'P1', confianca: 'xyz' }], orig, mapa, true)[0].confianca, 'MEDIA');
+});
+
+test('reconciliarItens: sem XML não sobrescreve; não muta a entrada; entrada inválida vira []', () => {
+  const itens = [{ cProd: 'P1', ncm: NCM_OK, confianca: 'ALTA' }];
+  const copia = JSON.parse(JSON.stringify(itens));
+  const [r] = reconciliarItens(itens, { P1: { NCM: '99999999' } }, mapa, false);
+  assert.equal(r.ncm, NCM_OK);
+  assert.deepEqual(itens, copia);
+  assert.deepEqual(reconciliarItens(undefined, {}, mapa, true), []);
+  assert.deepEqual(reconciliarItens(null, null, mapa, true), []);
+});
+
+test('reconciliarItens: cProd ausente do XML ou sem NCM no XML mantém o NCM do item', () => {
+  const [a] = reconciliarItens([{ cProd: 'X', ncm: NCM_OK }], { P1: { NCM: '99999999' } }, mapa, true);
+  assert.equal(a.ncm, NCM_OK);
+  const [b] = reconciliarItens([{ cProd: 'P1', ncm: NCM_OK }], { P1: { NCM: '' } }, mapa, true);
+  assert.equal(b.ncm, NCM_OK);
+});
+
+// ---------------------------------------------------------------- relatório
+const XSS = '<img src=x onerror=alert(1)>';
+const AGORA = new Date('2026-11-01T12:00:00Z');
+
+test('esc: escapa & < > \" \'', () => {
+  assert.equal(esc(XSS), '&lt;img src=x onerror=alert(1)&gt;');
+  assert.equal(esc('"a" \'b\' & c'), '&quot;a&quot; &#039;b&#039; &amp; c');
+  assert.equal(esc(null), '');
+  assert.equal(esc(undefined), '');
+  assert.equal(esc(0), '0');
+});
+
+test('renderRelatorioHtml: nenhum campo de texto externo sai cru (XSS)', () => {
+  const campos = ['cProd', 'xProd', 'ncm', 'cest', 'cfopEntrada', 'cstIcmsEntrada', 'aliqIcms',
+    'cstPisCofinsEntrada', 'aliqPis', 'aliqCofins', 'cClassTrib', 'aliqIbsTransitorio',
+    'aliqCbsTransitorio', 'regimeEspecial', 'instrucaoCadastro'];
+  for (const campo of campos) {
+    const html = renderRelatorioHtml({ itens: [{ [campo]: XSS + '"\'' }] }, AGORA);
+    assert.ok(!html.includes('<img src=x'), `campo ${campo} saiu sem escape`);
+    assert.ok(html.includes('&lt;img src=x onerror=alert(1)&gt;&quot;&#039;'), `campo ${campo} não aparece escapado`);
   }
+  const html = renderRelatorioHtml({ parecerTecnicoXml: XSS, parecerConformidade: XSS, itens: [] }, AGORA);
+  assert.ok(!html.includes('<img src=x'));
+});
 
-  const xProd = '<img src=x onerror=alert(1)>';
-  const escaped = esc(xProd);
+test('renderRelatorioHtml: mantém TODAS as seções e campos', () => {
+  const html = renderRelatorioHtml({ parecerTecnicoXml: 'T', parecerConformidade: 'C', itens: [{ cProd: '1', permiteCredito: true }] }, AGORA);
+  for (const trecho of ['Laudo de Auditoria Fiscal', 'Parecer Técnico do Documento',
+    'Parecer Breve de Conformidade e Créditos', 'Parametrização de ERP', 'Bloco ICMS/ST',
+    'Bloco PIS/COFINS', 'Bloco Reforma Tributária', 'cClassTrib:', 'Alíquota IBS:', 'Alíquota CBS:',
+    'Regime:', 'Instrução:', 'Crédito:</span> <span class="tax-value">Sim']) {
+    assert.ok(html.includes(trecho), `faltou: ${trecho}`);
+  }
+  assert.ok(renderRelatorioHtml({ itens: [] }, AGORA).includes('Nenhum item processado nesta auditoria.'));
+});
 
-  assert.equal(escaped, '&lt;img src=x onerror=alert(1)&gt;', 'Tags HTML perigosas devem ser escapadas');
-
-  const quote = '"test"';
-  const escapedQuote = esc(quote);
-  assert.equal(escapedQuote, '&quot;test&quot;', 'Aspas devem ser escapadas');
+test('renderRelatorioTxt: mantém seções e valores padrão', () => {
+  const txt = renderRelatorioTxt({ itens: [{ cProd: '9', xProd: 'p', permiteCredito: false }] }, AGORA);
+  for (const trecho of ['# Portela Contabilidade', '## Parecer Técnico do Documento', '#### [ICMS/ST]',
+    '#### [PIS/COFINS]', '#### [REFORMA TRIBUTÁRIA]', '- Crédito: Não', '**Instrução de Cadastro:** N/A']) {
+    assert.ok(txt.includes(trecho), `faltou: ${trecho}`);
+  }
 });

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { getMapaD8 } from '@/lib/ai/ncm-server';
-import { validarNcmIA } from '@/lib/ai/validar';
+import { sanearClassificacao } from '@/lib/ai/sanear-classificacao';
 
 export async function POST(req: Request) {
   try {
@@ -101,23 +101,7 @@ Contexto: "${contextoOperacao || 'Operação comercial interna padrão'}"`;
       throw ultimoErro || new Error('Nenhum modelo respondeu à solicitação.');
     }
 
-    const resultado = JSON.parse(responseText);
-
-    const mapaD8 = getMapaD8();
-    const validacao = validarNcmIA(resultado, mapaD8);
-
-    if (!validacao.valido) {
-      resultado.ncm = "";
-      resultado.confianca = "BAIXA";
-      resultado.valido = false;
-      resultado.descricaoNcm = "";
-      resultado.aviso = validacao.aviso;
-    } else {
-      resultado.ncm = validacao.ncm;
-      resultado.confianca = validacao.confianca;
-      resultado.valido = true;
-      resultado.descricaoNcm = validacao.descricaoNcm;
-    }
+    const resultado = sanearClassificacao(JSON.parse(responseText), getMapaD8());
 
     return NextResponse.json(resultado);
   } catch (error: any) {

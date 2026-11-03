@@ -5,7 +5,8 @@ const pdfParse = (pdfParseModule as any).default || pdfParseModule;
 import { getFiscalContext } from '@/lib/fiscal-context';
 import { GoogleGenAI, Type } from '@google/genai';
 import { getMapaD8 } from '@/lib/ai/ncm-server';
-import { validarNcmIA } from '@/lib/ai/validar';
+import { reconciliarItens } from '@/lib/ai/reconciliar';
+
 
 export async function POST(request: Request) {
   try {
@@ -212,29 +213,8 @@ Responda usando o seguinte JSON Schema, exatamente:
     }
 
     const result = JSON.parse(textResponse);
-    const mapaD8 = getMapaD8();
-
-    if (result.itens && Array.isArray(result.itens)) {
-      result.itens = result.itens.map((item: any) => {
-        // Reconcile NCM from XML
-        if (isXml && item.cProd && originalItens[item.cProd.toString()]) {
-          const originalNcm = originalItens[item.cProd.toString()].NCM;
-          if (originalNcm) {
-             item.ncm = originalNcm.toString();
-          }
-        }
-
-        // Validate NCM
-        const validacao = validarNcmIA({ ncm: item.ncm }, mapaD8);
-        if (!validacao.valido) {
-          item.ncmValidado = false;
-          item.confianca = "BAIXA";
-        } else {
-          item.ncmValidado = true;
-          item.confianca = validacao.confianca || "MEDIA";
-        }
-        return item;
-      });
+    if (Array.isArray(result.itens)) {
+      result.itens = reconciliarItens(result.itens, originalItens, getMapaD8(), isXml);
     }
 
     return NextResponse.json(result);
