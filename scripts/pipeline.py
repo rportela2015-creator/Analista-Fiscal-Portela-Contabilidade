@@ -301,6 +301,14 @@ assert set(HOT) | set(COLD) == set(dataset[0]) | set(next(iter(frias.values())))
                                     encoding="utf-8")
 (OUT / "regras.json").write_text(json.dumps(rules, ensure_ascii=False, separators=(",", ":")),
                                  encoding="utf-8")  # publica o arquivo inteiro (inclui listas extras)
+# arcabouço legal do motor de precificação -> publicado p/ o navegador com escrita atômica
+_marco = ROOT / "rules" / "marco-legal.json"
+if _marco.exists():
+    import os
+    _marco_tmp = OUT / "marco-legal.json.tmp"
+    _marco_tmp.write_text(json.dumps(json.loads(_marco.read_text(encoding="utf-8")),
+                                     ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    os.replace(_marco_tmp, OUT / "marco-legal.json")
 (OUT / "atributos.json").write_text(json.dumps({"codigos": ATTR_CODES, "defs": attr_lookup},
                                                 ensure_ascii=False, separators=(",", ":")),
                                     encoding="utf-8")
@@ -498,9 +506,12 @@ elif fontes_log:
 
 
 import hashlib
+import os
+
 ncm_bytes = (OUT / "ncm.json").read_bytes()
 regras_bytes = (OUT / "regras.json").read_bytes()
-versao_hash = hashlib.sha1(ncm_bytes + regras_bytes).hexdigest()[:12]
+marco_bytes = (OUT / "marco-legal.json").read_bytes() if (OUT / "marco-legal.json").exists() else b""
+versao_hash = hashlib.sha1(ncm_bytes + regras_bytes + marco_bytes).hexdigest()[:8]
 meta = {
     "versao": versao_hash,
     "aviso_fontes": aviso_fontes,
@@ -557,7 +568,9 @@ meta = {
         "fontes_oficiais_ok": bool(fontes_log.get("oficial", True)) and not falhas,
     },
 }
-(OUT / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
+meta_tmp = OUT / "meta.json.tmp"
+meta_tmp.write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8")
+os.replace(meta_tmp, OUT / "meta.json")
 
 for f in sorted(OUT.glob("*.json")):
     print(f"      -> {f.name:16s} {f.stat().st_size/1024:8.1f} KB")

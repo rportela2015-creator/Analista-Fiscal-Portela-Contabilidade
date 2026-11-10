@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe35261111222333000181550010000012341234567890" versao="4.00">
+      <ide>
+        <cUF>35</cUF>
+        <cNF>12345678</cNF>
+        <natOp>VENDA DE MERCADORIA</natOp>
+        <mod>55</mod>
+        <serie>1</serie>
+        <nNF>1234</nNF>
+        <dhEmi>2026-11-09T10:00:00-03:00</dhEmi>
+        <tpNF>1</tpNF>
+        <idDest>1</idDest>
+        <cMunFG>3550308</cMunFG>
+        <tpImp>1</tpImp>
+        <tpEmis>1</tpEmis>
+        <tpAmb>1</tpAmb>
+        <finNFe>1</finNFe>
+        <indFinal>0</indFinal>
+        <indPres>1</indPres>
+        <procEmi>0</procEmi>
+        <verProc>1.0</verProc>
+      </ide>
+      <emit>
+        <CNPJ>11222333000181</CNPJ>
+        <xNome>FORNECEDOR MATRIZ SP LTDA</xNome>
+        <enderEmit>
+          <xLgr>AV EXEMPLO</xLgr>
+          <nro>100</nro>
+          <xBairro>BAIRRO</xBairro>
+          <cMun>3550308</cMun>
+          <xMun>MUNICIPIO</xMun>
+          <UF>SP</UF>
+          <CEP>01000000</CEP>
+        </enderEmit>
+        <IE>110042490114</IE>
+        <CRT>3</CRT>
+      </emit>
+      <dest>
+        <CNPJ>06990590000123</CNPJ>
+        <xNome>ADQUIRENTE PAULISTA S.A.</xNome>
+        <enderDest>
+          <xLgr>RUA DESTINO</xLgr>
+          <nro>200</nro>
+          <xBairro>BAIRRO</xBairro>
+          <cMun>3550308</cMun>
+          <xMun>SAO PAULO</xMun>
+          <UF>SP</UF>
+          <CEP>04538133</CEP>
+        </enderDest>
+        <IE>111222333444</IE>
+      </dest>
+      
+      <det nItem="1">
+        <prod>
+          <cProd>LIV-01</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>LIVRO DIDATICO IMUNE TRIBUTACAO</xProd>
+          <NCM>49019900</NCM>
+          
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>1.0000</qCom>
+          <vUnCom>80.0000</vUnCom>
+          <vProd>80.00</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>1.0000</qTrib>
+          <vUnTrib>80.0000</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS>
+            <ICMS00>
+              <orig>0</orig>
+              <CST>00</CST>
+              <modBC>3</modBC>
+              <vBC>80.00</vBC>
+              <pICMS>0.00</pICMS>
+              <vICMS>0.00</vICMS>
+            </ICMS00>
+          </ICMS></imposto>
+      </det>
+      <total>
+        <ICMSTot>
+          <vBC>80.00</vBC>
+          <vICMS>0.00</vICMS>
+          <vICMSDeson>0.00</vICMSDeson>
+          <vFCP>0.00</vFCP>
+          <vBCST>0.00</vBCST>
+          <vST>0.00</vST>
+          <vFCPST>0.00</vFCPST>
+          <vFCPSTRet>0.00</vFCPSTRet>
+          <vProd>80.00</vProd>
+          <vFrete>0.00</vFrete>
+          <vSeg>0.00</vSeg>
+          <vDesc>0.00</vDesc>
+          <vII>0.00</vII>
+          <vIPI>0.00</vIPI>
+          <vIPIDevol>0.00</vIPIDevol>
+          <vPIS>0.00</vPIS>
+          <vCOFINS>0.00</vCOFINS>
+          <vOutro>0.00</vOutro>
+          <vNF>80.00</vNF>
+        </ICMSTot>
+      </total>
+    </infNFe>
+  </NFe>
+</nfeProc>

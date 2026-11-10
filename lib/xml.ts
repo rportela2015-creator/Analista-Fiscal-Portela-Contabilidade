@@ -484,3 +484,8 @@ function naturalOperacao(ctx: XmlCtx, temRec: boolean): string {
   if (ctx.finalidade === 'industrializacao') return 'Remessa para industrialização';
   return ctx.operacao === 'interestadual' ? 'Venda de mercadoria adquirida de terceiros (fora do estado)' : 'Venda de mercadoria';
 }
+
+export {
+  converterItemExtracaoParaPrecificacao,
+  type PrecificacaoItemInput,
+} from './extrator-nfe-types';

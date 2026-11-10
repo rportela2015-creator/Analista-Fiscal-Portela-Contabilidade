@@ -7,3 +7,7 @@ tsconfig.tsbuildinfo
 .DS_Store
 
 *.zip
+*.tmp
+.parse-csv.ts
+.bundle-*.mjs
+data/raw/reforma/*.part.json

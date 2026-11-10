@@ -1,0 +1,2793 @@
+{
+  "versao": "1.0",
+  "totalDocumentos": 20,
+  "totalTrechos": 68,
+  "documentos": [
+    {
+      "id": "sc-cosit-018-2022",
+      "arquivo": "docs/legal/cosit/sc-cosit-018-2022.md",
+      "tipo": "COSIT",
+      "titulo": "Solução de Consulta COSIT nº 018/2022 — Enquadramento de Cadeiras de Escritório Giratórias com Altura Ajustável",
+      "norma": "Solução de Consulta COSIT nº 018/2022 / Diário Oficial da União",
+      "capitulos": [
+        "94"
+      ],
+      "posicoes": [
+        "9401"
+      ],
+      "ncms": [
+        "9401.31.00",
+        "9401.39.00"
+      ],
+      "tags": [
+        "cosit",
+        "cadeira giratoria",
+        "armacao de madeira",
+        "armacao de metal",
+        "escritorio"
+      ]
+    },
+    {
+      "id": "sc-cosit-045-2023",
+      "arquivo": "docs/legal/cosit/sc-cosit-045-2023.md",
+      "tipo": "COSIT",
+      "titulo": "Solução de Consulta COSIT nº 045/2023 — Classificação de Computadores Portáteis Tipo Tablet vs Notebook",
+      "norma": "Solução de Consulta COSIT nº 045/2023 / Diário Oficial da União",
+      "capitulos": [
+        "84"
+      ],
+      "posicoes": [
+        "8471"
+      ],
+      "ncms": [
+        "8471.30.12",
+        "8471.30.19",
+        "8471.41.00"
+      ],
+      "tags": [
+        "cosit",
+        "tablet",
+        "notebook",
+        "teclado fisico",
+        "peso",
+        "tela de toque"
+      ]
+    },
+    {
+      "id": "nesh-cap-39",
+      "arquivo": "docs/legal/nesh/cap-39.md",
+      "tipo": "NESH",
+      "titulo": "NESH Capítulo 39 — Plásticos e suas obras",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "capitulos": [
+        "39"
+      ],
+      "posicoes": [
+        "3923",
+        "3924",
+        "3926",
+        "3901",
+        "3920"
+      ],
+      "ncms": [
+        "3924.10.00",
+        "3923.50.00",
+        "3926.90.90",
+        "3923.10.90"
+      ],
+      "tags": [
+        "plasticos",
+        "copo descartavel",
+        "embalagens",
+        "utensilios de mesa",
+        "polimeros"
+      ]
+    },
+    {
+      "id": "nesh-cap-84",
+      "arquivo": "docs/legal/nesh/cap-84.md",
+      "tipo": "NESH",
+      "titulo": "NESH Capítulo 84 — Reatores nucleares, caldeiras, máquinas, aparelhos e instrumentos mecânicos",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "capitulos": [
+        "84"
+      ],
+      "posicoes": [
+        "8471",
+        "8472",
+        "8473",
+        "8415",
+        "8418",
+        "8413",
+        "8481"
+      ],
+      "ncms": [
+        "8471.30.12",
+        "8471.30.19",
+        "8471.49.00",
+        "8415.10.11",
+        "8413.70.10"
+      ],
+      "tags": [
+        "computadores",
+        "notebook",
+        "processamento de dados",
+        "bombas",
+        "refrigeracao",
+        "exclusoes"
+      ]
+    },
+    {
+      "id": "nesh-cap-85",
+      "arquivo": "docs/legal/nesh/cap-85.md",
+      "tipo": "NESH",
+      "titulo": "NESH Capítulo 85 — Máquinas, aparelhos e materiais elétricos, e suas partes",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "capitulos": [
+        "85"
+      ],
+      "posicoes": [
+        "8517",
+        "8528",
+        "8504",
+        "8544",
+        "8501"
+      ],
+      "ncms": [
+        "8517.13.00",
+        "8517.62.77",
+        "8517.62.94",
+        "8528.52.00"
+      ],
+      "tags": [
+        "telecomunicacoes",
+        "smartphone",
+        "roteador",
+        "monitores",
+        "eletronicos"
+      ]
+    },
+    {
+      "id": "nesh-cap-94",
+      "arquivo": "docs/legal/nesh/cap-94.md",
+      "tipo": "NESH",
+      "titulo": "NESH Capítulo 94 — Móveis; mobiliário médico-cirúrgico; colchões; aparelhos de iluminação",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "capitulos": [
+        "94"
+      ],
+      "posicoes": [
+        "9401",
+        "9402",
+        "9403",
+        "9405"
+      ],
+      "ncms": [
+        "9401.31.00",
+        "9401.39.00",
+        "9403.10.00",
+        "9403.20.10"
+      ],
+      "tags": [
+        "moveis",
+        "cadeiras",
+        "giratorias",
+        "escritorio",
+        "regulagem de altura"
+      ]
+    },
+    {
+      "id": "reforma-anexo-01",
+      "arquivo": "docs/legal/reforma/anexo-01-cesta-basica.md",
+      "tipo": "REFORMA",
+      "titulo": "Cesta Básica Nacional de Alimentos — Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "norma": "Lei Complementar nº 214/2025 / Artigo 8º e Anexo I",
+      "capitulos": [
+        "02",
+        "04",
+        "10",
+        "11",
+        "15",
+        "19"
+      ],
+      "posicoes": [
+        "0201",
+        "0401",
+        "1006",
+        "1101",
+        "1507",
+        "1905"
+      ],
+      "ncms": [
+        "1006.30.21",
+        "1101.00.10",
+        "1507.90.11",
+        "0401.20.10"
+      ],
+      "tags": [
+        "cesta basica",
+        "aliquota zero",
+        "arroz",
+        "feijao",
+        "leite",
+        "farinha",
+        "reforma tributaria"
+      ]
+    },
+    {
+      "id": "reforma-anexo-04-07-dispositivos-medicos",
+      "arquivo": "docs/legal/reforma/anexo-04-dispositivos-medicos.md",
+      "tipo": "REFORMA",
+      "titulo": "Dispositivos Médicos e de Acessibilidade — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 136, 140, Anexos IV e VII",
+      "capitulos": [
+        "87",
+        "90"
+      ],
+      "posicoes": [
+        "8713",
+        "9018",
+        "9021"
+      ],
+      "ncms": [
+        "8713.10.00",
+        "8713.90.00",
+        "9018.11.00",
+        "9018.12.10",
+        "9018.13.00"
+      ],
+      "tags": [
+        "dispositivos medicos",
+        "acessibilidade",
+        "cadeira de rodas",
+        "eletrocardiografo",
+        "reducao 60%",
+        "aliquota zero",
+        "anexo iv",
+        "anexo vii"
+      ]
+    },
+    {
+      "id": "reforma-anexo-05-08-medicamentos",
+      "arquivo": "docs/legal/reforma/anexo-05-medicamentos.md",
+      "tipo": "REFORMA",
+      "titulo": "Medicamentos — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 138, 142, Anexos V e VIII",
+      "capitulos": [
+        "30"
+      ],
+      "posicoes": [
+        "3003",
+        "3004"
+      ],
+      "ncms": [
+        "3004.10.11",
+        "3004.10.12",
+        "3004.20.11",
+        "3004.90.99"
+      ],
+      "tags": [
+        "medicamentos",
+        "farmaceuticos",
+        "anexo v",
+        "anexo viii",
+        "reducao 60%",
+        "aliquota zero",
+        "antibioticos",
+        "oncologicos"
+      ]
+    },
+    {
+      "id": "reforma-anexo-09-10-agropecuaria",
+      "arquivo": "docs/legal/reforma/anexo-09-agropecuaria.md",
+      "tipo": "REFORMA",
+      "titulo": "Produtos Agropecuários, Aquícolas, Pesqueiros e Extrativos — Redução de 60% e Alíquota Zero (LC nº 214/2025)",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 144, 148, Anexos IX e X",
+      "capitulos": [
+        "01",
+        "03",
+        "07",
+        "08",
+        "12"
+      ],
+      "posicoes": [
+        "0101",
+        "0301",
+        "0701",
+        "0801",
+        "1201"
+      ],
+      "ncms": [
+        "0101.21.00",
+        "0301.91.10",
+        "0701.10.00",
+        "0701.90.00"
+      ],
+      "tags": [
+        "agropecuaria",
+        "agronegocio",
+        "aquicultura",
+        "pesca",
+        "extrativismo",
+        "hortifrutigranjeiros",
+        "anexo ix",
+        "anexo x",
+        "reducao 60%",
+        "aliquota zero"
+      ]
+    },
+    {
+      "id": "reforma-ato-conjunto-01-2025",
+      "arquivo": "docs/legal/reforma/ato-conjunto-rfb-cgibs-01-2025.md",
+      "tipo": "REFORMA",
+      "titulo": "Ato Conjunto RFB/CGIBS nº 1/2025 — Obrigações Acessórias e Documentos Fiscais Eletrônicos no Período de Transição 2026",
+      "norma": "Ato Conjunto RFB/CGIBS nº 1, de 22 de dezembro de 2025 / Arts. 1º a 3º",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "ato conjunto",
+        "rfb",
+        "cgibs",
+        "dfe",
+        "nf-e",
+        "nfc-e",
+        "nfs-e",
+        "ct-e",
+        "obrigacoes acessorias",
+        "transicao 2026"
+      ]
+    },
+    {
+      "id": "reforma-ato-conjunto-04-2026",
+      "arquivo": "docs/legal/reforma/ato-conjunto-rfb-cgibs-04-2026.md",
+      "tipo": "REFORMA",
+      "titulo": "Ato Conjunto RFB/CGIBS nº 4/2026 — Cronograma de Obrigatoriedade de Emissão de DF-e com Campos de IBS e CBS",
+      "norma": "Ato Conjunto RFB/CGIBS nº 4, de 30 de julho de 2026 / Arts. 1º a 3º",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "ato conjunto 04/2026",
+        "cronograma",
+        "obrigatoriedade",
+        "nf-e",
+        "nfc-e",
+        "03/08/2026",
+        "01/10/2026",
+        "01/12/2026",
+        "01/01/2027",
+        "simples nacional"
+      ]
+    },
+    {
+      "id": "reforma-imposto-seletivo",
+      "arquivo": "docs/legal/reforma/imposto-seletivo.md",
+      "tipo": "REFORMA",
+      "titulo": "Imposto Seletivo (IS) — Critérios de Incidência, Fato Gerador e NCMs Sujeitos (LC nº 214/2025)",
+      "norma": "Lei Complementar nº 214/2025 / Título VI e Anexos",
+      "capitulos": [
+        "22",
+        "24",
+        "27",
+        "87"
+      ],
+      "posicoes": [
+        "2203",
+        "2208",
+        "2402",
+        "2709",
+        "8703"
+      ],
+      "ncms": [
+        "2203.00.00",
+        "2208.30.20",
+        "2402.20.00",
+        "8703.22.10"
+      ],
+      "tags": [
+        "imposto seletivo",
+        "is",
+        "cigarro",
+        "bebidas alcoolicas",
+        "automoveis",
+        "reforma tributaria"
+      ]
+    },
+    {
+      "id": "reforma-nota-tecnica-2026-001-dfe",
+      "arquivo": "docs/legal/reforma/nota-tecnica-2026-001-dfe.md",
+      "tipo": "REFORMA",
+      "titulo": "Nota Técnica 2026.001 — Padrão de Adaptação e Validação dos Documentos Fiscais Eletrônicos para a Reforma Tributária (RTC)",
+      "norma": "Nota Técnica 2026.001 v1.02b / ENCAT / SEFAZ / RFB",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "nota tecnica 2026.001",
+        "paa nfe",
+        "rtc",
+        "cclasstrib",
+        "gibscbs",
+        "regras de validacao",
+        "encat",
+        "sefaz"
+      ]
+    },
+    {
+      "id": "reforma-regulamentos-cbs-ibs-2026",
+      "arquivo": "docs/legal/reforma/regulamentos-cbs-ibs-2026.md",
+      "tipo": "REFORMA",
+      "titulo": "Regulamentos do IBS e da CBS — Decreto nº 12.955/2026 (RCBS) e Resolução CGIBS nº 6/2026 (RIBS)",
+      "norma": "Decreto nº 12.955/2026 e Resolução CGIBS nº 6/2026 / Parte Comum",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "rcbs",
+        "ribs",
+        "decreto 12955",
+        "resolucao cgibs 6",
+        "regulamento cbs",
+        "regulamento ibs",
+        "split payment",
+        "nao cumulatividade"
+      ]
+    },
+    {
+      "id": "reforma-resolucao-cgsn-186-2026",
+      "arquivo": "docs/legal/reforma/resolucao-cgsn-186-2026.md",
+      "tipo": "REFORMA",
+      "titulo": "Resolução CGSN nº 186/2026 — Prazos e Condições para Opção pelo Regime Regular de IBS e CBS pelas ME e EPP em 2027",
+      "norma": "Resolução CGSN nº 186, de 9 de abril de 2026 / Arts. 1º a 5º",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "cgsn 186/2026",
+        "simples nacional",
+        "me",
+        "epp",
+        "opcao regime regular",
+        "ibs",
+        "cbs",
+        "janeiro a junho 2027",
+        "setembro 2026"
+      ]
+    },
+    {
+      "id": "rgi-1",
+      "arquivo": "docs/legal/rgi/rgi-1.md",
+      "tipo": "RGI",
+      "titulo": "RGI 1 — Textos dos Títulos, Posições e Notas de Seção ou Capítulo",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "rgi 1",
+        "regra geral",
+        "titulos",
+        "notas de secao",
+        "notas de capitulo"
+      ]
+    },
+    {
+      "id": "rgi-2",
+      "arquivo": "docs/legal/rgi/rgi-2.md",
+      "tipo": "RGI",
+      "titulo": "RGI 2 — Artigos Incompletos, Desmontados e Misturas de Matérias",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "rgi 2",
+        "artigo incompleto",
+        "desmontado",
+        "misturas",
+        "essencial"
+      ]
+    },
+    {
+      "id": "rgi-3",
+      "arquivo": "docs/legal/rgi/rgi-3.md",
+      "tipo": "RGI",
+      "titulo": "RGI 3 — Mercadorias Suscetíveis de Classificação em Duas ou Mais Posições",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "rgi 3",
+        "desempate",
+        "mais especifica",
+        "caracteristica essencial",
+        "ultima ordem numerica"
+      ]
+    },
+    {
+      "id": "rgi-6",
+      "arquivo": "docs/legal/rgi/rgi-6.md",
+      "tipo": "RGI",
+      "titulo": "RGI 6 — Classificação nos Subitens de Mesmo Nível Hierárquico",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "rgi 6",
+        "subitens",
+        "hifen",
+        "mesmo nivel",
+        "mutatis mutandis"
+      ]
+    }
+  ],
+  "porId": {
+    "sc-cosit-018-2022": {
+      "id": "sc-cosit-018-2022",
+      "arquivo": "docs/legal/cosit/sc-cosit-018-2022.md",
+      "tipo": "COSIT",
+      "titulo": "Solução de Consulta COSIT nº 018/2022 — Enquadramento de Cadeiras de Escritório Giratórias com Altura Ajustável",
+      "norma": "Solução de Consulta COSIT nº 018/2022 / Diário Oficial da União",
+      "capitulos": [
+        "94"
+      ],
+      "posicoes": [
+        "9401"
+      ],
+      "ncms": [
+        "9401.31.00",
+        "9401.39.00"
+      ],
+      "tags": [
+        "cosit",
+        "cadeira giratoria",
+        "armacao de madeira",
+        "armacao de metal",
+        "escritorio"
+      ]
+    },
+    "sc-cosit-045-2023": {
+      "id": "sc-cosit-045-2023",
+      "arquivo": "docs/legal/cosit/sc-cosit-045-2023.md",
+      "tipo": "COSIT",
+      "titulo": "Solução de Consulta COSIT nº 045/2023 — Classificação de Computadores Portáteis Tipo Tablet vs Notebook",
+      "norma": "Solução de Consulta COSIT nº 045/2023 / Diário Oficial da União",
+      "capitulos": [
+        "84"
+      ],
+      "posicoes": [
+        "8471"
+      ],
+      "ncms": [
+        "8471.30.12",
+        "8471.30.19",
+        "8471.41.00"
+      ],
+      "tags": [
+        "cosit",
+        "tablet",
+        "notebook",
+        "teclado fisico",
+        "peso",
+        "tela de toque"
+      ]
+    },
+    "nesh-cap-39": {
+      "id": "nesh-cap-39",
+      "arquivo": "docs/legal/nesh/cap-39.md",
+      "tipo": "NESH",
+      "titulo": "NESH Capítulo 39 — Plásticos e suas obras",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "capitulos": [
+        "39"
+      ],
+      "posicoes": [
+        "3923",
+        "3924",
+        "3926",
+        "3901",
+        "3920"
+      ],
+      "ncms": [
+        "3924.10.00",
+        "3923.50.00",
+        "3926.90.90",
+        "3923.10.90"
+      ],
+      "tags": [
+        "plasticos",
+        "copo descartavel",
+        "embalagens",
+        "utensilios de mesa",
+        "polimeros"
+      ]
+    },
+    "nesh-cap-84": {
+      "id": "nesh-cap-84",
+      "arquivo": "docs/legal/nesh/cap-84.md",
+      "tipo": "NESH",
+      "titulo": "NESH Capítulo 84 — Reatores nucleares, caldeiras, máquinas, aparelhos e instrumentos mecânicos",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "capitulos": [
+        "84"
+      ],
+      "posicoes": [
+        "8471",
+        "8472",
+        "8473",
+        "8415",
+        "8418",
+        "8413",
+        "8481"
+      ],
+      "ncms": [
+        "8471.30.12",
+        "8471.30.19",
+        "8471.49.00",
+        "8415.10.11",
+        "8413.70.10"
+      ],
+      "tags": [
+        "computadores",
+        "notebook",
+        "processamento de dados",
+        "bombas",
+        "refrigeracao",
+        "exclusoes"
+      ]
+    },
+    "nesh-cap-85": {
+      "id": "nesh-cap-85",
+      "arquivo": "docs/legal/nesh/cap-85.md",
+      "tipo": "NESH",
+      "titulo": "NESH Capítulo 85 — Máquinas, aparelhos e materiais elétricos, e suas partes",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "capitulos": [
+        "85"
+      ],
+      "posicoes": [
+        "8517",
+        "8528",
+        "8504",
+        "8544",
+        "8501"
+      ],
+      "ncms": [
+        "8517.13.00",
+        "8517.62.77",
+        "8517.62.94",
+        "8528.52.00"
+      ],
+      "tags": [
+        "telecomunicacoes",
+        "smartphone",
+        "roteador",
+        "monitores",
+        "eletronicos"
+      ]
+    },
+    "nesh-cap-94": {
+      "id": "nesh-cap-94",
+      "arquivo": "docs/legal/nesh/cap-94.md",
+      "tipo": "NESH",
+      "titulo": "NESH Capítulo 94 — Móveis; mobiliário médico-cirúrgico; colchões; aparelhos de iluminação",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "capitulos": [
+        "94"
+      ],
+      "posicoes": [
+        "9401",
+        "9402",
+        "9403",
+        "9405"
+      ],
+      "ncms": [
+        "9401.31.00",
+        "9401.39.00",
+        "9403.10.00",
+        "9403.20.10"
+      ],
+      "tags": [
+        "moveis",
+        "cadeiras",
+        "giratorias",
+        "escritorio",
+        "regulagem de altura"
+      ]
+    },
+    "reforma-anexo-01": {
+      "id": "reforma-anexo-01",
+      "arquivo": "docs/legal/reforma/anexo-01-cesta-basica.md",
+      "tipo": "REFORMA",
+      "titulo": "Cesta Básica Nacional de Alimentos — Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "norma": "Lei Complementar nº 214/2025 / Artigo 8º e Anexo I",
+      "capitulos": [
+        "02",
+        "04",
+        "10",
+        "11",
+        "15",
+        "19"
+      ],
+      "posicoes": [
+        "0201",
+        "0401",
+        "1006",
+        "1101",
+        "1507",
+        "1905"
+      ],
+      "ncms": [
+        "1006.30.21",
+        "1101.00.10",
+        "1507.90.11",
+        "0401.20.10"
+      ],
+      "tags": [
+        "cesta basica",
+        "aliquota zero",
+        "arroz",
+        "feijao",
+        "leite",
+        "farinha",
+        "reforma tributaria"
+      ]
+    },
+    "reforma-anexo-04-07-dispositivos-medicos": {
+      "id": "reforma-anexo-04-07-dispositivos-medicos",
+      "arquivo": "docs/legal/reforma/anexo-04-dispositivos-medicos.md",
+      "tipo": "REFORMA",
+      "titulo": "Dispositivos Médicos e de Acessibilidade — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 136, 140, Anexos IV e VII",
+      "capitulos": [
+        "87",
+        "90"
+      ],
+      "posicoes": [
+        "8713",
+        "9018",
+        "9021"
+      ],
+      "ncms": [
+        "8713.10.00",
+        "8713.90.00",
+        "9018.11.00",
+        "9018.12.10",
+        "9018.13.00"
+      ],
+      "tags": [
+        "dispositivos medicos",
+        "acessibilidade",
+        "cadeira de rodas",
+        "eletrocardiografo",
+        "reducao 60%",
+        "aliquota zero",
+        "anexo iv",
+        "anexo vii"
+      ]
+    },
+    "reforma-anexo-05-08-medicamentos": {
+      "id": "reforma-anexo-05-08-medicamentos",
+      "arquivo": "docs/legal/reforma/anexo-05-medicamentos.md",
+      "tipo": "REFORMA",
+      "titulo": "Medicamentos — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 138, 142, Anexos V e VIII",
+      "capitulos": [
+        "30"
+      ],
+      "posicoes": [
+        "3003",
+        "3004"
+      ],
+      "ncms": [
+        "3004.10.11",
+        "3004.10.12",
+        "3004.20.11",
+        "3004.90.99"
+      ],
+      "tags": [
+        "medicamentos",
+        "farmaceuticos",
+        "anexo v",
+        "anexo viii",
+        "reducao 60%",
+        "aliquota zero",
+        "antibioticos",
+        "oncologicos"
+      ]
+    },
+    "reforma-anexo-09-10-agropecuaria": {
+      "id": "reforma-anexo-09-10-agropecuaria",
+      "arquivo": "docs/legal/reforma/anexo-09-agropecuaria.md",
+      "tipo": "REFORMA",
+      "titulo": "Produtos Agropecuários, Aquícolas, Pesqueiros e Extrativos — Redução de 60% e Alíquota Zero (LC nº 214/2025)",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 144, 148, Anexos IX e X",
+      "capitulos": [
+        "01",
+        "03",
+        "07",
+        "08",
+        "12"
+      ],
+      "posicoes": [
+        "0101",
+        "0301",
+        "0701",
+        "0801",
+        "1201"
+      ],
+      "ncms": [
+        "0101.21.00",
+        "0301.91.10",
+        "0701.10.00",
+        "0701.90.00"
+      ],
+      "tags": [
+        "agropecuaria",
+        "agronegocio",
+        "aquicultura",
+        "pesca",
+        "extrativismo",
+        "hortifrutigranjeiros",
+        "anexo ix",
+        "anexo x",
+        "reducao 60%",
+        "aliquota zero"
+      ]
+    },
+    "reforma-ato-conjunto-01-2025": {
+      "id": "reforma-ato-conjunto-01-2025",
+      "arquivo": "docs/legal/reforma/ato-conjunto-rfb-cgibs-01-2025.md",
+      "tipo": "REFORMA",
+      "titulo": "Ato Conjunto RFB/CGIBS nº 1/2025 — Obrigações Acessórias e Documentos Fiscais Eletrônicos no Período de Transição 2026",
+      "norma": "Ato Conjunto RFB/CGIBS nº 1, de 22 de dezembro de 2025 / Arts. 1º a 3º",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "ato conjunto",
+        "rfb",
+        "cgibs",
+        "dfe",
+        "nf-e",
+        "nfc-e",
+        "nfs-e",
+        "ct-e",
+        "obrigacoes acessorias",
+        "transicao 2026"
+      ]
+    },
+    "reforma-ato-conjunto-04-2026": {
+      "id": "reforma-ato-conjunto-04-2026",
+      "arquivo": "docs/legal/reforma/ato-conjunto-rfb-cgibs-04-2026.md",
+      "tipo": "REFORMA",
+      "titulo": "Ato Conjunto RFB/CGIBS nº 4/2026 — Cronograma de Obrigatoriedade de Emissão de DF-e com Campos de IBS e CBS",
+      "norma": "Ato Conjunto RFB/CGIBS nº 4, de 30 de julho de 2026 / Arts. 1º a 3º",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "ato conjunto 04/2026",
+        "cronograma",
+        "obrigatoriedade",
+        "nf-e",
+        "nfc-e",
+        "03/08/2026",
+        "01/10/2026",
+        "01/12/2026",
+        "01/01/2027",
+        "simples nacional"
+      ]
+    },
+    "reforma-imposto-seletivo": {
+      "id": "reforma-imposto-seletivo",
+      "arquivo": "docs/legal/reforma/imposto-seletivo.md",
+      "tipo": "REFORMA",
+      "titulo": "Imposto Seletivo (IS) — Critérios de Incidência, Fato Gerador e NCMs Sujeitos (LC nº 214/2025)",
+      "norma": "Lei Complementar nº 214/2025 / Título VI e Anexos",
+      "capitulos": [
+        "22",
+        "24",
+        "27",
+        "87"
+      ],
+      "posicoes": [
+        "2203",
+        "2208",
+        "2402",
+        "2709",
+        "8703"
+      ],
+      "ncms": [
+        "2203.00.00",
+        "2208.30.20",
+        "2402.20.00",
+        "8703.22.10"
+      ],
+      "tags": [
+        "imposto seletivo",
+        "is",
+        "cigarro",
+        "bebidas alcoolicas",
+        "automoveis",
+        "reforma tributaria"
+      ]
+    },
+    "reforma-nota-tecnica-2026-001-dfe": {
+      "id": "reforma-nota-tecnica-2026-001-dfe",
+      "arquivo": "docs/legal/reforma/nota-tecnica-2026-001-dfe.md",
+      "tipo": "REFORMA",
+      "titulo": "Nota Técnica 2026.001 — Padrão de Adaptação e Validação dos Documentos Fiscais Eletrônicos para a Reforma Tributária (RTC)",
+      "norma": "Nota Técnica 2026.001 v1.02b / ENCAT / SEFAZ / RFB",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "nota tecnica 2026.001",
+        "paa nfe",
+        "rtc",
+        "cclasstrib",
+        "gibscbs",
+        "regras de validacao",
+        "encat",
+        "sefaz"
+      ]
+    },
+    "reforma-regulamentos-cbs-ibs-2026": {
+      "id": "reforma-regulamentos-cbs-ibs-2026",
+      "arquivo": "docs/legal/reforma/regulamentos-cbs-ibs-2026.md",
+      "tipo": "REFORMA",
+      "titulo": "Regulamentos do IBS e da CBS — Decreto nº 12.955/2026 (RCBS) e Resolução CGIBS nº 6/2026 (RIBS)",
+      "norma": "Decreto nº 12.955/2026 e Resolução CGIBS nº 6/2026 / Parte Comum",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "rcbs",
+        "ribs",
+        "decreto 12955",
+        "resolucao cgibs 6",
+        "regulamento cbs",
+        "regulamento ibs",
+        "split payment",
+        "nao cumulatividade"
+      ]
+    },
+    "reforma-resolucao-cgsn-186-2026": {
+      "id": "reforma-resolucao-cgsn-186-2026",
+      "arquivo": "docs/legal/reforma/resolucao-cgsn-186-2026.md",
+      "tipo": "REFORMA",
+      "titulo": "Resolução CGSN nº 186/2026 — Prazos e Condições para Opção pelo Regime Regular de IBS e CBS pelas ME e EPP em 2027",
+      "norma": "Resolução CGSN nº 186, de 9 de abril de 2026 / Arts. 1º a 5º",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "cgsn 186/2026",
+        "simples nacional",
+        "me",
+        "epp",
+        "opcao regime regular",
+        "ibs",
+        "cbs",
+        "janeiro a junho 2027",
+        "setembro 2026"
+      ]
+    },
+    "rgi-1": {
+      "id": "rgi-1",
+      "arquivo": "docs/legal/rgi/rgi-1.md",
+      "tipo": "RGI",
+      "titulo": "RGI 1 — Textos dos Títulos, Posições e Notas de Seção ou Capítulo",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "rgi 1",
+        "regra geral",
+        "titulos",
+        "notas de secao",
+        "notas de capitulo"
+      ]
+    },
+    "rgi-2": {
+      "id": "rgi-2",
+      "arquivo": "docs/legal/rgi/rgi-2.md",
+      "tipo": "RGI",
+      "titulo": "RGI 2 — Artigos Incompletos, Desmontados e Misturas de Matérias",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "rgi 2",
+        "artigo incompleto",
+        "desmontado",
+        "misturas",
+        "essencial"
+      ]
+    },
+    "rgi-3": {
+      "id": "rgi-3",
+      "arquivo": "docs/legal/rgi/rgi-3.md",
+      "tipo": "RGI",
+      "titulo": "RGI 3 — Mercadorias Suscetíveis de Classificação em Duas ou Mais Posições",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "rgi 3",
+        "desempate",
+        "mais especifica",
+        "caracteristica essencial",
+        "ultima ordem numerica"
+      ]
+    },
+    "rgi-6": {
+      "id": "rgi-6",
+      "arquivo": "docs/legal/rgi/rgi-6.md",
+      "tipo": "RGI",
+      "titulo": "RGI 6 — Classificação nos Subitens de Mesmo Nível Hierárquico",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "tags": [
+        "rgi 6",
+        "subitens",
+        "hifen",
+        "mesmo nivel",
+        "mutatis mutandis"
+      ]
+    }
+  },
+  "porCapitulo": {
+    "94": [
+      "sc-cosit-018-2022",
+      "nesh-cap-94"
+    ],
+    "84": [
+      "sc-cosit-045-2023",
+      "nesh-cap-84"
+    ],
+    "39": [
+      "nesh-cap-39"
+    ],
+    "85": [
+      "nesh-cap-85"
+    ],
+    "02": [
+      "reforma-anexo-01"
+    ],
+    "04": [
+      "reforma-anexo-01"
+    ],
+    "10": [
+      "reforma-anexo-01"
+    ],
+    "11": [
+      "reforma-anexo-01"
+    ],
+    "15": [
+      "reforma-anexo-01"
+    ],
+    "19": [
+      "reforma-anexo-01"
+    ],
+    "87": [
+      "reforma-anexo-04-07-dispositivos-medicos",
+      "reforma-imposto-seletivo"
+    ],
+    "90": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "30": [
+      "reforma-anexo-05-08-medicamentos"
+    ],
+    "01": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "03": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "07": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "08": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "12": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "22": [
+      "reforma-imposto-seletivo"
+    ],
+    "24": [
+      "reforma-imposto-seletivo"
+    ],
+    "27": [
+      "reforma-imposto-seletivo"
+    ]
+  },
+  "porPosicao": {
+    "9401": [
+      "sc-cosit-018-2022",
+      "nesh-cap-94"
+    ],
+    "8471": [
+      "sc-cosit-045-2023",
+      "nesh-cap-84"
+    ],
+    "3923": [
+      "nesh-cap-39"
+    ],
+    "3924": [
+      "nesh-cap-39"
+    ],
+    "3926": [
+      "nesh-cap-39"
+    ],
+    "3901": [
+      "nesh-cap-39"
+    ],
+    "3920": [
+      "nesh-cap-39"
+    ],
+    "8472": [
+      "nesh-cap-84"
+    ],
+    "8473": [
+      "nesh-cap-84"
+    ],
+    "8415": [
+      "nesh-cap-84"
+    ],
+    "8418": [
+      "nesh-cap-84"
+    ],
+    "8413": [
+      "nesh-cap-84"
+    ],
+    "8481": [
+      "nesh-cap-84"
+    ],
+    "8517": [
+      "nesh-cap-85"
+    ],
+    "8528": [
+      "nesh-cap-85"
+    ],
+    "8504": [
+      "nesh-cap-85"
+    ],
+    "8544": [
+      "nesh-cap-85"
+    ],
+    "8501": [
+      "nesh-cap-85"
+    ],
+    "9402": [
+      "nesh-cap-94"
+    ],
+    "9403": [
+      "nesh-cap-94"
+    ],
+    "9405": [
+      "nesh-cap-94"
+    ],
+    "0201": [
+      "reforma-anexo-01"
+    ],
+    "0401": [
+      "reforma-anexo-01"
+    ],
+    "1006": [
+      "reforma-anexo-01"
+    ],
+    "1101": [
+      "reforma-anexo-01"
+    ],
+    "1507": [
+      "reforma-anexo-01"
+    ],
+    "1905": [
+      "reforma-anexo-01"
+    ],
+    "8713": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "9018": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "9021": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "3003": [
+      "reforma-anexo-05-08-medicamentos"
+    ],
+    "3004": [
+      "reforma-anexo-05-08-medicamentos"
+    ],
+    "0101": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "0301": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "0701": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "0801": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "1201": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "2203": [
+      "reforma-imposto-seletivo"
+    ],
+    "2208": [
+      "reforma-imposto-seletivo"
+    ],
+    "2402": [
+      "reforma-imposto-seletivo"
+    ],
+    "2709": [
+      "reforma-imposto-seletivo"
+    ],
+    "8703": [
+      "reforma-imposto-seletivo"
+    ]
+  },
+  "porNcm": {
+    "94013100": [
+      "sc-cosit-018-2022",
+      "nesh-cap-94"
+    ],
+    "9401.31.00": [
+      "sc-cosit-018-2022",
+      "nesh-cap-94"
+    ],
+    "94013900": [
+      "sc-cosit-018-2022",
+      "nesh-cap-94"
+    ],
+    "9401.39.00": [
+      "sc-cosit-018-2022",
+      "nesh-cap-94"
+    ],
+    "84713012": [
+      "sc-cosit-045-2023",
+      "nesh-cap-84"
+    ],
+    "8471.30.12": [
+      "sc-cosit-045-2023",
+      "nesh-cap-84"
+    ],
+    "84713019": [
+      "sc-cosit-045-2023",
+      "nesh-cap-84"
+    ],
+    "8471.30.19": [
+      "sc-cosit-045-2023",
+      "nesh-cap-84"
+    ],
+    "84714100": [
+      "sc-cosit-045-2023"
+    ],
+    "8471.41.00": [
+      "sc-cosit-045-2023"
+    ],
+    "39241000": [
+      "nesh-cap-39"
+    ],
+    "3924.10.00": [
+      "nesh-cap-39"
+    ],
+    "39235000": [
+      "nesh-cap-39"
+    ],
+    "3923.50.00": [
+      "nesh-cap-39"
+    ],
+    "39269090": [
+      "nesh-cap-39"
+    ],
+    "3926.90.90": [
+      "nesh-cap-39"
+    ],
+    "39231090": [
+      "nesh-cap-39"
+    ],
+    "3923.10.90": [
+      "nesh-cap-39"
+    ],
+    "84714900": [
+      "nesh-cap-84"
+    ],
+    "8471.49.00": [
+      "nesh-cap-84"
+    ],
+    "84151011": [
+      "nesh-cap-84"
+    ],
+    "8415.10.11": [
+      "nesh-cap-84"
+    ],
+    "84137010": [
+      "nesh-cap-84"
+    ],
+    "8413.70.10": [
+      "nesh-cap-84"
+    ],
+    "85171300": [
+      "nesh-cap-85"
+    ],
+    "8517.13.00": [
+      "nesh-cap-85"
+    ],
+    "85176277": [
+      "nesh-cap-85"
+    ],
+    "8517.62.77": [
+      "nesh-cap-85"
+    ],
+    "85176294": [
+      "nesh-cap-85"
+    ],
+    "8517.62.94": [
+      "nesh-cap-85"
+    ],
+    "85285200": [
+      "nesh-cap-85"
+    ],
+    "8528.52.00": [
+      "nesh-cap-85"
+    ],
+    "94031000": [
+      "nesh-cap-94"
+    ],
+    "9403.10.00": [
+      "nesh-cap-94"
+    ],
+    "94032010": [
+      "nesh-cap-94"
+    ],
+    "9403.20.10": [
+      "nesh-cap-94"
+    ],
+    "10063021": [
+      "reforma-anexo-01"
+    ],
+    "1006.30.21": [
+      "reforma-anexo-01"
+    ],
+    "11010010": [
+      "reforma-anexo-01"
+    ],
+    "1101.00.10": [
+      "reforma-anexo-01"
+    ],
+    "15079011": [
+      "reforma-anexo-01"
+    ],
+    "1507.90.11": [
+      "reforma-anexo-01"
+    ],
+    "04012010": [
+      "reforma-anexo-01"
+    ],
+    "0401.20.10": [
+      "reforma-anexo-01"
+    ],
+    "87131000": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "8713.10.00": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "87139000": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "8713.90.00": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "90181100": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "9018.11.00": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "90181210": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "9018.12.10": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "90181300": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "9018.13.00": [
+      "reforma-anexo-04-07-dispositivos-medicos"
+    ],
+    "30041011": [
+      "reforma-anexo-05-08-medicamentos"
+    ],
+    "3004.10.11": [
+      "reforma-anexo-05-08-medicamentos"
+    ],
+    "30041012": [
+      "reforma-anexo-05-08-medicamentos"
+    ],
+    "3004.10.12": [
+      "reforma-anexo-05-08-medicamentos"
+    ],
+    "30042011": [
+      "reforma-anexo-05-08-medicamentos"
+    ],
+    "3004.20.11": [
+      "reforma-anexo-05-08-medicamentos"
+    ],
+    "30049099": [
+      "reforma-anexo-05-08-medicamentos"
+    ],
+    "3004.90.99": [
+      "reforma-anexo-05-08-medicamentos"
+    ],
+    "01012100": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "0101.21.00": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "03019110": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "0301.91.10": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "07011000": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "0701.10.00": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "07019000": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "0701.90.00": [
+      "reforma-anexo-09-10-agropecuaria"
+    ],
+    "22030000": [
+      "reforma-imposto-seletivo"
+    ],
+    "2203.00.00": [
+      "reforma-imposto-seletivo"
+    ],
+    "22083020": [
+      "reforma-imposto-seletivo"
+    ],
+    "2208.30.20": [
+      "reforma-imposto-seletivo"
+    ],
+    "24022000": [
+      "reforma-imposto-seletivo"
+    ],
+    "2402.20.00": [
+      "reforma-imposto-seletivo"
+    ],
+    "87032210": [
+      "reforma-imposto-seletivo"
+    ],
+    "8703.22.10": [
+      "reforma-imposto-seletivo"
+    ]
+  },
+  "trechos": [
+    {
+      "id": "sc-cosit-018-2022-s1",
+      "docId": "sc-cosit-018-2022",
+      "tipo": "COSIT",
+      "norma": "Solução de Consulta COSIT nº 018/2022 / Diário Oficial da União",
+      "tituloDoc": "Solução de Consulta COSIT nº 018/2022 — Enquadramento de Cadeiras de Escritório Giratórias com Altura Ajustável",
+      "secao": "Geral",
+      "capitulos": [
+        "94"
+      ],
+      "posicoes": [
+        "9401"
+      ],
+      "ncms": [
+        "9401.31.00",
+        "9401.39.00"
+      ],
+      "texto": "# Solução de Consulta COSIT nº 018/2022 (RFB)"
+    },
+    {
+      "id": "sc-cosit-018-2022-s2",
+      "docId": "sc-cosit-018-2022",
+      "tipo": "COSIT",
+      "norma": "Solução de Consulta COSIT nº 018/2022 / Diário Oficial da União",
+      "tituloDoc": "Solução de Consulta COSIT nº 018/2022 — Enquadramento de Cadeiras de Escritório Giratórias com Altura Ajustável",
+      "secao": "Assunto",
+      "capitulos": [
+        "94"
+      ],
+      "posicoes": [
+        "9401"
+      ],
+      "ncms": [
+        "9401.31.00",
+        "9401.39.00"
+      ],
+      "texto": "Critérios para distinção entre os subitens 9401.31.00 e 9401.39.00 da NCM para cadeiras de escritório."
+    },
+    {
+      "id": "sc-cosit-018-2022-s3",
+      "docId": "sc-cosit-018-2022",
+      "tipo": "COSIT",
+      "norma": "Solução de Consulta COSIT nº 018/2022 / Diário Oficial da União",
+      "tituloDoc": "Solução de Consulta COSIT nº 018/2022 — Enquadramento de Cadeiras de Escritório Giratórias com Altura Ajustável",
+      "secao": "Ementa Oficial",
+      "capitulos": [
+        "94"
+      ],
+      "posicoes": [
+        "9401"
+      ],
+      "ncms": [
+        "9401.31.00",
+        "9401.39.00"
+      ],
+      "texto": "1. A classificação de assentos giratórios de altura ajustável no subitem 9401.31.00 exige que a estrutura estrutural primária ou armação seja constituída essencialmente de **madeira**.\n2. As cadeiras de escritório providas de base giratória de aço cromado, polipropileno injetado com rodízios de nylon e pistão a gás para regulagem de altura classificam-se imperativamente no subitem residual **9401.39.00** (\"Outros\"), ainda que o encosto ou a concha interna do estofado contenha compensado fino de madeira que não funcione como a estrutura autoportante visível."
+    },
+    {
+      "id": "sc-cosit-018-2022-s4",
+      "docId": "sc-cosit-018-2022",
+      "tipo": "COSIT",
+      "norma": "Solução de Consulta COSIT nº 018/2022 / Diário Oficial da União",
+      "tituloDoc": "Solução de Consulta COSIT nº 018/2022 — Enquadramento de Cadeiras de Escritório Giratórias com Altura Ajustável",
+      "secao": "Aplicação no Motor de Inteligência Fiscal Portela",
+      "capitulos": [
+        "94"
+      ],
+      "posicoes": [
+        "9401"
+      ],
+      "ncms": [
+        "9401.31.00",
+        "9401.39.00"
+      ],
+      "texto": "- Ao auditar descrições comerciais de cadeiras giratórias que citem base de aço, plástico ou metal: a recomendação primária para estofadas com base metálica/plástica recai sobre `9401.39.00`.\n- Se a especificação declarar expressamente estrutura/armação em madeira nobre ou maciça: enquadra-se em `9401.31.00`."
+    },
+    {
+      "id": "sc-cosit-045-2023-s1",
+      "docId": "sc-cosit-045-2023",
+      "tipo": "COSIT",
+      "norma": "Solução de Consulta COSIT nº 045/2023 / Diário Oficial da União",
+      "tituloDoc": "Solução de Consulta COSIT nº 045/2023 — Classificação de Computadores Portáteis Tipo Tablet vs Notebook",
+      "secao": "Geral",
+      "capitulos": [
+        "84"
+      ],
+      "posicoes": [
+        "8471"
+      ],
+      "ncms": [
+        "8471.30.12",
+        "8471.30.19",
+        "8471.41.00"
+      ],
+      "texto": "# Solução de Consulta COSIT nº 045/2023 (RFB)"
+    },
+    {
+      "id": "sc-cosit-045-2023-s2",
+      "docId": "sc-cosit-045-2023",
+      "tipo": "COSIT",
+      "norma": "Solução de Consulta COSIT nº 045/2023 / Diário Oficial da União",
+      "tituloDoc": "Solução de Consulta COSIT nº 045/2023 — Classificação de Computadores Portáteis Tipo Tablet vs Notebook",
+      "secao": "Assunto",
+      "capitulos": [
+        "84"
+      ],
+      "posicoes": [
+        "8471"
+      ],
+      "ncms": [
+        "8471.30.12",
+        "8471.30.19",
+        "8471.41.00"
+      ],
+      "texto": "Classificação fiscal de máquina automática digital para processamento de dados, portátil, com peso inferior a 10 kg."
+    },
+    {
+      "id": "sc-cosit-045-2023-s3",
+      "docId": "sc-cosit-045-2023",
+      "tipo": "COSIT",
+      "norma": "Solução de Consulta COSIT nº 045/2023 / Diário Oficial da União",
+      "tituloDoc": "Solução de Consulta COSIT nº 045/2023 — Classificação de Computadores Portáteis Tipo Tablet vs Notebook",
+      "secao": "Ementa Oficial",
+      "capitulos": [
+        "84"
+      ],
+      "posicoes": [
+        "8471"
+      ],
+      "ncms": [
+        "8471.30.12",
+        "8471.30.19",
+        "8471.41.00"
+      ],
+      "texto": "1. O subitem NCM 8471.30.12 compreende as máquinas automáticas para processamento de dados, digitais, portáteis, de peso não superior a 10 kg, que contenham pelo menos uma unidade central de processamento (CPU), um teclado físico alfanumérico e uma tela, agrupados em corpo único ou dobrável (*notebooks*, *laptops*).\n2. Os dispositivos portáteis desprovidos de teclado físico integrado de fábrica, cuja interação e entrada de dados ocorra primariamente através de teclado virtual em tela sensível ao toque (*tablets* com tela <= 10 polegadas ou sem teclado mecânico acoplado permanente), enquadram-se no subitem 8471.30.19 (\"Outras\") ou 8471.41.00, não podendo ser equiparados aos computadores portáteis convencionais da subposição 8471.30.12."
+    },
+    {
+      "id": "sc-cosit-045-2023-s4",
+      "docId": "sc-cosit-045-2023",
+      "tipo": "COSIT",
+      "norma": "Solução de Consulta COSIT nº 045/2023 / Diário Oficial da União",
+      "tituloDoc": "Solução de Consulta COSIT nº 045/2023 — Classificação de Computadores Portáteis Tipo Tablet vs Notebook",
+      "secao": "Aplicação no Motor de Inteligência Fiscal Portela",
+      "capitulos": [
+        "84"
+      ],
+      "posicoes": [
+        "8471"
+      ],
+      "ncms": [
+        "8471.30.12",
+        "8471.30.19",
+        "8471.41.00"
+      ],
+      "texto": "- Ao auditar descrições comerciais que citem \"Notebook\" ou \"Laptop\" com teclado físico e tela: pontua-se com 100% de confiabilidade o subitem `8471.30.12`.\n- Ao auditar \"Tablet\" sem teclado: desvia-se para o subitem `8471.30.19`."
+    },
+    {
+      "id": "nesh-cap-39-s1",
+      "docId": "nesh-cap-39",
+      "tipo": "NESH",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "tituloDoc": "NESH Capítulo 39 — Plásticos e suas obras",
+      "secao": "Geral",
+      "capitulos": [
+        "39"
+      ],
+      "posicoes": [
+        "3923",
+        "3924",
+        "3926",
+        "3901",
+        "3920"
+      ],
+      "ncms": [
+        "3924.10.00",
+        "3923.50.00",
+        "3926.90.90",
+        "3923.10.90"
+      ],
+      "texto": "# NESH — Capítulo 39: Plásticos e suas Obras"
+    },
+    {
+      "id": "nesh-cap-39-s2",
+      "docId": "nesh-cap-39",
+      "tipo": "NESH",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "tituloDoc": "NESH Capítulo 39 — Plásticos e suas obras",
+      "secao": "1. Posição 39.24: Serviços de mesa, outros artigos de uso doméstico e artigos de higiene ou de toucador, de plástico",
+      "capitulos": [
+        "39"
+      ],
+      "posicoes": [
+        "3923",
+        "3924",
+        "3926",
+        "3901",
+        "3920"
+      ],
+      "ncms": [
+        "3924.10.00",
+        "3923.50.00",
+        "3926.90.90",
+        "3923.10.90"
+      ],
+      "texto": "A posição 39.24 compreende os utensílios de mesa e de cozinha, tais como pratos, copos, travessas, talheres e recipientes para alimentos destinados ao consumo humano.\n\n### Subitem 3924.10.00: Serviços de mesa e outros artigos de mesa ou de cozinha\n- **Copos Descartáveis para Bebida**: Classificam-se no código 3924.10.00 quando destinados ao serviço de mesa (refeições, eventos, escritórios), independentemente de serem descartáveis (poliestireno ou polipropileno).\n- **Distinção NESH vs Posição 39.23**: Artigos da posição 39.23 destinam-se ao acondicionamento ou transporte industrial/comercial de mercadorias (ex.: caixas, engradados, garrafões, rolhas e cápsulas). Copos de plástico usados para beber enquadram-se como artigos de mesa da posição 39.24."
+    },
+    {
+      "id": "nesh-cap-84-s1",
+      "docId": "nesh-cap-84",
+      "tipo": "NESH",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "tituloDoc": "NESH Capítulo 84 — Reatores nucleares, caldeiras, máquinas, aparelhos e instrumentos mecânicos",
+      "secao": "Geral",
+      "capitulos": [
+        "84"
+      ],
+      "posicoes": [
+        "8471",
+        "8472",
+        "8473",
+        "8415",
+        "8418",
+        "8413",
+        "8481"
+      ],
+      "ncms": [
+        "8471.30.12",
+        "8471.30.19",
+        "8471.49.00",
+        "8415.10.11",
+        "8413.70.10"
+      ],
+      "texto": "# NESH — Capítulo 84: Máquinas, Aparelhos Mecânicos e suas Partes"
+    },
+    {
+      "id": "nesh-cap-84-s2",
+      "docId": "nesh-cap-84",
+      "tipo": "NESH",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "tituloDoc": "NESH Capítulo 84 — Reatores nucleares, caldeiras, máquinas, aparelhos e instrumentos mecânicos",
+      "secao": "1. Notas Legais de Capítulo e Exclusões Mandatórias",
+      "capitulos": [
+        "84"
+      ],
+      "posicoes": [
+        "8471",
+        "8472",
+        "8473",
+        "8415",
+        "8418",
+        "8413",
+        "8481"
+      ],
+      "ncms": [
+        "8471.30.12",
+        "8471.30.19",
+        "8471.49.00",
+        "8415.10.11",
+        "8413.70.10"
+      ],
+      "texto": "- **Nota 1(a)**: Não compreende os artefatos de matérias têxteis para usos técnicos (posição 59.11).\n- **Nota 1(e)**: Máquinas e aparelhos para trabalhar pedra ou matérias minerais similares, com funções das posições 68.04, 68.05 ou do Capítulo 82 classificam-se nessas posições e não no Capítulo 84.\n- **Nota 2**: Sob reserva da Nota 3 da Seção XVI, as máquinas suscetíveis de se incluírem simultaneamente nas posições 84.01 a 84.24 e nas posições 84.25 a 84.80 classificam-se nas primeiras (regra de primazia da função básica)."
+    },
+    {
+      "id": "nesh-cap-84-s3",
+      "docId": "nesh-cap-84",
+      "tipo": "NESH",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "tituloDoc": "NESH Capítulo 84 — Reatores nucleares, caldeiras, máquinas, aparelhos e instrumentos mecânicos",
+      "secao": "2. Posição 84.71: Máquinas automáticas para processamento de dados e suas unidades",
+      "capitulos": [
+        "84"
+      ],
+      "posicoes": [
+        "8471",
+        "8472",
+        "8473",
+        "8415",
+        "8418",
+        "8413",
+        "8481"
+      ],
+      "ncms": [
+        "8471.30.12",
+        "8471.30.19",
+        "8471.49.00",
+        "8415.10.11",
+        "8413.70.10"
+      ],
+      "texto": "A posição 84.71 compreende as máquinas que satisfazem cumulativamente as condições da Nota 5(A) do Capítulo 84:\n1. Serem capazes de registrar o programa ou programas de processamento e pelo menos os dados necessários à execução do programa;\n2. Serem livremente programadas segundo as necessidades do usuário;\n3. Executarem cálculos aritméticos definidos pelo usuário;\n4. Executarem, sem intervenção humana, um programa de processamento no qual possam, por decisão lógica, modificar a execução no decorrer do processamento.\n\n### Subposição 8471.30: Máquinas automáticas para processamento de dados, portáteis\n- **Critério de Massa**: De peso não superior a 10 kg;\n- **Arquitetura Mínima Integrada**: Devem conter, em um corpo único ou conjunto integrado, pelo menos:\n  - Uma unidade central de processamento (CPU);\n  - Um teclado (físico ou alfanumérico integrado);\n  - Uma tela de visualização (display).\n- **Subitem 8471.30.12**: Máquinas portáteis contendo CPU, teclado e tela, com peso <= 10 kg, com capacidade de processamento padrão (computadores portáteis tipo *notebook* / *laptop*).\n- **Distinção Pericial (Tablets vs Notebooks)**: Aparelhos desprovidos de teclado físico integrado (operados unicamente por tela de toque) devem ser examinados à luz da Solução de Consulta COSIT nº 045/2023 para fins de enquadramento em 8471.30 ou 8471.41."
+    },
+    {
+      "id": "nesh-cap-85-s1",
+      "docId": "nesh-cap-85",
+      "tipo": "NESH",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "tituloDoc": "NESH Capítulo 85 — Máquinas, aparelhos e materiais elétricos, e suas partes",
+      "secao": "Geral",
+      "capitulos": [
+        "85"
+      ],
+      "posicoes": [
+        "8517",
+        "8528",
+        "8504",
+        "8544",
+        "8501"
+      ],
+      "ncms": [
+        "8517.13.00",
+        "8517.62.77",
+        "8517.62.94",
+        "8528.52.00"
+      ],
+      "texto": "# NESH — Capítulo 85: Equipamentos Elétricos e de Telecomunicação"
+    },
+    {
+      "id": "nesh-cap-85-s2",
+      "docId": "nesh-cap-85",
+      "tipo": "NESH",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "tituloDoc": "NESH Capítulo 85 — Máquinas, aparelhos e materiais elétricos, e suas partes",
+      "secao": "1. Posição 85.17: Telefones, Smartphones e Aparelhos de Transmissão de Redes",
+      "capitulos": [
+        "85"
+      ],
+      "posicoes": [
+        "8517",
+        "8528",
+        "8504",
+        "8544",
+        "8501"
+      ],
+      "ncms": [
+        "8517.13.00",
+        "8517.62.77",
+        "8517.62.94",
+        "8528.52.00"
+      ],
+      "texto": "A posição 85.17 compreende os aparelhos telefônicos, incluindo os telefones para redes celulares e para outras redes sem fio, bem como outros aparelhos para a transmissão ou recepção de voz, imagens ou outros dados.\n\n### Subposição 8517.13: Telefones inteligentes (smartphones)\n- Caracterizam-se por operar sobre um sistema operacional móvel programável (Android, iOS, etc.), suportando aplicativos de terceiros e transmissão de pacotes de dados celulares combinada com acesso à Internet.\n- **Subitem 8517.13.00**: Telefones inteligentes (*smartphones*).\n\n### Subposição 8517.62: Aparelhos para recepção, conversão e transmissão ou regeneração de dados\n- Compreende comutadores (switches), roteadores digitais (*routers*), modems e estações base.\n- **Distinção NESH**: Roteadores digitais em redes com fio ou sem fio classificam-se na subposição 8517.62, não se confundindo com periféricos de entrada/saída do Capítulo 84."
+    },
+    {
+      "id": "nesh-cap-94-s1",
+      "docId": "nesh-cap-94",
+      "tipo": "NESH",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "tituloDoc": "NESH Capítulo 94 — Móveis; mobiliário médico-cirúrgico; colchões; aparelhos de iluminação",
+      "secao": "Geral",
+      "capitulos": [
+        "94"
+      ],
+      "posicoes": [
+        "9401",
+        "9402",
+        "9403",
+        "9405"
+      ],
+      "ncms": [
+        "9401.31.00",
+        "9401.39.00",
+        "9403.10.00",
+        "9403.20.10"
+      ],
+      "texto": "# NESH — Capítulo 94: Móveis e Assentos"
+    },
+    {
+      "id": "nesh-cap-94-s2",
+      "docId": "nesh-cap-94",
+      "tipo": "NESH",
+      "norma": "IN RFB nº 2.169/2023 / NESH OMA 2022",
+      "tituloDoc": "NESH Capítulo 94 — Móveis; mobiliário médico-cirúrgico; colchões; aparelhos de iluminação",
+      "secao": "1. Posição 94.01: Assentos (exceto os da posição 94.02), mesmo transformáveis em camas, e suas partes",
+      "capitulos": [
+        "94"
+      ],
+      "posicoes": [
+        "9401",
+        "9402",
+        "9403",
+        "9405"
+      ],
+      "ncms": [
+        "9401.31.00",
+        "9401.39.00",
+        "9403.10.00",
+        "9403.20.10"
+      ],
+      "texto": "A posição 94.01 abrange todos os tipos de assentos destinados a colocar-se sobre o solo, concebidos para sentar uma pessoa, qualquer que seja a matéria constitutiva (madeira, metal, plástico, rotim, etc.), acolchoados, estofados ou não.\n\n### Subposição 9401.30 (9401.31 / 9401.39): Assentos giratórios de altura ajustável\n- **Requisitos Técnicos Cumulativos**:\n  1. **Mecanismo Giratório**: Devem possuir dispositivo que permita a rotação em 360 graus do assento sobre uma base ou coluna central;\n  2. **Regulagem de Altura**: Devem dispor de mecanismo mecânico, pneumático (pistão a gás) ou hidráulico para elevar e rebaixar a altura do assento.\n- **Subitem 9401.31.00**: Assentos giratórios de altura ajustável, **com armação de madeira**.\n- **Subitem 9401.39.00**: Assentos giratórios de altura ajustável, **outros** (incluindo armações metálicas, tubulares de aço cromado, polipropileno com alma de aço e bases com rodízios para escritório)."
+    },
+    {
+      "id": "reforma-anexo-01-s1",
+      "docId": "reforma-anexo-01",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Artigo 8º e Anexo I",
+      "tituloDoc": "Cesta Básica Nacional de Alimentos — Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "Geral",
+      "capitulos": [
+        "02",
+        "04",
+        "10",
+        "11",
+        "15",
+        "19"
+      ],
+      "posicoes": [
+        "0201",
+        "0401",
+        "1006",
+        "1101",
+        "1507",
+        "1905"
+      ],
+      "ncms": [
+        "1006.30.21",
+        "1101.00.10",
+        "1507.90.11",
+        "0401.20.10"
+      ],
+      "texto": "# Reforma Tributária: Cesta Básica Nacional de Alimentos (Anexo I)"
+    },
+    {
+      "id": "reforma-anexo-01-s2",
+      "docId": "reforma-anexo-01",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Artigo 8º e Anexo I",
+      "tituloDoc": "Cesta Básica Nacional de Alimentos — Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "Fundamentação Legal",
+      "capitulos": [
+        "02",
+        "04",
+        "10",
+        "11",
+        "15",
+        "19"
+      ],
+      "posicoes": [
+        "0201",
+        "0401",
+        "1006",
+        "1101",
+        "1507",
+        "1905"
+      ],
+      "ncms": [
+        "1006.30.21",
+        "1101.00.10",
+        "1507.90.11",
+        "0401.20.10"
+      ],
+      "texto": "Conforme o Art. 8º da Lei Complementar nº 214/2025, ficam reduzidas a **zero** as alíquotas da Contribuição sobre Bens e Serviços (CBS) e do Imposto sobre Bens e Serviços (IBS) incidentes sobre as operações com os produtos destinados à alimentação humana que componham a Cesta Básica Nacional."
+    },
+    {
+      "id": "reforma-anexo-01-s3",
+      "docId": "reforma-anexo-01",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Artigo 8º e Anexo I",
+      "tituloDoc": "Cesta Básica Nacional de Alimentos — Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "Lista Taxativa de NCMs Beneficiados (Amostra Operacional)",
+      "capitulos": [
+        "02",
+        "04",
+        "10",
+        "11",
+        "15",
+        "19"
+      ],
+      "posicoes": [
+        "0201",
+        "0401",
+        "1006",
+        "1101",
+        "1507",
+        "1905"
+      ],
+      "ncms": [
+        "1006.30.21",
+        "1101.00.10",
+        "1507.90.11",
+        "0401.20.10"
+      ],
+      "texto": "1. **Arroz**: Subposição 1006.30 (ex.: `1006.30.21` — Arroz polido ou brunido);\n2. **Farinha de Trigo**: Posição `1101.00.10`;\n3. **Leite Fluido Pasteurizado/UHT**: Posição `0401.20.10`;\n4. **Óleo de Soja Refinado**: Subposição `1507.90.11`;\n5. **Feijões**: Posição `0713.33`;\n6. **Café Torrado e Moído**: Posição `0901.21.00`."
+    },
+    {
+      "id": "reforma-anexo-01-s4",
+      "docId": "reforma-anexo-01",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Artigo 8º e Anexo I",
+      "tituloDoc": "Cesta Básica Nacional de Alimentos — Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "Parametrização Fiscal Obrigatória no ERP",
+      "capitulos": [
+        "02",
+        "04",
+        "10",
+        "11",
+        "15",
+        "19"
+      ],
+      "posicoes": [
+        "0201",
+        "0401",
+        "1006",
+        "1101",
+        "1507",
+        "1905"
+      ],
+      "ncms": [
+        "1006.30.21",
+        "1101.00.10",
+        "1507.90.11",
+        "0401.20.10"
+      ],
+      "texto": "- **CST IBS/CBS**: `200` (Alíquota Reduzida / Zero por Benefício Específico) ou `400` (Isenção);\n- **cClassTrib Sugerido**: `200003` (\"Vendas de produtos destinados à alimentação humana — Anexo I da LC 214/2025\");\n- **Alíquota CBS 2027**: 0,00%;\n- **Alíquota IBS 2027**: 0,00%;\n- **Imposto Seletivo**: Não incide (Vedada a incidência sobre produtos da Cesta Básica Nacional)."
+    },
+    {
+      "id": "reforma-anexo-04-07-dispositivos-medicos-s1",
+      "docId": "reforma-anexo-04-07-dispositivos-medicos",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 136, 140, Anexos IV e VII",
+      "tituloDoc": "Dispositivos Médicos e de Acessibilidade — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "Geral",
+      "capitulos": [
+        "87",
+        "90"
+      ],
+      "posicoes": [
+        "8713",
+        "9018",
+        "9021"
+      ],
+      "ncms": [
+        "8713.10.00",
+        "8713.90.00",
+        "9018.11.00",
+        "9018.12.10",
+        "9018.13.00"
+      ],
+      "texto": "# Reforma Tributária: Dispositivos Médicos e Acessibilidade (Anexos IV e VII)"
+    },
+    {
+      "id": "reforma-anexo-04-07-dispositivos-medicos-s2",
+      "docId": "reforma-anexo-04-07-dispositivos-medicos",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 136, 140, Anexos IV e VII",
+      "tituloDoc": "Dispositivos Médicos e de Acessibilidade — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "Regime Diferenciado e Tratamento Tributário",
+      "capitulos": [
+        "87",
+        "90"
+      ],
+      "posicoes": [
+        "8713",
+        "9018",
+        "9021"
+      ],
+      "ncms": [
+        "8713.10.00",
+        "8713.90.00",
+        "9018.11.00",
+        "9018.12.10",
+        "9018.13.00"
+      ],
+      "texto": "A Lei Complementar nº 214/2025 estabelece tratamento tributário favorecido para o setor de saúde humana e acessibilidade para pessoas com deficiência:\n- **Anexo IV (Redução de 60% das Alíquotas)**: Dispositivos médicos de uso hospitalar, ambulatorial e clínico geral têm redução de 60% nas alíquotas de CBS e IBS (Art. 136);\n- **Anexo VII (Alíquota Zero / Desoneração Total)**: Dispositivos médicos essenciais, próteses, órteses e aparelhos para pessoas com deficiência física, auditiva ou visual gozam de **alíquota zero** (Art. 140)."
+    },
+    {
+      "id": "reforma-anexo-04-07-dispositivos-medicos-s3",
+      "docId": "reforma-anexo-04-07-dispositivos-medicos",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 136, 140, Anexos IV e VII",
+      "tituloDoc": "Dispositivos Médicos e de Acessibilidade — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "Principais Posições e NCMs Abrangidos",
+      "capitulos": [
+        "87",
+        "90"
+      ],
+      "posicoes": [
+        "8713",
+        "9018",
+        "9021"
+      ],
+      "ncms": [
+        "8713.10.00",
+        "8713.90.00",
+        "9018.11.00",
+        "9018.12.10",
+        "9018.13.00"
+      ],
+      "texto": "1. **Cadeiras de Rodas e Veículos para Inválidos**: Posição `8713` (`8713.10.00` sem motor, `8713.90.00` com motor ou outro mecanismo de propulsão);\n2. **Aparelhos de Eletrodiagnóstico**: Posição `9018` (`9018.11.00` Eletrocardiógrafos, `9018.12.10` Aparelhos de ecografia, `9018.13.00` Aparelhos de ressonância magnética nuclear);\n3. **Artigos e Aparelhos Ortopédicos e Próteses**: Posição `9021` (Próteses articulares, aparelhos para fraturas, aparelhos auditivos)."
+    },
+    {
+      "id": "reforma-anexo-04-07-dispositivos-medicos-s4",
+      "docId": "reforma-anexo-04-07-dispositivos-medicos",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 136, 140, Anexos IV e VII",
+      "tituloDoc": "Dispositivos Médicos e de Acessibilidade — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "Parametrização no ERP",
+      "capitulos": [
+        "87",
+        "90"
+      ],
+      "posicoes": [
+        "8713",
+        "9018",
+        "9021"
+      ],
+      "ncms": [
+        "8713.10.00",
+        "8713.90.00",
+        "9018.11.00",
+        "9018.12.10",
+        "9018.13.00"
+      ],
+      "texto": "- **CST IBS/CBS**: `200` (Alíquota Reduzida) para itens do Anexo IV; `400` (Alíquota Zero / Isenção) para itens do Anexo VII;\n- **cClassTrib**:\n  - `200021` (\"Fornecimento de dispositivos médicos com redução de 60% — Anexo IV\");\n  - `400015` (\"Fornecimento de dispositivos de acessibilidade e próteses com alíquota zero — Anexo VII\");\n- **Exclusão de Imposto Seletivo**: Não incide sob nenhuma hipótese sobre dispositivos médicos."
+    },
+    {
+      "id": "reforma-anexo-05-08-medicamentos-s1",
+      "docId": "reforma-anexo-05-08-medicamentos",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 138, 142, Anexos V e VIII",
+      "tituloDoc": "Medicamentos — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "Geral",
+      "capitulos": [
+        "30"
+      ],
+      "posicoes": [
+        "3003",
+        "3004"
+      ],
+      "ncms": [
+        "3004.10.11",
+        "3004.10.12",
+        "3004.20.11",
+        "3004.90.99"
+      ],
+      "texto": "# Reforma Tributária: Medicamentos e Fármacos (Anexos V e VIII)"
+    },
+    {
+      "id": "reforma-anexo-05-08-medicamentos-s2",
+      "docId": "reforma-anexo-05-08-medicamentos",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 138, 142, Anexos V e VIII",
+      "tituloDoc": "Medicamentos — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "Sistemática Tributária da Indústria Farmacêutica",
+      "capitulos": [
+        "30"
+      ],
+      "posicoes": [
+        "3003",
+        "3004"
+      ],
+      "ncms": [
+        "3004.10.11",
+        "3004.10.12",
+        "3004.20.11",
+        "3004.90.99"
+      ],
+      "texto": "O regime da reforma tributária unifica a complexa tributação monofásica de PIS/COFINS e as listas positiva/negativa/neutra em dois grupos bem delimitados sob a égide da LC nº 214/2025:\n- **Anexo V (Redução de 60%)**: Medicamentos e fórmulas farmacêuticas em geral registrados na ANVISA, abrangendo antibióticos, anti-inflamatórios, analgésicos e medicamentos de uso contínuo (Art. 138);\n- **Anexo VIII (Alíquota Zero)**: Medicamentos para tratamento de doenças graves, imunobiológicos, vacinas, hemoderivados, antirretrovirais e fármacos oncológicos (Art. 142)."
+    },
+    {
+      "id": "reforma-anexo-05-08-medicamentos-s3",
+      "docId": "reforma-anexo-05-08-medicamentos",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 138, 142, Anexos V e VIII",
+      "tituloDoc": "Medicamentos — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "NCMs Abrangidos na Posição 3004",
+      "capitulos": [
+        "30"
+      ],
+      "posicoes": [
+        "3003",
+        "3004"
+      ],
+      "ncms": [
+        "3004.10.11",
+        "3004.10.12",
+        "3004.20.11",
+        "3004.90.99"
+      ],
+      "texto": "- `3004.10.11` a `3004.10.20`: Medicamentos contendo penicilinas ou seus derivados;\n- `3004.20.11` a `3004.20.99`: Medicamentos contendo outros antibióticos;\n- `3004.90.99`: Outros medicamentos formulados para fins terapêuticos ou profiláticos."
+    },
+    {
+      "id": "reforma-anexo-05-08-medicamentos-s4",
+      "docId": "reforma-anexo-05-08-medicamentos",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 138, 142, Anexos V e VIII",
+      "tituloDoc": "Medicamentos — Redução de 60% e Alíquota Zero de CBS e IBS (LC nº 214/2025)",
+      "secao": "Parametrização no ERP",
+      "capitulos": [
+        "30"
+      ],
+      "posicoes": [
+        "3003",
+        "3004"
+      ],
+      "ncms": [
+        "3004.10.11",
+        "3004.10.12",
+        "3004.20.11",
+        "3004.90.99"
+      ],
+      "texto": "- **CST IBS/CBS**: `200` (Redução de 60%) ou `400` (Alíquota Zero);\n- **cClassTrib**:\n  - `200030` (\"Medicamentos com alíquota reduzida de 60% — Anexo V da LC 214/2025\");\n  - `400020` (\"Medicamentos essenciais e oncológicos com alíquota zero — Anexo VIII da LC 214/2025\");\n- **Vedação de Imposto Seletivo**: Não incide sobre medicamentos."
+    },
+    {
+      "id": "reforma-anexo-09-10-agropecuaria-s1",
+      "docId": "reforma-anexo-09-10-agropecuaria",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 144, 148, Anexos IX e X",
+      "tituloDoc": "Produtos Agropecuários, Aquícolas, Pesqueiros e Extrativos — Redução de 60% e Alíquota Zero (LC nº 214/2025)",
+      "secao": "Geral",
+      "capitulos": [
+        "01",
+        "03",
+        "07",
+        "08",
+        "12"
+      ],
+      "posicoes": [
+        "0101",
+        "0301",
+        "0701",
+        "0801",
+        "1201"
+      ],
+      "ncms": [
+        "0101.21.00",
+        "0301.91.10",
+        "0701.10.00",
+        "0701.90.00"
+      ],
+      "texto": "# Reforma Tributária: Produtos do Agronegócio e Extrativos (Anexos IX e X)"
+    },
+    {
+      "id": "reforma-anexo-09-10-agropecuaria-s2",
+      "docId": "reforma-anexo-09-10-agropecuaria",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 144, 148, Anexos IX e X",
+      "tituloDoc": "Produtos Agropecuários, Aquícolas, Pesqueiros e Extrativos — Redução de 60% e Alíquota Zero (LC nº 214/2025)",
+      "secao": "Regime Diferenciado do Agronegócio",
+      "capitulos": [
+        "01",
+        "03",
+        "07",
+        "08",
+        "12"
+      ],
+      "posicoes": [
+        "0101",
+        "0301",
+        "0701",
+        "0801",
+        "1201"
+      ],
+      "ncms": [
+        "0101.21.00",
+        "0301.91.10",
+        "0701.10.00",
+        "0701.90.00"
+      ],
+      "texto": "A Lei Complementar nº 214/2025 consolida e preserva a competitividade da cadeia agropecuária e pesqueira nacional:\n- **Anexo IX (Redução de 60% das Alíquotas)**: Produtos agropecuários, aquícolas, pesqueiros, florestais e extrativos vegetais in natura destinados à industrialização ou consumo que não componham a cesta básica nacional essencial (Art. 144);\n- **Anexo X (Alíquota Zero / Desoneração)**: Insumos agropecuários fundamentais, sementes e mudas certificadas, reprodutores e matrizes de raça pura, fertilizantes e defensivos ecológicos (Art. 148)."
+    },
+    {
+      "id": "reforma-anexo-09-10-agropecuaria-s3",
+      "docId": "reforma-anexo-09-10-agropecuaria",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 144, 148, Anexos IX e X",
+      "tituloDoc": "Produtos Agropecuários, Aquícolas, Pesqueiros e Extrativos — Redução de 60% e Alíquota Zero (LC nº 214/2025)",
+      "secao": "Principais Posições e Códigos NCM",
+      "capitulos": [
+        "01",
+        "03",
+        "07",
+        "08",
+        "12"
+      ],
+      "posicoes": [
+        "0101",
+        "0301",
+        "0701",
+        "0801",
+        "1201"
+      ],
+      "ncms": [
+        "0101.21.00",
+        "0301.91.10",
+        "0701.10.00",
+        "0701.90.00"
+      ],
+      "texto": "1. **Reprodutores e Matrizes**: Capítulo 01 (ex.: `0101.21.00` Reprodutores de cavalos de raça pura);\n2. **Alevinos e Matrizes para Piscicultura**: Capítulo 03 (`0301.91.10` para reprodução);\n3. **Hortícolas e Legumes In Natura**: Capítulo 07 (ex.: `0701.10.00` Batata para semente, `0701.90.00` Outras batatas);\n4. **Frutas Frescas**: Capítulo 08;\n5. **Grãos e Oleaginosas**: Posição `1201` (Soja para semeadura e grão)."
+    },
+    {
+      "id": "reforma-anexo-09-10-agropecuaria-s4",
+      "docId": "reforma-anexo-09-10-agropecuaria",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Arts. 144, 148, Anexos IX e X",
+      "tituloDoc": "Produtos Agropecuários, Aquícolas, Pesqueiros e Extrativos — Redução de 60% e Alíquota Zero (LC nº 214/2025)",
+      "secao": "Parametrização no ERP",
+      "capitulos": [
+        "01",
+        "03",
+        "07",
+        "08",
+        "12"
+      ],
+      "posicoes": [
+        "0101",
+        "0301",
+        "0701",
+        "0801",
+        "1201"
+      ],
+      "ncms": [
+        "0101.21.00",
+        "0301.91.10",
+        "0701.10.00",
+        "0701.90.00"
+      ],
+      "texto": "- **CST IBS/CBS**: `200` (Redução de 60%) ou `400` (Alíquota Zero);\n- **cClassTrib**:\n  - `200040` (\"Produtos agropecuários in natura com redução de 60% — Anexo IX\");\n  - `400030` (\"Insumos agropecuários e sementes com alíquota zero — Anexo X\");\n- **Crédito Presumido do Produtor Rural Pessoa Física**: Quando o adquirente de regime regular compra de produtor rural não contribuinte, apropria crédito presumido nos termos do Art. 52 da LC 214/2025."
+    },
+    {
+      "id": "reforma-ato-conjunto-01-2025-s1",
+      "docId": "reforma-ato-conjunto-01-2025",
+      "tipo": "REFORMA",
+      "norma": "Ato Conjunto RFB/CGIBS nº 1, de 22 de dezembro de 2025 / Arts. 1º a 3º",
+      "tituloDoc": "Ato Conjunto RFB/CGIBS nº 1/2025 — Obrigações Acessórias e Documentos Fiscais Eletrônicos no Período de Transição 2026",
+      "secao": "Geral",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "# Ato Conjunto RFB/CGIBS nº 1/2025: Obrigações Acessórias para IBS e CBS"
+    },
+    {
+      "id": "reforma-ato-conjunto-01-2025-s2",
+      "docId": "reforma-ato-conjunto-01-2025",
+      "tipo": "REFORMA",
+      "norma": "Ato Conjunto RFB/CGIBS nº 1, de 22 de dezembro de 2025 / Arts. 1º a 3º",
+      "tituloDoc": "Ato Conjunto RFB/CGIBS nº 1/2025 — Obrigações Acessórias e Documentos Fiscais Eletrônicos no Período de Transição 2026",
+      "secao": "Objeto e Recepção de Documentos Fiscais Eletrônicos",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "O Ato Conjunto RFB/CGIBS nº 1/2025 estabelece o rol de documentos fiscais eletrônicos (DF-e) a serem recepcionados e adaptados pelos regulamentos do IBS e da CBS para fornecimento de informações e apuração dos novos tributos durante o ano de transição de 2026:\n- **NF-e (modelo 55)**: Operações com mercadorias e bens em geral;\n- **NFC-e (modelo 65)**: Venda a consumidor final;\n- **NFS-e**: Serviços em padrão nacional;\n- **CT-e (modelo 57)** e **CT-e OS (modelo 67)**: Serviços de transporte de cargas e pessoas;\n- **BP-e (modelo 63)**: Bilhete de passagem rodoviário, ferroviário e aéreo;\n- Novos modelos instituídos: **NFAg (modelo 75)** para água e saneamento, **NFGas (modelo 76)**, **NF-e ABI (modelo 77)** para alienação de imóveis e **DeRE** (Declaração de Regimes Específicos)."
+    },
+    {
+      "id": "reforma-ato-conjunto-01-2025-s3",
+      "docId": "reforma-ato-conjunto-01-2025",
+      "tipo": "REFORMA",
+      "norma": "Ato Conjunto RFB/CGIBS nº 1, de 22 de dezembro de 2025 / Arts. 1º a 3º",
+      "tituloDoc": "Ato Conjunto RFB/CGIBS nº 1/2025 — Obrigações Acessórias e Documentos Fiscais Eletrônicos no Período de Transição 2026",
+      "secao": "Regra de Não Aplicação de Penalidades em 2026",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "Conforme o Artigo 3º, até o primeiro dia do quarto mês subsequente ao da publicação da parte comum dos regulamentos do IBS e CBS, **não haverá aplicação de penalidades** pela ausência de preenchimento dos novos campos do IBS e CBS nos documentos fiscais emitidos."
+    },
+    {
+      "id": "reforma-ato-conjunto-01-2025-s4",
+      "docId": "reforma-ato-conjunto-01-2025",
+      "tipo": "REFORMA",
+      "norma": "Ato Conjunto RFB/CGIBS nº 1, de 22 de dezembro de 2025 / Arts. 1º a 3º",
+      "tituloDoc": "Ato Conjunto RFB/CGIBS nº 1/2025 — Obrigações Acessórias e Documentos Fiscais Eletrônicos no Período de Transição 2026",
+      "secao": "Parametrização para Sistemas ERP e Emissores",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "- Os sistemas devem manter a compatibilidade híbrida entre o leiaute atual (ICMS/IPI/PIS/COFINS) e os novos grupos `<IBSCBS>` e `<cClassTrib>`.\n- O período de 2026 atua como fase de teste operacional e adaptação sem ônus sancionatório."
+    },
+    {
+      "id": "reforma-ato-conjunto-04-2026-s1",
+      "docId": "reforma-ato-conjunto-04-2026",
+      "tipo": "REFORMA",
+      "norma": "Ato Conjunto RFB/CGIBS nº 4, de 30 de julho de 2026 / Arts. 1º a 3º",
+      "tituloDoc": "Ato Conjunto RFB/CGIBS nº 4/2026 — Cronograma de Obrigatoriedade de Emissão de DF-e com Campos de IBS e CBS",
+      "secao": "Geral",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "# Ato Conjunto RFB/CGIBS nº 4/2026: Datas de Início da Obrigatoriedade de DF-e"
+    },
+    {
+      "id": "reforma-ato-conjunto-04-2026-s2",
+      "docId": "reforma-ato-conjunto-04-2026",
+      "tipo": "REFORMA",
+      "norma": "Ato Conjunto RFB/CGIBS nº 4, de 30 de julho de 2026 / Arts. 1º a 3º",
+      "tituloDoc": "Ato Conjunto RFB/CGIBS nº 4/2026 — Cronograma de Obrigatoriedade de Emissão de DF-e com Campos de IBS e CBS",
+      "secao": "Cronograma Oficial de Entrada em Vigor por Modelo de DF-e",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "Em cumprimento ao Art. 112 do Decreto nº 12.955/2026 (RCBS) e da Resolução CGIBS nº 6/2026 (RIBS), a obrigatoriedade de preenchimento dos grupos de IBS e CBS observará o seguinte cronograma em relação aos fatos geradores:\n\n1. **3 de agosto de 2026**:\n   - **NF-e (modelo 55)**: Emissão com preenchimento obrigatório dos campos da reforma;\n   - **NFC-e (modelo 65)**: Varejo geral com campos de IBS/CBS;\n   - **CT-e (modelo 57)** e **CT-e OS (modelo 67)**: Transportes intermunicipais e interestaduais.\n\n2. **1º de outubro de 2026**:\n   - **NFS-e**: Prestadores de serviços municipais em geral sujeitos ao ISS (LC 116/2003).\n\n3. **1º de dezembro de 2026**:\n   - **NFS-e**: Plataformas digitais intermediadoras (Art. 22 da LC 214/2025), serviços de tecnologia/software (subitens 1.03, 1.05 e 1.09) e transporte municipal (subitem 16.01);\n   - **BP-e (modelo 63)**: Bilhete de passagem aéreo e rodoviário interestadual/metropolitano;\n   - Locações de bens móveis, imóveis e cessões onerosas de direitos.\n\n4. **1º de janeiro de 2027**:\n   - Início da vigência plena das alíquotas oficiais de CBS e IBS e opção pelo regime regular para contribuintes do **Simples Nacional** e regimes específicos monofásicos."
+    },
+    {
+      "id": "reforma-ato-conjunto-04-2026-s3",
+      "docId": "reforma-ato-conjunto-04-2026",
+      "tipo": "REFORMA",
+      "norma": "Ato Conjunto RFB/CGIBS nº 4, de 30 de julho de 2026 / Arts. 1º a 3º",
+      "tituloDoc": "Ato Conjunto RFB/CGIBS nº 4/2026 — Cronograma de Obrigatoriedade de Emissão de DF-e com Campos de IBS e CBS",
+      "secao": "Diretrizes de Parametrização para Desenvolvedores de Software Fiscal",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "- As validações de esquema XML referentes a `<cClassTrib>` e `<gIBSCBS>` passam a rejeitar documentos sem os campos a partir de **03/08/2026** para emissores de Regime Normal.\n- Optantes pelo Simples Nacional não são autuados antes de 01/01/2027 pelas regras regulares de apuração, salvo se optarem formalmente pelo regime regular nos termos da Resolução CGSN nº 186/2026."
+    },
+    {
+      "id": "reforma-imposto-seletivo-s1",
+      "docId": "reforma-imposto-seletivo",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Título VI e Anexos",
+      "tituloDoc": "Imposto Seletivo (IS) — Critérios de Incidência, Fato Gerador e NCMs Sujeitos (LC nº 214/2025)",
+      "secao": "Geral",
+      "capitulos": [
+        "22",
+        "24",
+        "27",
+        "87"
+      ],
+      "posicoes": [
+        "2203",
+        "2208",
+        "2402",
+        "2709",
+        "8703"
+      ],
+      "ncms": [
+        "2203.00.00",
+        "2208.30.20",
+        "2402.20.00",
+        "8703.22.10"
+      ],
+      "texto": "# Reforma Tributária: Imposto Seletivo (IS)"
+    },
+    {
+      "id": "reforma-imposto-seletivo-s2",
+      "docId": "reforma-imposto-seletivo",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Título VI e Anexos",
+      "tituloDoc": "Imposto Seletivo (IS) — Critérios de Incidência, Fato Gerador e NCMs Sujeitos (LC nº 214/2025)",
+      "secao": "Competência e Fato Gerador",
+      "capitulos": [
+        "22",
+        "24",
+        "27",
+        "87"
+      ],
+      "posicoes": [
+        "2203",
+        "2208",
+        "2402",
+        "2709",
+        "8703"
+      ],
+      "ncms": [
+        "2203.00.00",
+        "2208.30.20",
+        "2402.20.00",
+        "8703.22.10"
+      ],
+      "texto": "O Imposto Seletivo (IS), instituído pelo Artigo 153, VIII da Constituição Federal e disciplinado pela Lei Complementar nº 214/2025, tem finalidade extrafiscal e incide uma única vez (monofásico) sobre a produção, extração, comercialização ou importação de bens prejudiciais à saúde ou ao meio ambiente."
+    },
+    {
+      "id": "reforma-imposto-seletivo-s3",
+      "docId": "reforma-imposto-seletivo",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Título VI e Anexos",
+      "tituloDoc": "Imposto Seletivo (IS) — Critérios de Incidência, Fato Gerador e NCMs Sujeitos (LC nº 214/2025)",
+      "secao": "Categorias de Mercadorias Tributadas e Amostra de NCMs",
+      "capitulos": [
+        "22",
+        "24",
+        "27",
+        "87"
+      ],
+      "posicoes": [
+        "2203",
+        "2208",
+        "2402",
+        "2709",
+        "8703"
+      ],
+      "ncms": [
+        "2203.00.00",
+        "2208.30.20",
+        "2402.20.00",
+        "8703.22.10"
+      ],
+      "texto": "1. **Veículos Automotores de Passageiros**: Posição `8703` (alíquotas moduladas por eficiência energética e emissão de CO2);\n2. **Bebidas Alcoólicas**: Posições `2203` (Cervejas), `2204` (Vinhos), `2208` (Destilados como cachaça e uísque);\n3. **Produtos de Tabaco**: Posição `2402` (Cigarros, charutos e cigarrilhas);\n4. **Bebidas Açucaradas / Refrigerantes**: Posição `2202` (incidência escalonada);\n5. **Bens Minerais Extraídos**: Posições `2709` (Petróleo bruto) e minérios de ferro."
+    },
+    {
+      "id": "reforma-imposto-seletivo-s4",
+      "docId": "reforma-imposto-seletivo",
+      "tipo": "REFORMA",
+      "norma": "Lei Complementar nº 214/2025 / Título VI e Anexos",
+      "tituloDoc": "Imposto Seletivo (IS) — Critérios de Incidência, Fato Gerador e NCMs Sujeitos (LC nº 214/2025)",
+      "secao": "Parametrização no ERP e Impacto nos Níveis do Sistema",
+      "capitulos": [
+        "22",
+        "24",
+        "27",
+        "87"
+      ],
+      "posicoes": [
+        "2203",
+        "2208",
+        "2402",
+        "2709",
+        "8703"
+      ],
+      "ncms": [
+        "2203.00.00",
+        "2208.30.20",
+        "2402.20.00",
+        "8703.22.10"
+      ],
+      "texto": "- **Selo Visual**: Os NCMs afetados recebem a tag `<span className=\"badge red\">IS 2027</span>` nas telas de consulta e classificação.\n- **Parametrização do XML**: No preenchimento da tag `<IS>`, deve-se declarar o grupo de tributação do Imposto Seletivo com as alíquotas oficiais `ad valorem` e `ad rem` parametrizadas pela regulamentação da Receita Federal."
+    },
+    {
+      "id": "reforma-nota-tecnica-2026-001-dfe-s1",
+      "docId": "reforma-nota-tecnica-2026-001-dfe",
+      "tipo": "REFORMA",
+      "norma": "Nota Técnica 2026.001 v1.02b / ENCAT / SEFAZ / RFB",
+      "tituloDoc": "Nota Técnica 2026.001 — Padrão de Adaptação e Validação dos Documentos Fiscais Eletrônicos para a Reforma Tributária (RTC)",
+      "secao": "Geral",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "# Nota Técnica 2026.001: Adaptação da NF-e e NFC-e à Reforma Tributária do Consumo (RTC)"
+    },
+    {
+      "id": "reforma-nota-tecnica-2026-001-dfe-s2",
+      "docId": "reforma-nota-tecnica-2026-001-dfe",
+      "tipo": "REFORMA",
+      "norma": "Nota Técnica 2026.001 v1.02b / ENCAT / SEFAZ / RFB",
+      "tituloDoc": "Nota Técnica 2026.001 — Padrão de Adaptação e Validação dos Documentos Fiscais Eletrônicos para a Reforma Tributária (RTC)",
+      "secao": "Objetivos e Novos Grupos de Informação",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "A Nota Técnica 2026.001 introduz as alterações no leiaute da Nota Fiscal Eletrônica (NF-e, modelo 55) e da Nota Fiscal de Consumidor Eletrônica (NFC-e, modelo 65) necessárias para viabilizar a apuração do IBS, da CBS e do Imposto Seletivo:\n\n1. **Tag `<cClassTrib>`**: Código de Classificação Tributária da Operação com 6 dígitos alfanuméricos, vinculando cada item de mercadoria à sua fundamentação legal na LC 214/2025;\n2. **Grupo `<gIBSCBS>`**:\n   - `<CST>`: Código de Situação Tributária do IBS/CBS (ex.: `000` tributado integralmente, `200` redução, `400` alíquota zero/isenção, `620` monofásico);\n   - `<vBCIBS>` e `<pIBS>`: Base de cálculo e alíquota estadual/municipal do IBS;\n   - `<vBCBS>` e `<pCBS>`: Base de cálculo e alíquota federal da CBS;\n3. **Grupo `<gIS>`**:\n   - Alíquota `ad valorem` ou valor `ad rem` por unidade de medida tributável do Imposto Seletivo;\n4. **Mecanismo de Pagamento Vinculado (Split Payment)**:\n   - Identificação do tipo de liquidação financeira no grupo `<pag>` para retenção automática na fonte pagadora."
+    },
+    {
+      "id": "reforma-nota-tecnica-2026-001-dfe-s3",
+      "docId": "reforma-nota-tecnica-2026-001-dfe",
+      "tipo": "REFORMA",
+      "norma": "Nota Técnica 2026.001 v1.02b / ENCAT / SEFAZ / RFB",
+      "tituloDoc": "Nota Técnica 2026.001 — Padrão de Adaptação e Validação dos Documentos Fiscais Eletrônicos para a Reforma Tributária (RTC)",
+      "secao": "Regras de Validação Severas e Erros de Rejeição",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "- **Rejeição por cClassTrib Inexistente**: O código deve constar obrigatoriamente na Tabela de Classificação Tributária oficial publicada pelo Comitê Gestor do IBS e Receita Federal;\n- **Rejeição por Incompatibilidade CST x cClassTrib**: O prefixo do cClassTrib de 6 dígitos deve corresponder exatamente ao CST informado no mesmo grupo (ex.: CST `200` exige cClassTrib iniciando em `200...`);\n- **Rejeição de NCM em Regime Sujeito a IS**: Itens de bebidas alcoólicas, cigarros ou veículos que omitirem a informação do grupo `<IS>` serão rejeitados a partir de 2027."
+    },
+    {
+      "id": "reforma-regulamentos-cbs-ibs-2026-s1",
+      "docId": "reforma-regulamentos-cbs-ibs-2026",
+      "tipo": "REFORMA",
+      "norma": "Decreto nº 12.955/2026 e Resolução CGIBS nº 6/2026 / Parte Comum",
+      "tituloDoc": "Regulamentos do IBS e da CBS — Decreto nº 12.955/2026 (RCBS) e Resolução CGIBS nº 6/2026 (RIBS)",
+      "secao": "Geral",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "# Regulamentação Infraconstitucional da Reforma: RCBS e RIBS"
+    },
+    {
+      "id": "reforma-regulamentos-cbs-ibs-2026-s2",
+      "docId": "reforma-regulamentos-cbs-ibs-2026",
+      "tipo": "REFORMA",
+      "norma": "Decreto nº 12.955/2026 e Resolução CGIBS nº 6/2026 / Parte Comum",
+      "tituloDoc": "Regulamentos do IBS e da CBS — Decreto nº 12.955/2026 (RCBS) e Resolução CGIBS nº 6/2026 (RIBS)",
+      "secao": "Estrutura Harmonizada entre União, Estados e Municípios",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "O Decreto nº 12.955, de 29 de abril de 2026 (Regulamento da CBS - RCBS) e a Resolução CGIBS nº 6, de 30 de abril de 2026 (Regulamento do IBS - RIBS) contêm uma **Parte Geral Unificada** de redação idêntica, assegurando a uniformidade de interpretação do modelo do IVA dual brasileiro:\n\n1. **Fato Gerador Amplo**: Fornecimento oneroso de qualquer bem material ou imaterial (inclusive direitos, marcas, softwares e ativos digitais) ou prestação de qualquer serviço;\n2. **Princípio do Destino**: A tributação pertence ao local de consumo/entrega do bem ou da fruição do serviço;\n3. **Não Cumulatividade Plena**: Todo IBS e CBS incidente sobre aquisições tributadas gera crédito fiscal imediato e financeiro, com exceção expressa de itens de uso e consumo pessoal exclusivo sem pertinência com a atividade econômica;\n4. **Mecanismo de Split Payment (Liquidação Financeira Vinculada)**:\n   - Pagamento inteligente e automático no momento da liquidação bancária/PIX/cartão;\n   - Separação imediata do montante devido aos cofres públicos do IBS/CBS e do valor líquido creditado ao fornecedor."
+    },
+    {
+      "id": "reforma-regulamentos-cbs-ibs-2026-s3",
+      "docId": "reforma-regulamentos-cbs-ibs-2026",
+      "tipo": "REFORMA",
+      "norma": "Decreto nº 12.955/2026 e Resolução CGIBS nº 6/2026 / Parte Comum",
+      "tituloDoc": "Regulamentos do IBS e da CBS — Decreto nº 12.955/2026 (RCBS) e Resolução CGIBS nº 6/2026 (RIBS)",
+      "secao": "Impacto na Classificação Fiscal e Atributos de ERP",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "- Os documentos fiscais eletrônicos são a base única de constituição do crédito;\n- O preenchimento correto do `cClassTrib` (Classificação Tributária da Operação) é requisito de validade jurídica para que o adquirente possa apropriar crédito na entrada (`/api/auditoria-entrada`)."
+    },
+    {
+      "id": "reforma-resolucao-cgsn-186-2026-s1",
+      "docId": "reforma-resolucao-cgsn-186-2026",
+      "tipo": "REFORMA",
+      "norma": "Resolução CGSN nº 186, de 9 de abril de 2026 / Arts. 1º a 5º",
+      "tituloDoc": "Resolução CGSN nº 186/2026 — Prazos e Condições para Opção pelo Regime Regular de IBS e CBS pelas ME e EPP em 2027",
+      "secao": "Geral",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "# Resolução CGSN nº 186/2026: Opção do Simples Nacional para IBS e CBS em 2027"
+    },
+    {
+      "id": "reforma-resolucao-cgsn-186-2026-s2",
+      "docId": "reforma-resolucao-cgsn-186-2026",
+      "tipo": "REFORMA",
+      "norma": "Resolução CGSN nº 186, de 9 de abril de 2026 / Arts. 1º a 5º",
+      "tituloDoc": "Resolução CGSN nº 186/2026 — Prazos e Condições para Opção pelo Regime Regular de IBS e CBS pelas ME e EPP em 2027",
+      "secao": "Janela Temporal de Exercício de Opção",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "A Resolução CGSN nº 186/2026 regulamenta o Artigo 41, §§ 3º e 4º da LC nº 214/2025 e o Art. 16 da LC nº 123/2006:\n1. **Prazo de Manifestação**: O contribuinte do Simples Nacional deverá manifestar sua opção pelo regime regular de apuração e recolhimento do IBS e da CBS entre **01 de setembro de 2026 e 30 de setembro de 2026** no Portal do Simples Nacional;\n2. **Produção de Efeitos**: Produz efeitos a partir de **1º de janeiro de 2027** para o semestre de **janeiro a junho de 2027**;\n3. **Cancelamento Irretratável**: O solicitante poderá cancelar o pedido até o último dia de **novembro de 2026**."
+    },
+    {
+      "id": "reforma-resolucao-cgsn-186-2026-s3",
+      "docId": "reforma-resolucao-cgsn-186-2026",
+      "tipo": "REFORMA",
+      "norma": "Resolução CGSN nº 186, de 9 de abril de 2026 / Arts. 1º a 5º",
+      "tituloDoc": "Resolução CGSN nº 186/2026 — Prazos e Condições para Opção pelo Regime Regular de IBS e CBS pelas ME e EPP em 2027",
+      "secao": "Consequências Tributárias da Opção",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "- **Empresas que optarem pelo Regime Regular de IBS/CBS**:\n  - Apuram IBS e CBS pelo regime não cumulativo pleno com direito a apropriação e transferência integral de créditos fiscais para seus clientes de regime normal;\n  - Deixam de recolher as parcelas de IBS e CBS dentro do Documento de Arrecadação do Simples Nacional (DAS);\n  - Mantêm os demais tributos federais (IRPJ, CSLL, PIS residual, COFINS residual, CPP) recolhidos via DAS.\n- **Empresas que mantiverem a apuração unificada do Simples**:\n  - Recolhem IBS e CBS englobados na alíquota única do DAS;\n  - Só transferem créditos de IBS e CBS aos adquirentes correspondentes ao montante efetivamente recolhido em sua faixa do DAS."
+    },
+    {
+      "id": "reforma-resolucao-cgsn-186-2026-s4",
+      "docId": "reforma-resolucao-cgsn-186-2026",
+      "tipo": "REFORMA",
+      "norma": "Resolução CGSN nº 186, de 9 de abril de 2026 / Arts. 1º a 5º",
+      "tituloDoc": "Resolução CGSN nº 186/2026 — Prazos e Condições para Opção pelo Regime Regular de IBS e CBS pelas ME e EPP em 2027",
+      "secao": "Parametrização no Módulo ERP",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "- No cadastro de empresas no ERP, deve ser incluído o flag `optante_ibs_cbs_regime_regular` (Sim/Não).\n- Quando `Sim`, nas emissões de notas a partir de 01/01/2027 o sistema substitui o CST simplificado pelo CST de regime regular (ex.: CST `000` / `200` com destaque das alíquotas plenas de IBS/CBS)."
+    },
+    {
+      "id": "rgi-1-s1",
+      "docId": "rgi-1",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 1 — Textos dos Títulos, Posições e Notas de Seção ou Capítulo",
+      "secao": "Geral",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "# Regra Geral de Interpretação 1 (RGI 1)"
+    },
+    {
+      "id": "rgi-1-s2",
+      "docId": "rgi-1",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 1 — Textos dos Títulos, Posições e Notas de Seção ou Capítulo",
+      "secao": "Texto Legal",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "Os títulos das Seções, Capítulos e Subcapítulos têm apenas valor indicativo. Para os efeitos legais, a classificação é determinada pelos textos das posições e das Notas de Seção e de Capítulo e, desde que não sejam contrárias aos textos das referidas posições e Notas, pelas Regras seguintes (RGI 2 a 6)."
+    },
+    {
+      "id": "rgi-1-s3",
+      "docId": "rgi-1",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 1 — Textos dos Títulos, Posições e Notas de Seção ou Capítulo",
+      "secao": "Diretriz Pericial Portela",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "1. A RGI 1 é a regra suprema e soberana. Se a mercadoria for claramente descrita pelo texto de uma posição (4 dígitos) combinada com as Notas de Seção ou Capítulo, a classificação se encerra de imediato, sem recurso às regras subsidiárias.\n2. Os títulos de seções e capítulos não possuem força normativa classificatória: servem exclusivamente como índice topográfico de localização.\n3. As **Notas de Seção e Capítulo** têm força cogente de lei. Se uma Nota de Capítulo excluir a mercadoria de um determinado capítulo (ex.: \"O Capítulo 84 não compreende...\"), essa exclusão é imperativa, prevalecendo sobre qualquer semelhança descritiva da posição."
+    },
+    {
+      "id": "rgi-2-s1",
+      "docId": "rgi-2",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 2 — Artigos Incompletos, Desmontados e Misturas de Matérias",
+      "secao": "Geral",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "# Regra Geral de Interpretação 2 (RGI 2)"
+    },
+    {
+      "id": "rgi-2-s2",
+      "docId": "rgi-2",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 2 — Artigos Incompletos, Desmontados e Misturas de Matérias",
+      "secao": "Texto Legal",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "- **RGI 2(a)**: Qualquer referência a um artigo em determinada posição abrange esse artigo mesmo incompleto ou inacabado, desde que apresente, no estado em que se encontra, as características essenciais do artigo completo ou acabado. Abrange igualmente o artigo completo ou acabado, ou considerado como tal por aplicação das disposições precedentes, mesmo que se apresente desmontado ou por montar.\n- **RGI 2(b)**: Qualquer referência a uma matéria em determinada posição abrange essa matéria, quer em estado puro, quer misturada ou associada a outras matérias. Da mesma forma, qualquer referência a obras de determinada matéria abrange as obras constituídas inteira ou parcialmente por essa matéria. A classificação das mercadorias constituídas por mais de uma matéria efetua-se conforme os princípios da Regra 3."
+    },
+    {
+      "id": "rgi-2-s3",
+      "docId": "rgi-2",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 2 — Artigos Incompletos, Desmontados e Misturas de Matérias",
+      "secao": "Diretriz Pericial Portela",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "- Na importação ou faturamento de bens desarticulados (ex.: kits CKD/SKD de maquinários ou veículos desmontados), aplica-se a RGI 2(a), enquadrando o conjunto na posição do produto final montado, desde que contenha os componentes essenciais.\n- Se um produto for composto por mistura de matérias (ex.: polímero com fibra de vidro ou algodão com poliéster), a RGI 2(b) remete o desempate obrigatoriamente para a RGI 3."
+    },
+    {
+      "id": "rgi-3-s1",
+      "docId": "rgi-3",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 3 — Mercadorias Suscetíveis de Classificação em Duas ou Mais Posições",
+      "secao": "Geral",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "# Regra Geral de Interpretação 3 (RGI 3)\n\nQuando pareça que uma mercadoria pode ser classificada em duas ou mais posições por aplicação da Regra 2(b) ou por qualquer outra razão, a classificação deve efetuar-se da seguinte forma:"
+    },
+    {
+      "id": "rgi-3-s2",
+      "docId": "rgi-3",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 3 — Mercadorias Suscetíveis de Classificação em Duas ou Mais Posições",
+      "secao": "1. RGI 3(a): Posição Mais Específica sobre Posição Genérica",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "A posição mais específica prevalece sobre as mais genéricas. Todavia, quando duas ou mais posições se refiram, cada uma delas, a apenas uma parte das matérias constitutivas de um produto misturado ou de um artigo composto, ou a apenas um dos componentes de sortidos acondicionados para venda a retalho, tais posições devem considerar-se, em relação a esse produto ou artigo, como igualmente específicas, ainda que uma delas dê uma descrição mais precisa ou completa da mercadoria."
+    },
+    {
+      "id": "rgi-3-s3",
+      "docId": "rgi-3",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 3 — Mercadorias Suscetíveis de Classificação em Duas ou Mais Posições",
+      "secao": "2. RGI 3(b): Característica Essencial",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "Os produtos misturados, as obras compostas de matérias diferentes ou constituídas pela reunião de artigos diferentes e as mercadorias apresentadas em sortidos acondicionados para venda a retalho, cuja classificação não se possa efetuar pela aplicação da Regra 3(a), classificam-se pela matéria ou artigo que lhes confira a **característica essencial**, quando for possível realizar esta determinação."
+    },
+    {
+      "id": "rgi-3-s4",
+      "docId": "rgi-3",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 3 — Mercadorias Suscetíveis de Classificação em Duas ou Mais Posições",
+      "secao": "3. RGI 3(c): Última Ordem Numérica (Desempate Residual)",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "Nos casos em que as Regras 3(a) e 3(b) não permitam efetuar a classificação, a mercadoria classifica-se na **posição situada em último lugar na ordem numérica** entre as suscetíveis de validamente se tomarem em consideração."
+    },
+    {
+      "id": "rgi-3-s5",
+      "docId": "rgi-3",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 3 — Mercadorias Suscetíveis de Classificação em Duas ou Mais Posições",
+      "secao": "Diretriz Pericial Portela",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "- O critério da RGI 3(c) é estritamente determinístico: havendo empate insuperável entre posições legítimas, ordena-se numericamente de forma decrescente e adota-se o código de maior número (`b.code > a.code`)."
+    },
+    {
+      "id": "rgi-6-s1",
+      "docId": "rgi-6",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 6 — Classificação nos Subitens de Mesmo Nível Hierárquico",
+      "secao": "Geral",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "# Regra Geral de Interpretação 6 (RGI 6)"
+    },
+    {
+      "id": "rgi-6-s2",
+      "docId": "rgi-6",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 6 — Classificação nos Subitens de Mesmo Nível Hierárquico",
+      "secao": "Texto Legal",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "A classificação de mercadorias nas subposições de uma mesma posição é determinada, para efeitos legais, pelos textos dessas subposições e das Notas de Subposição de um mesmo Capítulo, assim como, *mutatis mutandis*, pelas Regras precedentes (RGI 1 a 5), entendendo-se que apenas são comparáveis subposições do mesmo nível. Para os efeitos desta Regra, as Notas de Seção e de Capítulo são também aplicáveis, salvo disposições em contrário."
+    },
+    {
+      "id": "rgi-6-s3",
+      "docId": "rgi-6",
+      "tipo": "RGI",
+      "norma": "Convenção Internacional sobre o Sistema Harmonizado / IN RFB nº 2.169/2023",
+      "tituloDoc": "RGI 6 — Classificação nos Subitens de Mesmo Nível Hierárquico",
+      "secao": "Diretriz Pericial Portela",
+      "capitulos": [],
+      "posicoes": [],
+      "ncms": [],
+      "texto": "1. Fixada a posição (4 dígitos) pela RGI 1, a descida para 6 e 8 dígitos (subposição, item e subitem no Mercosul) obedece estritamente ao nível de traços (hífens):\n   - Comparam-se primeiro subposições de um hífen (`-`);\n   - Escolhida a subposição de um hífen, comparam-se as subdivisões de dois hífens (`--`) subordinadas a ela.\n2. É proibido comparar um subitem de dois hífens pertencente a um ramo com outro pertencente a ramo distinto."
+    }
+  ]
+}

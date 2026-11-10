@@ -1,3 +1,8 @@
+﻿---
+name: code-reviewer-jules
+description: "Revisor de codigo, seguranca HTML, cache-busting e conformidade fiscal NCM/IBS/CBS para o Aplicativo MCM."
+---
+
 # Skill: Revisão de Código e Auditoria OWASP
 
 **Descrição:** Especialidade para inspecionar, revisar e sugerir melhorias de qualidade, legibilidade, arquitetura e blindar contra falhas de segurança seguindo as boas práticas globais.
@@ -14,3 +19,4 @@
 5. **Automação Preditiva:** Apontar regressões no momento em que as rules.json ou dependências de API com o `@google/genai` não refletem o formato em `responseSchema`.
 
 **Objetivo Central:** Detectar e antecipar regressões ou falhas de segurança antes do merge em branchs produtivas.
+

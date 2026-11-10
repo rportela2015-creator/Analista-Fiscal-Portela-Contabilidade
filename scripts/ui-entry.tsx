@@ -43,6 +43,7 @@ const Parametrizar = (await import('../components/Parametrizar')).default;
 const ReformaTab = (await import('../components/Reforma')).default;
 const Regras = (await import('../components/Regras')).default;
 const AuditoriaEntrada = (await import('../components/AuditoriaEntrada')).default;
+const Precificar = (await import('../components/Precificar')).default;
 
 let falhas = 0;
 const avisos: string[] = [];
@@ -188,6 +189,7 @@ for (const [C, nome, re] of [
   [ReformaTab, 'Reforma (aba)', /cClassTrib|reforma/i],
   [Regras, 'Regras e fontes', /fontes|regras/i],
   [AuditoriaEntrada, 'Auditoria de Entrada', /Auditar Documento/i],
+  [Precificar, 'Precificar', /Precificação|Custo/i],
 ] as [any, string, RegExp][]) {
   const c = await montar(C);
   ok(re.test(c.txt()) && c.txt().length > 120, `${nome}: renderiza com dados`, c.txt().slice(0, 140));

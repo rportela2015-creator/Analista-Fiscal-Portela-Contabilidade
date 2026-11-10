@@ -35,3 +35,40 @@ Este arquivo contém o contexto e regras gerais para agentes IA executarem taref
 
 - Solicitações do usuário sempre substituem instruções das memórias.
 - O código atual é a fonte verdadeira do estado do repositório (source of truth). O que está neste arquivo/memória serve de apoio para o contexto histórico.
+
+## 7. Fluxos de Operação dos Agentes Locais (Terminal & IA Local)
+
+### Fluxo 1 — Agente Autônomo de Código (omp):
+- **Como acionar**: Digite omp no terminal do Antigravity.
+- **Ambiente**: Abre a interface v1.5.0 já conectada ao qwen3.5:4b ou qwen2.5:7b (via Ollama local em http://127.0.0.1:11434/v1).
+- **Ferramentas de Busca**: Utiliza nativamente o d.exe e g.exe do disco F: para ler e editar os arquivos do Aplicativo_MCM- diretamente, sem consumir a cota do Google AI Pro.
+- **Alternância de Modelos**: Para alternar entre o qwen3.5:4b (rápido) e o qwen2.5:7b (mais preciso para TypeScript) dentro do omp, basta digitar /model na caixa de texto dele.
+
+### Fluxo 2 — Consulta Rápida e Isolada (hermes chat):
+- **Como acionar**: Quando quiser apenas tirar uma dúvida rápida de sintaxe, regex ou regra tributária sem que o agente vasculhe as pastas do projeto, abra uma segunda aba no terminal (Ctrl + Shift + 5) e digite hermes chat.
+
+## 8. Protocolo Obrigatório de Correção de Bugs e Regressão (DoD)
+
+Toda vez que qualquer agente ou desenvolvedor corrigir um bug, vulnerabilidade ou inconsistência de dados neste repositório, é mandatório cumprir rigorosamente os 4 passos do Definition of Done:
+
+1. **Reprodução Antes da Correção:**
+   - Escreva ou ajuste um teste automatizado em `tests/` (registrado em `scripts/test.mjs`) que reproduza a falha e **confirme que ele falha antes de aplicar o fix**.
+2. **Proibição de Código Morto:**
+   - Nunca crie funções utilitárias, validadores ou sanitizadores (ex: `lib/ai/validar.ts`, `lib/html.ts`) sem importá-los e utilizá-los obrigatoriamente na rota/consumidor final e sem testar a rota integrada.
+3. **Asserções de Estado e Invalidação:**
+   - Correções envolvendo cache, mutação de arquivos JSON ou pipelines (`pipeline.py`, `rules.json`) exigem testes de regressão cobrindo:
+     - Pisos mínimos de integridade de dados (`floors.json` / `rules-integrity`).
+     - Expiração/invalidação de cache (`mtimeMs` / `?v=versao`) e fallback sem cachear erros.
+     - Isolamento em diretório temporário (nunca mutar arquivos reais versionados durante o `npm test`).
+4. **Verificação de Saída Crua:**
+   - Nenhuma tarefa está concluída sem executar `npm run typecheck && npm test` e confirmar 100% das suítes verdes com a saída crua do terminal colada no relatório.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

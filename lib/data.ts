@@ -80,6 +80,8 @@ export type Rules = {
   jargao_sem_valor_fiscal?: string[];
   /** palavras corriqueiras da própria tabela (não servem de âncora de match) */
   palavras_comuns_na_tabela?: string[];
+  /** marcas e modelos comerciais conhecidos */
+  marcas_conhecidas?: string[];
 };
 
 export type SearchIndex = { n: number; vocab: string[]; df: number[]; inv: number[][] };
@@ -214,8 +216,14 @@ export function loadDataset(): Promise<Dataset> {
   return cache;
 }
 
-/** "8471.30.12" | "84713012" -> "84713012" */
-export const normalizeNcm = (s: string) => (s || '').replace(/\D/g, '');
+/** "8471.30.12" | "84713012" | "1012100" -> "84713012" / "01012100" */
+export const normalizeNcm = (s: string) => {
+  if (!s) return '';
+  const clean = String(s).trim();
+  if (/[\d.]+[eE][+-]?\d+/.test(clean)) return '';
+  const d = clean.replace(/\D/g, '');
+  return d.length === 7 ? d.padStart(8, '0') : d;
+};
 
 export function describePath(ds: Dataset, rec: Record8) {
   return rec.path.map((c) => ({ code: c, desc: ds.hier[c] ?? (c.length === 8 ? rec.desc : '') }));

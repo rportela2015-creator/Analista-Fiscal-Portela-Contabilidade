@@ -165,7 +165,7 @@
         "68109100",
         "69041000"
       ],
-      "alcance": "",
+      "alcance": "LC 214/2025 — Construção Civil (Arts. 252 e 255)",
       "fonte": "LC 214/2025 art. 255, §5º e DERE Anexo I"
     },
     {
@@ -181,7 +181,7 @@
         "04012010",
         "19059090"
       ],
-      "alcance": "",
+      "alcance": "LC 214/2025 — Cesta Básica Nacional (Art. 125 e Anexo I)",
       "fonte": "LC 214/2025 art. 125 e Anexo I"
     },
     {
@@ -196,7 +196,7 @@
         "38249977",
         "38249979"
       ],
-      "alcance": "",
+      "alcance": "LC 214/2025 — Insumos Agropecuários (Art. 138 e Anexo IX)",
       "fonte": "LC 214/2025 art. 138 e Anexo IX"
     }
   ],
@@ -655,6 +655,26 @@
       ],
       "quando": [],
       "fonte": "LC 214/2025 e LC 227/2026"
+    },
+    {
+      "id": "assento_vs_veiculo_cadeira",
+      "titulo": "Cadeira: assentos (Cap. 94) prevalecem sobre partes de veículos (Cap. 87)",
+      "quando": [
+        "cadeira",
+        "cadeiras"
+      ],
+      "capitulos": [
+        "94"
+      ],
+      "penalizar_prefijos": [
+        "8714"
+      ],
+      "candidatos": [
+        "9401.31.00",
+        "9401.39.00"
+      ],
+      "explicacao": "Pela RGI 1 e NESH posições 94.01 e 87.14, assentos e cadeiras de escritório/uso doméstico pertencem ao Capítulo 94, não se confundindo com partes de cadeiras de rodas (posição 87.14).",
+      "fonte": "RGI 1 + NESH Posições 94.01 e 87.14"
     }
   ],
   "sinonimos": {
@@ -2787,7 +2807,10 @@
     "promocao",
     "oferta",
     "desconto",
-    "embalagem economica"
+    "embalagem economica",
+    "brinde",
+    "casa",
+    "variedade"
   ],
   "palavras_comuns_na_tabela": [
     "casa",
@@ -2847,5 +2870,32 @@
     "final",
     "finais",
     "variedades"
+  ],
+  "marcas_conhecidas": [
+    "dell",
+    "lenovo",
+    "hp",
+    "asus",
+    "acer",
+    "samsung",
+    "lg",
+    "xiaomi",
+    "philco",
+    "multilaser",
+    "positivo",
+    "consul",
+    "brastemp",
+    "eletrolux",
+    "tramontina",
+    "arno",
+    "walita",
+    "midea",
+    "toshiba",
+    "philips",
+    "kadix",
+    "narumi",
+    "oystra",
+    "frigelar",
+    "gelatherm"
   ]
 }

@@ -71,7 +71,7 @@ export type ParsedQuery = {
   marca?: string;
 };
 
-const MARCAS = ['dell', 'lenovo', 'hp', 'asus', 'acer', 'samsung', 'lg', 'xiaomi', 'philco',
+const MARCAS_FALLBACK = ['dell', 'lenovo', 'hp', 'asus', 'acer', 'samsung', 'lg', 'xiaomi', 'philco',
   'multilaser', 'positivo', 'consul', 'brastemp', 'eletrolux', 'tramontina', 'arno', 'walita',
   'midea', 'toshiba', 'philips', 'kadix', 'narumi', 'oystra', 'frigelar', 'gelatherm'];
 
@@ -137,7 +137,8 @@ export function parseQuery(text: string, ds: Dataset): ParsedQuery {
 
   const MEDIDA = /(\d+(?:[.,]\d+)?)\s?(kg|g|w|v|ah|mah|a|l|ml|cm|mm|m|pol|polegadas?|gb|tb|mb|btu|rpm|hz|bar)\b/g;
   const medidas = Array.from(norm.matchAll(MEDIDA)).map((m) => m[0].trim());
-  const foundMarca = MARCAS.find((m) => norm.split(/[\s,;()]+/).includes(m));
+  const marcasList = ds.rules.marcas_conhecidas?.length ? ds.rules.marcas_conhecidas : MARCAS_FALLBACK;
+  const foundMarca = marcasList.find((m) => norm.split(/[\s,;()]+/).includes(m));
 
   const sig = (k: SignalKey) => ((ds.rules.indicadores || {})[k] || [])
     .some((w) => norm.includes(normalize(w)));
@@ -284,11 +285,7 @@ export function classify(text: string, ds: Dataset, opts: { top?: number } = {})
       phrase: phrase.has(i), penalizedGeneric: rec.gen === 1,
     });
   }
-  for (const c of out) {
-    if (c.rec.ncm.startsWith("8714") && q.raw.toLowerCase().includes("cadeira")) { c.score = 0; }
-    if (c.rec.ncm.startsWith("9401") && q.raw.toLowerCase().includes("cadeira")) { c.score += 500.0; }
-  }
-  out.sort((a, b) => b.score - a.score || a.rec.d8.localeCompare(b.rec.d8));
+  out.sort((a, b) => b.score - a.score || b.rec.d8.localeCompare(a.rec.d8));
   return { query: q, candidates: out.slice(0, top), totalWeight: queryWeight, corpus: n };
 }
 
@@ -430,6 +427,12 @@ export function armadilhasAplicaveis(q: ParsedQuery, ds: Dataset): Dataset['rule
   });
 }
 
+function contemPalavraOuFrase(texto: string, termo: string): boolean {
+  const normTexto = ' ' + normalize(texto).split(/[\s,;()]+/).filter(Boolean).join(' ') + ' ';
+  const normTermo = normalize(termo).split(/[\s,;()]+/).filter(Boolean).join(' ');
+  return normTexto.includes(' ' + normTermo + ' ');
+}
+
 export function buildNotes(cand: Candidate | undefined, q: ParsedQuery, ds: Dataset,
   all: Candidate[]): { notes: RuleNote[]; confidence: number; band: 'alta' | 'media' | 'baixa' } {
   if (!cand) {
@@ -534,7 +537,9 @@ export function buildNotes(cand: Candidate | undefined, q: ParsedQuery, ds: Data
   const noEvidence = cand.matched.length > 0 && cand.matched.every((m) => m.where === 'pai');
   const longest = Math.max(0, ...cand.matched.map((m) => m.term.length));
   const generico = longest < 5 && !cand.phrase && cand.coverage < 0.62;
-  if ((noEvidence || generico || q.terms.length <= 3 || jargao(q, ds, anchors) || ['brinde', 'variedade', 'casa', 'sortido', 'linha', 'variedades'].some(w => q.raw.toLowerCase().includes(w)))
+  const jargaoList = ds.rules.jargao_sem_valor_fiscal || [];
+  const temJargao = jargaoList.some((w) => contemPalavraOuFrase(q.raw, w));
+  if ((noEvidence || generico || q.terms.length <= 3 || jargao(q, ds, anchors) || temJargao)
       && !q.signals.material && !q.signals.uso) {
     notes.push({ kind: 'Sinal', id: 'insuficiente', titulo: 'Descrição insuficiente para fechar o código',
       texto: 'Sem matéria, uso/aplicação ou composição declarados, o item/subitem (6º-8º dígitos) vira suposição. Peça a ficha técnica antes de parametrizar.',
@@ -559,7 +564,7 @@ export function buildNotes(cand: Candidate | undefined, q: ParsedQuery, ds: Data
   let confidence = Math.max(0, Math.min(0.96,
     0.30 * abs + 0.24 * margin + 0.26 * cov + 0.14 + (cand.phrase ? 0.12 : 0) - penalty - semSubstantivo));
 
-  const isGenericOrKit = (q.signals && q.signals.composto) || ['brinde', 'variedade', 'casa', 'sortido', 'linha', 'variedades'].some(w => q.raw.toLowerCase().includes(w));
+  const isGenericOrKit = (q.signals && q.signals.composto) || temJargao;
   if (isGenericOrKit) {
     confidence = Math.min(confidence, 0.40);
   }

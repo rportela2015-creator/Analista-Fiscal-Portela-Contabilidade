@@ -53,9 +53,9 @@ export default function Regras() {
       <div className="card">
         <h2>Notas Legais e limites de capítulo</h2>
         <p className="hint">Restrições que costumam tirar o produto do capítulo óbvio. O agente as anexa ao resultado quando o capítulo é tocado.</p>
-        {r.notas_legais.map((n) => (
-          <div key={n.alcance} className="note atencao" style={{ margin: '0 0 10px' }}>
-            <div className="t">{n.alcance}</div>
+        {r.notas_legais.map((n, idx) => (
+          <div key={(n as any).id || n.alcance || (n as any).titulo || idx} className="note atencao" style={{ margin: '0 0 10px' }}>
+            <div className="t">{n.alcance || (n as any).titulo || (n as any).id || 'Nota Legal'}</div>
             <div className="x">{n.texto}</div>
             <div className="mini-list">{n.ncms.map((c) => <span key={c} className="badge grey mono" title={ds.byD8.get(c.replace(/\D/g, ''))?.desc || 'fora da lista'}>{c}</span>)}</div>
           </div>

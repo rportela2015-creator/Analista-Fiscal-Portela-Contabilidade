@@ -1,7 +1,7 @@
 {
   "rgi": 8,
   "notas_legais": 13,
-  "armadilhas": 18,
+  "armadilhas": 19,
   "sinonimos": 359,
   "materiais": 95,
   "usos": 21,
@@ -9,6 +9,7 @@
   "indicadores": 5,
   "resumo_rotina": 7,
   "sinais_de_inseguranca": 6,
-  "jargao_sem_valor_fiscal": 36,
-  "palavras_comuns_na_tabela": 57
+  "jargao_sem_valor_fiscal": 39,
+  "palavras_comuns_na_tabela": 57,
+  "marcas_conhecidas": 25
 }

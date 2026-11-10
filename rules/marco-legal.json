@@ -1,0 +1,958 @@
+{
+  "versao": "2026-11-10",
+  "verificado_em": "2026-11-10",
+  "aviso": "Arcabouço legal do motor de precificação. Cada norma tem STATUS de verificação; o motor só trata como 'confirmado' o que foi conferido em fonte oficial ou em fontes concordantes. Itens 'nao_verificado' viram alerta no resultado. Nenhum texto de lei é reproduzido: os resumos são paráfrases.",
+  "status_legenda": {
+    "confirmado": "conferido em fonte oficial (dados abertos RFB/Portal NF-e/consulta da SEFAZ)",
+    "confirmado_fonte_secundaria": "conferido em 2+ fontes técnicas concordantes; texto oficial do dispositivo NÃO lido",
+    "conhecimento_geral": "regra estável e amplamente conhecida; não reconferida nesta versão",
+    "nao_verificado": "premissa sem confirmação; gera alerta"
+  },
+  "normas": [
+    {
+      "id": "LC214-381",
+      "norma": "LC 214/2025",
+      "dispositivo": "art. 381; Decreto 12.955/2026, arts. 605-613",
+      "tema": "Crédito presumido de CBS sobre estoque de abertura",
+      "resumo": "Estoque de bens materiais existente em 1º/01/2027 gera crédito presumido de CBS: 9,25% do custo de aquisição (critérios do IRPJ) para bens nacionais; para importados, o PIS/COFINS-Importação efetivamente pago (sem o adicional da COFINS). Apropriação até 30/06/2027; uso em 12 parcelas mensais a partir do período seguinte à apropriação; só compensa CBS. Alcança quem estava no regime cumulativo, bens sujeitos a ST/monofásico e parcelas com vedação parcial de crédito. Devolução estorna.",
+      "efeito_motor": "credito_estoque",
+      "vigencia_inicio": "2027-01-01",
+      "vigencia_fim": null,
+      "status": "confirmado_fonte_secundaria",
+      "fontes": [
+        "https://escolasuperioresn.com.br/creditos-pis-cofins-cbs-migracao/",
+        "https://www.barbieriadvogados.com/?p=15036"
+      ]
+    },
+    {
+      "id": "LC214-378-383",
+      "norma": "LC 214/2025",
+      "dispositivo": "arts. 378 a 383",
+      "tema": "Saldos credores de PIS/COFINS, devoluções e quotas de imobilizado na transição",
+      "resumo": "Saldo escriturado até 31/12/2026 permanece crédito de PIS/COFINS (PUC via PER/DCOMP); quotas remanescentes de imobilizado viram crédito presumido de CBS; devoluções de vendas anteriores geram crédito de CBS; créditos antigos têm preferência sobre créditos de CBS; prazo de 5 anos contado da apropriação.",
+      "efeito_motor": "fora_do_escopo_item (afeta apuração agregada)",
+      "vigencia_inicio": "2027-01-01",
+      "vigencia_fim": null,
+      "status": "confirmado_fonte_secundaria",
+      "fontes": [
+        "https://escolasuperioresn.com.br/creditos-pis-cofins-cbs-migracao/",
+        "https://taxup.com.br/creditos-pis-cofins-transicao-cbs/"
+      ]
+    },
+    {
+      "id": "ADCT127-LC214-344-347",
+      "norma": "EC 132/2023 (ADCT) e LC 214/2025",
+      "dispositivo": "ADCT art. 127; LC 214 arts. 344 e 347",
+      "tema": "Alíquotas de 2027-2028",
+      "resumo": "Em 2027 e 2028 o IBS é cobrado a 0,05% estadual + 0,05% municipal, e a CBS sai da alíquota fixada reduzida em 0,1 ponto percentual.",
+      "efeito_motor": "aliquotas_ano",
+      "vigencia_inicio": "2027-01-01",
+      "vigencia_fim": "2028-12-31",
+      "status": "confirmado_fonte_secundaria",
+      "fontes": [
+        "https://www.jettax.com.br/?p=30182",
+        "tabela oficial RFB em public/data/reforma.json (CBS 8,4% e IBS-UF 0,05% em 2027)"
+      ]
+    },
+    {
+      "id": "EC132-TRANSICAO-2029-2033",
+      "norma": "EC 132/2023 (ADCT)",
+      "dispositivo": "arts. 125 a 133",
+      "tema": "Escalonamento IBS x ICMS (2029-2033)",
+      "resumo": "IBS entra em 10/20/30/40% da alíquota plena em 2029-2032 enquanto ICMS/ISS são reduzidos para 90/80/70/60%; 2033 = IBS pleno e ICMS extinto.",
+      "efeito_motor": "ibs_fracao, icms_fator",
+      "vigencia_inicio": "2029-01-01",
+      "vigencia_fim": "2033-01-01",
+      "status": "confirmado_fonte_secundaria",
+      "fontes": [
+        "https://schiefler.adv.br/assunto/cbs/",
+        "transicao.cbs_destino/ibs_destino em public/data/reforma.json",
+        "IBS-UF 2029 = 1,6% = 10% de 16,0% na tabela oficial"
+      ]
+    },
+    {
+      "id": "LC214-12-2",
+      "norma": "LC 214/2025",
+      "dispositivo": "art. 12, §2º, I, II, III e V",
+      "tema": "Base do IBS/CBS",
+      "resumo": "Não integram a base de IBS/CBS: o próprio IBS/CBS (cálculo por fora), o IPI, os descontos incondicionais e o ICMS (2026-2032). O Imposto Seletivo integra a base de IBS/CBS.",
+      "efeito_motor": "base_iva",
+      "vigencia_inicio": "2026-01-01",
+      "vigencia_fim": "2032-12-31",
+      "status": "confirmado_fonte_secundaria",
+      "fontes": [
+        "https://www.conjur.com.br/2026-jun-26/funrural-e-reforma-tributaria-a-base-de-calculo-do-ibs-cbs/",
+        "https://www.jettax.com.br/?p=30182"
+      ]
+    },
+    {
+      "id": "SEFA-PR-CONS-48-2026",
+      "norma": "SEFA-PR, Consulta 48/2026 (09/10/2026)",
+      "dispositivo": "Consulta de contribuinte",
+      "tema": "IBS/CBS/IS na base do ICMS",
+      "resumo": "Na transição, IBS, CBS e IS (calculados por fora) somam-se ao valor sem tributos e sobre o total aplica-se o ICMS 'por dentro'; rejeitado calcular o ICMS só sobre o preço líquido e somar o IVA depois. Convergem MG (Consulta 20/2026) e SP (soluções de 2026). LC 214 não prevê exclusão recíproca.",
+      "efeito_motor": "icms_base_inclui_iva",
+      "vigencia_inicio": "2027-01-01",
+      "vigencia_fim": "2032-12-31",
+      "status": "confirmado_fonte_secundaria",
+      "fontes": [
+        "https://smabr.com/parana-confirma-inclusao-do-ibs-da-cbs-e-do-imposto-seletivo-na-base-de-calculo-do-icms/",
+        "https://www.reformatributaria.com/iva/valores-do-ibs-e-da-cbs-entram-na-base-de-calculo-do-icms-em-2027-diz-fazenda-do-parana/"
+      ],
+      "observacao": "Há sentença (tese contrária) citada por fontes técnicas; o motor mantém a flag incluirIvaNaBaseIcms para esse cenário."
+    },
+    {
+      "id": "NT-2026-008",
+      "norma": "NF-e/NFC-e, Nota Técnica 2026.008",
+      "dispositivo": "v1.00 (out/2026) e v1.01 (30/10/2026)",
+      "tema": "vProdLiq e composição do vProd",
+      "resumo": "Cria vUnComLiq/vProdLiq (valor sem tributos). A v1.00 incluía IBS/CBS no vProd (tags informativas); a v1.01 passou a deixar IBS, CBS e IS fora do vProd.",
+      "efeito_motor": "vprod_inclui_ibs_cbs=false (v1.01)",
+      "vigencia_inicio": "2026-10-30",
+      "vigencia_fim": null,
+      "status": "confirmado_fonte_secundaria",
+      "fontes": [
+        "https://www.contabeis.com.br/noticias/80671/nf-e-ibs-e-cbs-ficam-fora-do-campo-vprod/",
+        "https://inventti.com.br/?p=25252"
+      ],
+      "observacao": "Ler o PDF da v1.01 no Portal Nacional da NF-e antes de produção."
+    },
+    {
+      "id": "LEI9249-15-20",
+      "norma": "Lei 9.249/1995",
+      "dispositivo": "arts. 15 e 20; Lei 9.430/1996 e RIR (adicional de 10% do IRPJ)",
+      "tema": "Percentuais de presunção (Lucro Presumido)",
+      "resumo": "Comércio e indústria: presunção de 8% (IRPJ) e 12% (CSLL); serviços em geral 32%/32%. Alíquotas 15% IRPJ e 9% CSLL, com adicional de 10% do IRPJ sobre o lucro presumido que exceder R$ 20 mil/mês.",
+      "efeito_motor": "irpj_csll_presumido_pct",
+      "vigencia_inicio": "1996-01-01",
+      "vigencia_fim": null,
+      "status": "conhecimento_geral",
+      "fontes": []
+    },
+    {
+      "id": "LC224-PRESUMIDO",
+      "norma": "LC 224/2025",
+      "dispositivo": "majoração de presunções (receita acima de limite anual)",
+      "tema": "Possível majoração das presunções do Lucro Presumido",
+      "resumo": "Pode elevar o percentual de presunção para parcela da receita acima de limite anual. Não conferido nesta versão.",
+      "efeito_motor": "alerta",
+      "vigencia_inicio": "2026-01-01",
+      "vigencia_fim": null,
+      "status": "nao_verificado",
+      "fontes": []
+    },
+    {
+      "id": "RSF22-89-RSF13-12",
+      "norma": "Resoluções do Senado 22/1989 e 13/2012",
+      "dispositivo": "alíquotas interestaduais de ICMS",
+      "tema": "ICMS interestadual",
+      "resumo": "7% de origem S/SE (exceto ES) para N/NE/CO/ES; 12% nos demais fluxos; 4% para importados (conteúdo de importação acima de 40%). Vale durante a vigência do ICMS (até 2032).",
+      "efeito_motor": "icms_interestadual_pct",
+      "vigencia_inicio": "2013-01-01",
+      "vigencia_fim": "2032-12-31",
+      "status": "conhecimento_geral",
+      "fontes": []
+    },
+    {
+      "id": "CPC16-R3",
+      "norma": "CPC 16 (R3) / IAS 2",
+      "dispositivo": "itens 10-11 (custo de aquisição)",
+      "tema": "Tributos recuperáveis fora do custo do estoque",
+      "resumo": "Tributos recuperáveis não compõem o custo de aquisição do estoque. O tratamento do crédito presumido de estoque (art. 381) como redutor do custo é premissa contábil a validar com o auditor.",
+      "efeito_motor": "custo_liquido; modo_credito_estoque",
+      "vigencia_inicio": "2016-01-01",
+      "vigencia_fim": null,
+      "status": "conhecimento_geral",
+      "fontes": []
+    },
+    {
+      "id": "CPC12-AVP",
+      "norma": "CPC 12 / IAS 37 §45 (ajuste a valor presente)",
+      "dispositivo": "AVP de ativos e passivos de longo prazo ou relevantes",
+      "tema": "Valor presente das 12 parcelas",
+      "resumo": "Base para descontar o fluxo de recuperação do crédito de estoque quando o efeito for relevante. O motor oferece o modo 'vp' com taxa mensal informada pelo usuário.",
+      "efeito_motor": "modo_credito_estoque=vp",
+      "vigencia_inicio": "2010-01-01",
+      "vigencia_fim": null,
+      "status": "conhecimento_geral",
+      "fontes": []
+    },
+    {
+      "id": "OT-CFC-01-2026",
+      "norma": "Orientação Técnica CFC nº 01/2026",
+      "dispositivo": "citada no manual enviado pelo usuário",
+      "tema": "Tratamento contábil dos créditos da transição",
+      "resumo": "Citada no manual técnico do usuário; texto não localizado/verificado.",
+      "efeito_motor": "alerta",
+      "vigencia_inicio": "2026-01-01",
+      "vigencia_fim": null,
+      "status": "nao_verificado",
+      "fontes": []
+    },
+    {
+      "id": "SPLIT-PAYMENT",
+      "norma": "LC 214/2025",
+      "dispositivo": "arts. 31 a 35 (pagamento fracionado)",
+      "tema": "Retenção no ato do pagamento",
+      "resumo": "A liquidação financeira do IBS/CBS ocorre no pagamento, com retenção pelo meio de pagamento. A mecânica exata de compensação de créditos na retenção não foi verificada; o motor mostra a retenção do débito integral por unidade e trata a apuração como agregada.",
+      "efeito_motor": "apuracao_caixa",
+      "vigencia_inicio": "2027-01-01",
+      "vigencia_fim": null,
+      "status": "nao_verificado",
+      "fontes": []
+    },
+    {
+      "id": "IS-LC214",
+      "norma": "LC 214/2025 e legislação do Imposto Seletivo",
+      "dispositivo": "arts. 409 e seguintes (a confirmar)",
+      "tema": "Imposto Seletivo",
+      "resumo": "O IS integra a base de IBS/CBS e do ICMS na transição. Alíquotas ad valorem e ad rem por NCM vêm da tabela oficial (RFB); o motor modela apenas ad valorem.",
+      "efeito_motor": "aliquota_is",
+      "vigencia_inicio": "2027-01-01",
+      "vigencia_fim": null,
+      "status": "confirmado_fonte_secundaria",
+      "fontes": [
+        "https://smabr.com/parana-confirma-inclusao-do-ibs-da-cbs-e-do-imposto-seletivo-na-base-de-calculo-do-icms/"
+      ]
+    },
+    {
+      "id": "LC123-ANEXO1",
+      "norma": "Lei Complementar 123/2006",
+      "dispositivo": "art. 18, §4º, I e Anexo I",
+      "tema": "Tabela do Simples Nacional - Comércio (Faixas 1 a 6)",
+      "resumo": "Regulamenta as alíquotas nominais e parcelas a deduzir do Simples Nacional no comércio, com a partilha percentual entre IRPJ, CSLL, COFINS, PIS, CPP e ICMS.",
+      "efeito_motor": "simples_das_efetivo",
+      "vigencia_inicio": "2006-12-14",
+      "vigencia_fim": null,
+      "status": "conhecimento_geral",
+      "fontes": [
+        "http://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm"
+      ]
+    },
+    {
+      "id": "LC214-SIMPLES-HIBRIDO",
+      "norma": "LC 214/2025",
+      "dispositivo": "arts. 41 a 46",
+      "tema": "Opção pelo recolhimento de IBS e CBS no regime regular (Simples Híbrido)",
+      "resumo": "Permite que a ME/EPP opte por recolher IBS e CBS fora do DAS pelo regime regular de débitos e créditos. A parcela do DAS relativa ao ICMS e PIS/COFINS (ou IBS/CBS na transição) é deduzida, o DAS é reduzido, e a empresa transfere crédito integral de IBS e CBS aos adquirentes B2B.",
+      "efeito_motor": "simples_hibrido_apuracao",
+      "vigencia_inicio": "2027-01-01",
+      "vigencia_fim": null,
+      "status": "confirmado_fonte_secundaria",
+      "fontes": [
+        "https://www.reformatributaria.com/iva/simples-nacional-reforma-tributaria/"
+      ]
+    },
+    {
+      "id": "LEI10637-10833-LUCRO-REAL",
+      "norma": "Leis 10.637/2002 e 10.833/2003",
+      "dispositivo": "PIS art. 1º a 3º; COFINS art. 1º a 3º",
+      "tema": "Lucro Real - PIS 1,65% e COFINS 7,60% não-cumulativos com apropriação de créditos",
+      "resumo": "No Lucro Real, as aquisições de insumos e mercadorias para revenda geram crédito de PIS (1,65%) e COFINS (7,60%), reduzindo o custo de aquisição. IRPJ (15% + 10% adicional) e CSLL (9%) incidem sobre o lucro real apurado.",
+      "efeito_motor": "lucro_real_creditos",
+      "vigencia_inicio": "2002-12-30",
+      "vigencia_fim": null,
+      "status": "conhecimento_geral",
+      "fontes": [
+        "http://www.planalto.gov.br/ccivil_03/leis/2002/l10637.htm",
+        "http://www.planalto.gov.br/ccivil_03/leis/2003/l10833.htm"
+      ]
+    },
+    {
+      "id": "LEI9718-LUCRO-PRESUMIDO",
+      "norma": "Lei 9.718/1998",
+      "dispositivo": "arts. 2º e 3º",
+      "tema": "Lucro Presumido - PIS 0,65% e COFINS 3,00% cumulativos",
+      "resumo": "No Lucro Presumido, PIS (0,65%) e COFINS (3,00%) incidem cumulativamente sobre a receita bruta, sem direito a créditos nas compras.",
+      "efeito_motor": "lucro_presumido_cumulativo",
+      "vigencia_inicio": "1998-11-27",
+      "vigencia_fim": null,
+      "status": "conhecimento_geral",
+      "fontes": [
+        "http://www.planalto.gov.br/ccivil_03/leis/l9718.htm"
+      ]
+    },
+    {
+      "id": "ALIQ-ICMS-INTERNAS",
+      "norma": "Legislações Estaduais de ICMS",
+      "dispositivo": "Leis Orgânicas Estaduais",
+      "tema": "Alíquotas internas padrão de ICMS por Unidade Federativa",
+      "resumo": "Alíquotas padrão de operações internas de ICMS: PR (19,5%), SP (18,0%), RJ (20,0%), MG (18,0%), RS (17,0%), SC (17,0%), BA (20,5%), PE (20,5%), DF (20,0%), etc.",
+      "efeito_motor": "icms_interno_uf",
+      "vigencia_inicio": "2024-01-01",
+      "vigencia_fim": "2032-12-31",
+      "status": "conhecimento_geral",
+      "fontes": [
+        "https://www.confaz.fazenda.gov.br"
+      ]
+    },
+    {
+      "id": "CRONOGRAMA-REF-2026-2033",
+      "norma": "EC 132/2023 e LC 214/2025",
+      "dispositivo": "ADCT arts. 125 a 133",
+      "tema": "Cronograma de alíquotas de referência da Reforma Tributária (2026-2033)",
+      "resumo": "2026: CBS 0,9% e IBS 0,1% compensáveis; 2027-2028: CBS 8,8% e IBS 0,1% com extinção do PIS/COFINS; 2029-2032: transição escalonada do ICMS para o IBS (10%, 20%, 30%, 40%); 2033+: vigência plena CBS 8,8% + IBS 17,7% = 26,5%.",
+      "efeito_motor": "cronograma_aliquotas_referencia",
+      "vigencia_inicio": "2026-01-01",
+      "vigencia_fim": null,
+      "status": "confirmado_fonte_secundaria",
+      "fontes": [
+        "https://www.gov.br/fazenda/pt-br/assuntos/reforma-tributaria"
+      ]
+    },
+    {
+      "id": "NBC-TG-16-R2",
+      "norma": "NBC TG 16 (R2) / CPC 16 (R1) / CFC",
+      "dispositivo": "Itens 9, 10, 11, 15, 16 e 28 a 33",
+      "tema": "Mensuração de estoques e regra do menor valor entre Custo e VRL",
+      "titulo": "Mensuração de Estoques e Regra de Custo ou VRL",
+      "diploma": "NBC TG 16 (R2) / CPC 16 (R1)",
+      "artigos": "Itens 9, 10, 11, 15, 16 e 28 a 33",
+      "orgao": "Conselho Federal de Contabilidade (CFC) / Comitê de Pronunciamentos Contábeis (CPC)",
+      "esfera": "Federal / Normativa Contábil",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "https://www1.cfc.org.br/sisweb/SRE/docs/NBCTG16(R2).pdf",
+      "fontes": [
+        "https://www1.cfc.org.br/sisweb/SRE/docs/NBCTG16(R2).pdf"
+      ],
+      "resumo": "Mensuração do custo de estoques: inclui preço de compra, impostos de importação e outros tributos não recuperáveis, custos de transporte, seguro e manuseio, deduzidos de descontos comerciais, abatimentos e outras parcelas semelhantes. Veda expressamente a inclusão no custo de: perdas anormais de matéria-prima, custos de armazenagem posterior à entrada, despesas administrativas gerais e despesas de comercialização. Avaliação subsequente pelo menor valor entre o Custo e o Valor Realizável Líquido (VRL).",
+      "efeito_motor": "custo_aquisicao_real, vrl_impairment",
+      "vigencia_inicio": "2010-01-01",
+      "vigencia_fim": null
+    },
+    {
+      "id": "RIR-2018-ESTOQUES",
+      "norma": "Decreto nº 9.580/2018 (RIR/2018)",
+      "dispositivo": "arts. 304 a 310",
+      "tema": "Avaliação de estoques, custeio por absorção e arbitramento fiscal",
+      "titulo": "Avaliação de Estoques, Custeio por Absorção e Arbitramento Fiscal",
+      "diploma": "Decreto nº 9.580/2018 (Regulamento do Imposto sobre a Renda)",
+      "artigos": "arts. 304 a 310",
+      "orgao": "Receita Federal do Brasil / Presidência da República",
+      "esfera": "Federal",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "http://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/decreto/d9580.htm",
+      "fontes": [
+        "http://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/decreto/d9580.htm"
+      ],
+      "resumo": "Obrigatoriedade do método de Custeio por Absorção para pessoas jurídicas tributadas com base no Lucro Real (art. 305). Vedação expressa ao método UEPS/LIFO (art. 308, § 2º), sendo admitidos PEPS/FIFO ou Média Ponderada Móvel. Arbitramento Fiscal do Custo na ausência de escrituração de custos permanente e integrada (art. 309): 70% do maior preço de venda no período de apuração para bens destinados a revenda e 80% para produtos fabricados.",
+      "efeito_motor": "custeio_absorcao, arbitramento_fiscal",
+      "vigencia_inicio": "2018-11-23",
+      "vigencia_fim": null
+    },
+    {
+      "id": "LEI-6404-ART183",
+      "norma": "Lei Federal nº 6.404/1976 (Lei das S.A.)",
+      "dispositivo": "art. 183, inciso II",
+      "tema": "Critérios de avaliação do ativo e ajuste ao valor de mercado (VRL)",
+      "titulo": "Critérios de Avaliação do Ativo e Ajuste ao Valor de Mercado (VRL)",
+      "diploma": "Lei Federal nº 6.404/1976",
+      "artigos": "art. 183, II",
+      "orgao": "Congresso Nacional / Presidência da República",
+      "esfera": "Federal",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "http://www.planalto.gov.br/ccivil_03/leis/l6404consol.htm",
+      "fontes": [
+        "http://www.planalto.gov.br/ccivil_03/leis/l6404consol.htm"
+      ],
+      "resumo": "Determina que as mercadorias e produtos do comércio e da indústria, matérias-primas e bens em almoxarifado devem ser avaliados pelo custo de aquisição ou produção, deduzido de provisão para ajustá-lo ao valor de mercado (Valor Realizável Líquido), quando este for inferior.",
+      "efeito_motor": "vrl_ajuste_mercado",
+      "vigencia_inicio": "1976-12-15",
+      "vigencia_fim": null
+    },
+    {
+      "id": "LC87-1996-KANDIR",
+      "norma": "Lei Complementar nº 87/1996 (Lei Kandir)",
+      "dispositivo": "arts. 8º, 13, 20 e 21",
+      "tema": "Não-cumulatividade do ICMS, inclusão do IPI na base de ICMS-ST e estorno proporcional",
+      "titulo": "Lei Kandir - Princípio da Não-Cumulatividade, Base do ICMS-ST e Estorno Proporcional",
+      "diploma": "Lei Complementar nº 87/1996",
+      "artigos": "arts. 8º, 13, 20 e 21",
+      "orgao": "Congresso Nacional",
+      "esfera": "Nacional / Estadual",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "http://www.planalto.gov.br/ccivil_03/leis/lcp/lcp87.htm",
+      "fontes": [
+        "http://www.planalto.gov.br/ccivil_03/leis/lcp/lcp87.htm"
+      ],
+      "resumo": "Regula o ICMS no âmbito nacional: consagra a não-cumulatividade (art. 20); determina a inclusão obrigatória do IPI na base de cálculo do ICMS-ST nas operações de revenda (art. 8º, II); veda a apropriação e exige estorno proporcional do crédito de entrada em saídas subsequentes isentas ou com redução de base de cálculo (art. 20, § 3º e art. 21, II).",
+      "efeito_motor": "nao_cumulatividade_icms, base_icms_st_ipi, estorno_proporcional_icms",
+      "vigencia_inicio": "1996-09-13",
+      "vigencia_fim": "2032-12-31"
+    },
+    {
+      "id": "RICMS-PR-DEC7871",
+      "norma": "RICMS/PR - Decreto Estadual nº 7.871/2017 c/c Lei Estadual nº 21.850/2023",
+      "dispositivo": "art. 17, Anexo II e Anexo IX",
+      "tema": "ICMS modal do Paraná (19,5%), reduções de base (Anexo II) e ST/MVA Ajustada (Anexo IX)",
+      "titulo": "Regulamento do ICMS do Estado do Paraná - Alíquota Modal 19,5%, Anexo II e Anexo IX",
+      "diploma": "Decreto Estadual nº 7.871/2017 e Lei Estadual nº 21.850/2023",
+      "artigos": "art. 17, Anexo II e Anexo IX",
+      "orgao": "Governo do Estado do Paraná / SEFA-PR",
+      "esfera": "Estadual",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "https://www.fazenda.pr.gov.br/Pagina/Regulamento-do-ICMS",
+      "fontes": [
+        "https://www.fazenda.pr.gov.br/Pagina/Regulamento-do-ICMS"
+      ],
+      "resumo": "Fixa a alíquota modal interna do ICMS no Paraná em 19,5% (vigência pela Lei 21.850/2023). Anexo II disciplina as hipóteses de redução de base de cálculo e a exigência de estorno proporcional de crédito. Anexo IX disciplina o regime de Substituição Tributária (ICMS-ST), CESTs obrigatórios e a fórmula de MVA Ajustada quando a alíquota interestadual da operação for inferior à alíquota interna do Paraná.",
+      "efeito_motor": "icms_modal_pr, reducao_base_pr, mva_ajustada_anexo_ix",
+      "vigencia_inicio": "2024-03-18",
+      "vigencia_fim": "2032-12-31"
+    },
+    {
+      "id": "RES-SF-13-2012",
+      "norma": "Resoluções do Senado Federal nº 13/2012 e nº 22/1989",
+      "dispositivo": "art. 1º da Res. 13/2012 e art. 1º da Res. 22/1989",
+      "tema": "Alíquotas interestaduais de ICMS (4% importados, 7% S/SE para N/NE/CO/ES e 12% geral)",
+      "titulo": "Resoluções do Senado Federal nº 13/2012 e nº 22/1989 - Alíquotas Interestaduais de ICMS",
+      "diploma": "Resoluções do Senado Federal nº 13/2012 e nº 22/1989",
+      "artigos": "art. 1º (Res. 13/2012) e art. 1º (Res. 22/1989)",
+      "orgao": "Senado Federal",
+      "esfera": "Federal",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "https://legis.senado.leg.br/norma/584742",
+      "fontes": [
+        "https://legis.senado.leg.br/norma/584742"
+      ],
+      "resumo": "Fixa alíquota interestadual de 4% para produtos importados do exterior ou com Conteúdo de Importação superior a 40% (FCI / origens 1, 2, 3 e 8). Fixa 7% nas operações de contribuintes do Sul e Sudeste (exceto ES) destinadas às regiões Norte, Nordeste, Centro-Oeste e Espírito Santo; e 12% para as demais operações interestaduais (incluindo SP, SC, RS, MS destinados ao PR).",
+      "efeito_motor": "icms_interestadual_4_7_12",
+      "vigencia_inicio": "2013-01-01",
+      "vigencia_fim": "2032-12-31"
+    },
+    {
+      "id": "LEIS-10637-10833-CRT1",
+      "norma": "Leis Federais nº 10.637/2002 e nº 10.833/2003 c/c LC nº 123/2006",
+      "dispositivo": "art. 3º, § 2º, II das Leis 10.637/02 e 10.833/03; art. 23 da LC 123/06; art. 3º, IX (frete FOB)",
+      "tema": "Vedação de crédito PIS/COFINS em compras do Simples Nacional e crédito sobre frete FOB",
+      "titulo": "Vedação de Crédito PIS/COFINS e Disciplina de Crédito ICMS em Aquisições do Simples Nacional",
+      "diploma": "Leis Federais nº 10.637/2002 e nº 10.833/2003 c/c LC nº 123/2006",
+      "artigos": "art. 3º, § 2º, II das Leis 10.637/02 e 10.833/03; art. 23 da LC 123/06; art. 3º, IX",
+      "orgao": "Receita Federal do Brasil / Congresso Nacional",
+      "esfera": "Federal",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "http://www.planalto.gov.br/ccivil_03/leis/2003/l10833.htm",
+      "fontes": [
+        "http://www.planalto.gov.br/ccivil_03/leis/2003/l10833.htm"
+      ],
+      "resumo": "Veda expressamente a apropriação de créditos de PIS e COFINS pelo adquirente no Lucro Real quando a mercadoria é adquirida de fornecedor optante pelo Simples Nacional (CRT 1 ou CRT 2). Autoriza o crédito de ICMS exclusivamente à alíquota de ICMS informada nos dados adicionais da NF-e (art. 23 da LC 123/2006). Garante direito a crédito sobre frete FOB suportado pelo adquirente (art. 3º, IX).",
+      "efeito_motor": "vedacao_pis_cofins_crt1, credito_icms_simples_adicional, credito_frete_fob",
+      "vigencia_inicio": "2003-02-01",
+      "vigencia_fim": null
+    }
+  ],
+  "parametros": {
+    "transicao": {
+      "ibs_fracao_pct": {
+        "2029": 10,
+        "2030": 20,
+        "2031": 30,
+        "2032": 40
+      },
+      "icms_fator_pct": {
+        "2029": 90,
+        "2030": 80,
+        "2031": 70,
+        "2032": 60
+      },
+      "ibs_municipal_pct_2027_2028": 0.05,
+      "ano_ibs_pleno": 2033,
+      "norma_ids": [
+        "ADCT127-LC214-344-347",
+        "EC132-TRANSICAO-2029-2033"
+      ]
+    },
+    "credito_estoque": {
+      "aliquota_pct": 9.25,
+      "parcelas": 12,
+      "mes_limite_apropriacao": 6,
+      "ano_base": 2027,
+      "regimes_elegiveis": [
+        "cumulativo",
+        "monofasico_st"
+      ],
+      "regimes_inelegiveis": {
+        "nao_cumulativo": "crédito já apropriado na entrada (EFD-Contribuições); sem crédito presumido"
+      },
+      "uso_exclusivo": "CBS",
+      "prazo_anos": 5,
+      "norma_ids": [
+        "LC214-381",
+        "CPC16-R3",
+        "CPC12-AVP"
+      ]
+    },
+    "icms": {
+      "base_inclui_iva_padrao": true,
+      "norma_ids": [
+        "SEFA-PR-CONS-48-2026",
+        "LC214-12-2",
+        "ALIQ-ICMS-INTERNAS"
+      ],
+      "interestadual": {
+        "regioes": {
+          "S": [
+            "PR",
+            "SC",
+            "RS"
+          ],
+          "SE": [
+            "SP",
+            "RJ",
+            "MG"
+          ],
+          "ES": [
+            "ES"
+          ],
+          "N": [
+            "AC",
+            "AM",
+            "AP",
+            "PA",
+            "RO",
+            "RR",
+            "TO"
+          ],
+          "NE": [
+            "AL",
+            "BA",
+            "CE",
+            "MA",
+            "PB",
+            "PE",
+            "PI",
+            "RN",
+            "SE"
+          ],
+          "CO": [
+            "DF",
+            "GO",
+            "MT",
+            "MS"
+          ]
+        },
+        "origens_7": [
+          "S",
+          "SE"
+        ],
+        "destinos_7": [
+          "N",
+          "NE",
+          "CO",
+          "ES"
+        ],
+        "aliquota_geral_pct": 12,
+        "aliquota_menor_pct": 7,
+        "aliquota_importado_pct": 4,
+        "norma_ids": [
+          "RSF22-89-RSF13-12"
+        ]
+      },
+      "aliquotas_internas_uf": {
+        "AC": 19.0,
+        "AL": 19.0,
+        "AP": 18.0,
+        "AM": 20.0,
+        "BA": 20.5,
+        "CE": 20.0,
+        "DF": 20.0,
+        "ES": 17.0,
+        "GO": 19.0,
+        "MA": 22.0,
+        "MT": 17.0,
+        "MS": 17.0,
+        "MG": 18.0,
+        "PA": 19.0,
+        "PB": 20.0,
+        "PR": 19.5,
+        "PE": 20.5,
+        "PI": 21.0,
+        "RJ": 20.0,
+        "RN": 18.0,
+        "RS": 17.0,
+        "RO": 19.5,
+        "RR": 20.0,
+        "SC": 17.0,
+        "SP": 18.0,
+        "SE": 19.0,
+        "TO": 20.0
+      }
+    },
+    "lucro_presumido": {
+      "atividades": {
+        "comercio": {
+          "presuncao_irpj_pct": 8,
+          "presuncao_csll_pct": 12
+        },
+        "industria": {
+          "presuncao_irpj_pct": 8,
+          "presuncao_csll_pct": 12
+        },
+        "servicos": {
+          "presuncao_irpj_pct": 32,
+          "presuncao_csll_pct": 32
+        }
+      },
+      "aliquota_irpj_pct": 15,
+      "aliquota_csll_pct": 9,
+      "pis_pct": 0.65,
+      "cofins_pct": 3.0,
+      "total_pis_cofins_pct": 3.65,
+      "adicional_irpj_pct": 10,
+      "limite_adicional_mensal": 20000,
+      "norma_ids": [
+        "LEI9249-15-20",
+        "LEI9718-LUCRO-PRESUMIDO",
+        "LC224-PRESUMIDO"
+      ]
+    },
+    "lucro_real": {
+      "pis_pct": 1.65,
+      "cofins_pct": 7.6,
+      "total_pis_cofins_pct": 9.25,
+      "aliquota_irpj_pct": 15,
+      "adicional_irpj_pct": 10,
+      "aliquota_csll_pct": 9,
+      "norma_ids": [
+        "LEI10637-10833-LUCRO-REAL"
+      ]
+    },
+    "simples_nacional": {
+      "anexo_i_comercio": [
+        {
+          "faixa": 1,
+          "limite_superior": 180000,
+          "aliquota_nominal_pct": 4.0,
+          "deducao": 0,
+          "partilha_pct": {
+            "irpj": 5.5,
+            "csll": 3.5,
+            "cofins": 12.74,
+            "pis": 2.76,
+            "cpp": 41.5,
+            "icms": 34.0
+          }
+        },
+        {
+          "faixa": 2,
+          "limite_superior": 360000,
+          "aliquota_nominal_pct": 7.3,
+          "deducao": 5940,
+          "partilha_pct": {
+            "irpj": 5.5,
+            "csll": 3.5,
+            "cofins": 12.74,
+            "pis": 2.76,
+            "cpp": 41.5,
+            "icms": 34.0
+          }
+        },
+        {
+          "faixa": 3,
+          "limite_superior": 720000,
+          "aliquota_nominal_pct": 9.5,
+          "deducao": 13860,
+          "partilha_pct": {
+            "irpj": 5.5,
+            "csll": 3.5,
+            "cofins": 12.74,
+            "pis": 2.76,
+            "cpp": 42.0,
+            "icms": 33.5
+          }
+        },
+        {
+          "faixa": 4,
+          "limite_superior": 1800000,
+          "aliquota_nominal_pct": 10.7,
+          "deducao": 22500,
+          "partilha_pct": {
+            "irpj": 5.5,
+            "csll": 3.5,
+            "cofins": 12.74,
+            "pis": 2.76,
+            "cpp": 42.0,
+            "icms": 33.5
+          }
+        },
+        {
+          "faixa": 5,
+          "limite_superior": 3600000,
+          "aliquota_nominal_pct": 14.3,
+          "deducao": 87300,
+          "partilha_pct": {
+            "irpj": 5.5,
+            "csll": 3.5,
+            "cofins": 12.74,
+            "pis": 2.76,
+            "cpp": 42.0,
+            "icms": 33.5
+          }
+        },
+        {
+          "faixa": 6,
+          "limite_superior": 4800000,
+          "aliquota_nominal_pct": 19.0,
+          "deducao": 378000,
+          "partilha_pct": {
+            "irpj": 13.5,
+            "csll": 10.0,
+            "cofins": 28.27,
+            "pis": 6.13,
+            "cpp": 42.1,
+            "icms": 0.0
+          }
+        }
+      ],
+      "norma_ids": [
+        "LC123-ANEXO1",
+        "LC214-SIMPLES-HIBRIDO"
+      ]
+    },
+    "cronograma_referencia": {
+      "2026": {
+        "cbs_pct": 0.9,
+        "ibs_pct": 0.1,
+        "compensavel": true,
+        "pis_cofins_extinto": false
+      },
+      "2027": {
+        "cbs_pct": 8.8,
+        "ibs_pct": 0.1,
+        "compensavel": false,
+        "pis_cofins_extinto": true
+      },
+      "2028": {
+        "cbs_pct": 8.8,
+        "ibs_pct": 0.1,
+        "compensavel": false,
+        "pis_cofins_extinto": true
+      },
+      "2029": {
+        "cbs_pct": 8.8,
+        "ibs_pct": 1.77,
+        "fracao_ibs_pct": 10,
+        "icms_fator_pct": 90,
+        "pis_cofins_extinto": true
+      },
+      "2030": {
+        "cbs_pct": 8.8,
+        "ibs_pct": 3.54,
+        "fracao_ibs_pct": 20,
+        "icms_fator_pct": 80,
+        "pis_cofins_extinto": true
+      },
+      "2031": {
+        "cbs_pct": 8.8,
+        "ibs_pct": 5.31,
+        "fracao_ibs_pct": 30,
+        "icms_fator_pct": 70,
+        "pis_cofins_extinto": true
+      },
+      "2032": {
+        "cbs_pct": 8.8,
+        "ibs_pct": 7.08,
+        "fracao_ibs_pct": 40,
+        "icms_fator_pct": 60,
+        "pis_cofins_extinto": true
+      },
+      "2033": {
+        "cbs_pct": 8.8,
+        "ibs_pct": 17.7,
+        "fracao_ibs_pct": 100,
+        "icms_fator_pct": 0,
+        "soma_iva_pct": 26.5,
+        "pis_cofins_extinto": true
+      },
+      "norma_ids": [
+        "CRONOGRAMA-REF-2026-2033"
+      ]
+    },
+    "nfe": {
+      "vprod_inclui_ibs_cbs": false,
+      "versao_nt": "2026.008 v1.01",
+      "norma_ids": [
+        "NT-2026-008"
+      ]
+    },
+    "reducoes_manuais": {
+      "_doc": "Sobrescreve a redução derivada do texto 'tt' da tabela oficial por cClassTrib: { \"200025\": { \"cbs\": 100, \"ibs\": 60 } }. Use só quando a tabela oficial não permitir derivar o percentual.",
+      "200025": {
+        "cbs": 100,
+        "ibs": 60
+      }
+    },
+    "fontes_consulta_oficiais": {
+      "siscomex_tipi": {
+        "nome": "Tabela TIPI Vigente (Receita Federal / Siscomex)",
+        "url": "https://www.gov.br/receitafederal/pt-br/assuntos/aduana-e-comercio-exterior/classificacao-fiscal-de-mercadorias/tabela-tipi",
+        "metodo": "download_json_ou_xlsx",
+        "periodicidade": "mensal"
+      },
+      "confaz_cest": {
+        "nome": "Tabela CEST Vigente (Convênio ICMS 142/2018 - CONFAZ)",
+        "url": "https://www.confaz.fazenda.gov.br/legislacao/convenios/2018/CV142_18",
+        "metodo": "scraping_ou_json",
+        "periodicidade": "trimestral"
+      },
+      "sefaz_pr_anexo_ix": {
+        "nome": "SEFA-PR - RICMS/PR Anexo IX (Substituição Tributária e MVA)",
+        "url": "https://www.fazenda.pr.gov.br/Pagina/Regulamento-do-ICMS",
+        "metodo": "consulta_diario_oficial_ou_json",
+        "periodicidade": "mensal"
+      },
+      "sefaz_pr_anexo_ii": {
+        "nome": "SEFA-PR - RICMS/PR Anexo II (Redução de Base de Cálculo e Estorno)",
+        "url": "https://www.fazenda.pr.gov.br/Pagina/Regulamento-do-ICMS",
+        "metodo": "consulta_legislacao",
+        "periodicidade": "trimestral"
+      },
+      "sped_monofasicos": {
+        "nome": "Tabela 4.3.10 - Produtos Sujeitos a Alíquotas Diferenciadas/Monofásicos (PIS/COFINS)",
+        "url": "http://sped.rfb.gov.br/pasta/show/1615",
+        "metodo": "download_csv_sped",
+        "periodicidade": "semestral"
+      },
+      "senado_interestadual": {
+        "nome": "Resoluções do Senado Federal 13/2012 e 22/1989 (Alíquotas Interestaduais)",
+        "url": "https://legis.senado.leg.br/norma/584742",
+        "metodo": "resolucao_federal",
+        "periodicidade": "anual"
+      }
+    },
+    "cfop_de_para": {
+      "norma_ids": [
+        "LC87-1996-KANDIR",
+        "RICMS-PR-DEC7871"
+      ],
+      "regras": {
+        "5101": {
+          "comercializacao": "1102",
+          "industrializacao": "1101",
+          "uso_consumo": "1556",
+          "ativo_imobilizado": "1551"
+        },
+        "5102": {
+          "comercializacao": "1102",
+          "industrializacao": "1101",
+          "uso_consumo": "1556",
+          "ativo_imobilizado": "1551"
+        },
+        "6101": {
+          "comercializacao": "2102",
+          "industrializacao": "2101",
+          "uso_consumo": "2556",
+          "ativo_imobilizado": "2551"
+        },
+        "6102": {
+          "comercializacao": "2102",
+          "industrializacao": "2101",
+          "uso_consumo": "2556",
+          "ativo_imobilizado": "2551"
+        },
+        "5401": {
+          "comercializacao": "1403",
+          "industrializacao": "1401",
+          "uso_consumo": "1407",
+          "ativo_imobilizado": "1406"
+        },
+        "5403": {
+          "comercializacao": "1403",
+          "industrializacao": "1401",
+          "uso_consumo": "1407",
+          "ativo_imobilizado": "1406"
+        },
+        "5405": {
+          "comercializacao": "1403",
+          "industrializacao": "1401",
+          "uso_consumo": "1407",
+          "ativo_imobilizado": "1406"
+        },
+        "6401": {
+          "comercializacao": "2403",
+          "industrializacao": "2401",
+          "uso_consumo": "2407",
+          "ativo_imobilizado": "2406"
+        },
+        "6403": {
+          "comercializacao": "2403",
+          "industrializacao": "2401",
+          "uso_consumo": "2407",
+          "ativo_imobilizado": "2406"
+        },
+        "6404": {
+          "comercializacao": "2403",
+          "industrializacao": "2401",
+          "uso_consumo": "2407",
+          "ativo_imobilizado": "2406"
+        }
+      }
+    },
+    "regras_icms_pr_vizinhos": {
+      "norma_ids": [
+        "RICMS-PR-DEC7871",
+        "RES-SF-13-2012"
+      ],
+      "aliquota_modal_pr_pct": 19.5,
+      "origens_importadas": [
+        "1",
+        "2",
+        "3",
+        "8"
+      ],
+      "aliquota_importados_pct": 4.0,
+      "ufs_limitrofes_12_pct": [
+        "SP",
+        "SC",
+        "RS",
+        "MS"
+      ],
+      "aliquota_limitrofes_pct": 12.0,
+      "difal_uso_consumo": {
+        "exigido": true,
+        "norma": "EC 87/2015 e LC 190/2022"
+      },
+      "difal_comercial_simples_pr": {
+        "exigido": true,
+        "norma": "Lei Estadual PR 21.850/2023"
+      }
+    },
+    "contabilidade_custos": {
+      "norma_ids": [
+        "NBC-TG-16-R2",
+        "RIR-2018-ESTOQUES",
+        "LEI-6404-ART183"
+      ],
+      "arbitramento_revenda_pct": 70,
+      "arbitramento_industria_pct": 80,
+      "custeio_absorcao_obrigatorio_lucro_real": true,
+      "metodos_admitidos": [
+        "PEPS",
+        "Media_Ponderada_Movel"
+      ],
+      "metodos_vedados": [
+        "UEPS",
+        "LIFO"
+      ],
+      "criterios_rateio_frete": [
+        "valor",
+        "peso"
+      ],
+      "ajuste_vrl_obrigatorio": true
+    }
+  }
+}

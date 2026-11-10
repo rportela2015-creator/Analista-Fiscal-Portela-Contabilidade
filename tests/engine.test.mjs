@@ -191,4 +191,48 @@ assert.equal(fails.length, 0, `${fails.length} caso(s) fora do esperado: ` +
   console.log('OK  CEST detalhado →', t.cest[0].code, '·', t.cest[0].d.slice(0, 50) + '…');
 }
 
+{ // RGI 3(c) desempate numérico decrescente testado DIRETAMENTE no engine.classify real
+  const rec1 = { d8: '84011000', ncm: '8401.10.00', desc: 'reatores nucleares modelo alfa', gen: 0, path: ['84', '8401', '840110', '84011000'] };
+  const rec2 = { d8: '85011000', ncm: '8501.10.00', desc: 'reatores nucleares modelo alfa', gen: 0, path: ['85', '8501', '850110', '85011000'] };
+  const testDs = {
+    ...ds,
+    records: [rec1, rec2],
+    byD8: new Map([['84011000', rec1], ['85011000', rec2]]),
+    hier: {},
+    search: {
+      n: 2,
+      vocab: ['reator', 'nuclear', 'model', 'alfa'],
+      inv: [
+        [0, 1],
+        [0, 1],
+        [0, 1],
+        [0, 1],
+      ],
+      df: [2, 2, 2, 2],
+    },
+  };
+  const res = engine.classify('reatores nucleares modelo alfa', testDs);
+  assert.equal(res.candidates.length, 2, 'Deve encontrar ambos os candidatos');
+  assert.equal(res.candidates[0].score, res.candidates[1].score, 'Scores devem empatar perfeitamente');
+  assert.equal(res.candidates[0].rec.d8, '85011000', 'RGI 3(c): maior código numérico (85011000) deve liderar desempate');
+  assert.equal(res.candidates[1].rec.d8, '84011000', 'RGI 3(c): menor código numérico (84011000) fica em segundo');
+  console.log('OK  RGI 3(c) desempate numérico decrescente verificado no engine.classify real (85011000 > 84011000)');
+}
+{ // Validação anti-falso-positivo de jargão (ex: "casaco de lã" não pode casar com "casa")
+  const qCasaco = engine.parseQuery('casaco de lã', ds);
+  const candCasaco = { rec: { d8: '61021000', ncm: '6102.10.00', desc: 'Sobretudos, casacos e semelhantes de lã', gen: 0, path: ['61', '6102', '610210', '61021000'] },
+    score: 80.0, coverage: 1.0, matched: [{ term: 'casaco', where: 'propria', w: 1 }, { term: 'la', where: 'propria', w: 1 }], phrase: true, penalizedGeneric: false };
+  const notesCasaco = engine.buildNotes(candCasaco, qCasaco, ds, [candCasaco]);
+  assert.ok(notesCasaco.confidence > 0.40, `Confiança de casaco de lã não pode ser truncada para <= 0.40 (obteve ${notesCasaco.confidence})`);
+  assert.ok(notesCasaco.band !== 'baixa', `Banda de casaco não pode ser rebaixada para baixa por falso positivo de jargão (obteve ${notesCasaco.band})`);
+  console.log('OK  jargão com limites de palavra: casaco não colide com casa (confiança > 0.40 preservada)');
+}
+{ // normalizeNcm unificado com zeros à esquerda e rejeição de notação científica
+  assert.equal(mods.data.normalizeNcm('1012100'), '01012100', '7 dígitos devem receber padStart(8, "0")');
+  assert.equal(mods.data.normalizeNcm('01012100'), '01012100');
+  assert.equal(mods.data.normalizeNcm('8471.30.12'), '84713012');
+  assert.equal(mods.data.normalizeNcm('8.4713E+07'), '', 'notação científica do Excel deve ser rejeitada');
+  console.log('OK  normalizeNcm unificado: 7 dígitos -> 8 com zero à esquerda e exp rejeitado');
+}
+
 console.log('\nTODOS OS TESTES PASSARAM ✓');

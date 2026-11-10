@@ -1,0 +1,22 @@
+# Progress — M3 Explorer 2 (Gemini API Cloud Engine)
+
+- Last visited: 2026-11-09T20:00:00Z
+- Status: Completed Investigation
+- Completed:
+  - Initialized DISPATCH.md and BRIEFING.md
+  - Investigated `package.json`: verified `@google/genai: ^2.22.0` is installed and verified in Node.js runtime.
+  - Investigated existing implementations: `app/api/classificar-ia/route.ts` and `app/api/auditoria-entrada/route.ts`.
+  - Investigated tests and contract specs: `tests/e2e-auditoria-entrada.test.mjs`, `tests/tabela-itens-extracao.test.mjs`, `tests/m2-challenger-stress.test.mjs`.
+  - Analyzed official `@google/genai` SDK documentation and samples using `gemini-api_gemini-api-docs`.
+  - Designed the comprehensive Gemini API cloud engine for `lib/auditoria-particionada.ts`:
+    - SDK imports and client initialization with `GoogleGenAI`
+    - Target model: `gemini-3.8-flash` with fallback
+    - Structured JSON schema (`responseSchema`) with `Type.OBJECT` and `Type.ARRAY` enforcing `AuditedItemFinding[]`
+    - API key handling (`GEMINI_API_KEY`) and data sovereignty compliance (`AI_SOVEREIGNTY_MODE=local_strict`)
+    - Context stripping removing non-tax metadata (`<transp>`, `<cobr>`, `<pag>`, `<infAdic>`)
+    - Pericial prompt template grounded in RGI 1-6, CFOP conversion, LC 123/2006, Convênio 142/2018, and LC 214/2025
+    - Post-processing grounding against official 10,515 Siscomex NCMs (`getMapaD8()`)
+    - Full backward compatibility with `components/AuditoriaEntrada.tsx` and `components/ParametrizacaoERP.tsx`
+- Next Steps:
+  - Write detailed handoff report in `handoff.md`
+  - Send message to orchestrator

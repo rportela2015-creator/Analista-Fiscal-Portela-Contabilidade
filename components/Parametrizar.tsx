@@ -6,11 +6,118 @@
  * CST-IBS/CBS, IS) e a maqueta de XML do item, com as conferências de schema.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { Dataset, ErpTabela, Reforma, loadDataset, loadErpTabela, loadReforma, normalizeNcm } from '@/lib/data';
+import { Dataset, ErpTabela, Reforma, Record8, loadDataset, loadErpTabela, loadReforma, normalizeNcm } from '@/lib/data';
 import { classify } from '@/lib/engine';
-import { XmlCtx, cUF, montarXml, MODELOS } from '@/lib/xml';
+import { XmlCtx, cUF, montarXml, MODELOS, XmlParam } from '@/lib/xml';
 import { Finalidade, Operacao, Regime } from '@/lib/parametrizacao';
 import { buscarClassificacoes } from '@/lib/reforma';
+import {
+  ParametrosErpPayload,
+  ParametrosErpItem,
+  gerarRelatorioErpResumidoTxt,
+  gerarRelatorioErpResumidoHtml,
+  gerarRelatorioErpDetalhadoTxt,
+  gerarRelatorioErpDetalhadoHtml,
+} from '@/lib/relatorio-erp';
+
+function baixarArquivo(conteudo: string, nomeArquivo: string, mime: string) {
+  const blob = new Blob([conteudo], { type: mime });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeArquivo;
+  a.click();
+  setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+}
+
+function abrirEmNovaAba(conteudoHtml: string) {
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(conteudoHtml);
+    win.document.close();
+  }
+}
+
+function extrairPayloadErp(
+  ctx: XmlCtx,
+  rec: Record8 | null,
+  p: XmlParam | null,
+  texto: string,
+): ParametrosErpPayload {
+  const camposProd = p?.campos.find((b) => b.tag === 'prod')?.campos || [];
+  const camposIcms = p?.campos.find((b) => b.grupo.startsWith('ICMS'))?.campos || [];
+  const camposIpi = p?.campos.find((b) => b.grupo === 'IPI' || b.tag === 'gIPI')?.campos || [];
+  const camposPis = p?.campos.find((b) => b.grupo === 'PIS/COFINS' || b.tag === 'tributosPisCofins')?.campos || [];
+  const camposIbs = p?.campos.find((b) => b.tag === 'IBSCBS')?.campos || [];
+  const camposIs = p?.campos.find((b) => b.tag === 'IS')?.campos || [];
+
+  const cfopTag = camposProd.find((c) => c.tag === 'CFOP')?.valor || (ctx.operacao === 'interna' ? '5.102' : '6.102');
+  const cestTag = camposProd.find((c) => c.tag === 'CEST')?.valor || (rec?.cest || [])[0] || '';
+  const cstIcms = camposIcms.find((c) => c.tag === 'CST')?.valor || '';
+  const csosn = camposIcms.find((c) => c.tag === 'CSOSN')?.valor || '';
+  const cstIpi = camposIpi.find((c) => c.tag === 'CST')?.valor || '';
+  const aliqIpi = camposIpi.find((c) => c.tag === 'pIPI')?.valor || (rec?.ipi != null ? String(rec.ipi) : '');
+  const cstPis = camposPis.find((c) => c.tag === 'PIS/CST')?.valor || '';
+  const cstCofins = camposPis.find((c) => c.tag === 'COFINS/CST')?.valor || '';
+  const cstIbsCbs = camposIbs.find((c) => c.tag === 'CST')?.valor || '';
+  const cClassTrib = camposIbs.find((c) => c.tag === 'cClassTrib')?.valor || ctx.cClassTribForcado || '';
+  const aliqCbs = camposIbs.find((c) => c.tag === 'pCBS')?.valor || '';
+  const aliqIbsUf = camposIbs.find((c) => c.tag === 'pIBSUF')?.valor || '';
+  const aliqIbsMun = camposIbs.find((c) => c.tag === 'pIBSMun')?.valor || '';
+  const isTributa = camposIs.length > 0;
+  const cstIs = camposIs.find((c) => c.tag === 'CSTIS')?.valor || '';
+  const aliqIsAdv = camposIs.find((c) => c.tag === 'pIS')?.valor || '';
+
+  const item: ParametrosErpItem = {
+    cProd: 'PROD-001',
+    xProd: texto.trim() || rec?.desc?.replace(/^[-–\s]+/, '') || 'Produto parametrizado',
+    ncm: rec?.d8 || '',
+    descricaoNcm: rec?.desc?.replace(/^[-–\s]+/, '') || '',
+    cest: cestTag,
+    cfop: cfopTag,
+    cstIcms: cstIcms,
+    csosn: csosn,
+    cstIpi: cstIpi,
+    aliqIpi: aliqIpi,
+    cstPis: cstPis,
+    cstCofins: cstCofins,
+    cstIbsCbs: cstIbsCbs,
+    cClassTrib: cClassTrib,
+    aliqCbs: aliqCbs,
+    aliqIbsUf: aliqIbsUf,
+    aliqIbsMun: aliqIbsMun,
+    isTributa: isTributa,
+    cstIs: cstIs,
+    aliqIsAdv: aliqIsAdv,
+    instrucao: p?.resumo || 'Parametrização gerada conforme regras oficiais.',
+  };
+
+  return {
+    contexto: {
+      emitente: {
+        cnpj: ctx.cnpj,
+        ie: ctx.ie,
+        municipioIbge: ctx.municipioIbge,
+        uf: ctx.ufEmi,
+        regime: ctx.regime,
+        crt: ctx.regime === 'simples' ? '1' : '3',
+        regApIBSCBSSN: ctx.regApIBSCBSSN,
+      },
+      destinatario: {
+        cnpjCpf: ctx.cnpjDest,
+        ie: ctx.ieDest,
+        uf: ctx.ufDest,
+      },
+      operacao: {
+        tipo: ctx.operacao,
+        finalidade: ctx.finalidade,
+        modelo: ctx.modelo,
+        anoReforma: ctx.anoReforma,
+      },
+    },
+    itens: [item],
+  };
+}
 
 const UFS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB',
   'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
@@ -36,11 +143,48 @@ export default function Parametrizar() {
   const [copiado, setCopiado] = useState('');
   const [buscaTabela, setBuscaTabela] = useState('');
   const [soOficial, setSoOficial] = useState(false);
+  const [modalRelatorio, setModalRelatorio] = useState<{ aberto: boolean; modo: 'resumido' | 'detalhado' }>({ aberto: false, modo: 'resumido' });
+  const [formatoModal, setFormatoModal] = useState<'html' | 'txt'>('html');
+  const [relatorioCopiado, setRelatorioCopiado] = useState('');
 
   useEffect(() => {
     loadDataset().then(async (d) => { setDs(d); await d.pronto; }).catch(() => setDs(null));
     loadReforma().then(setReforma).catch(() => setReforma(null));
     loadErpTabela().then(setErp).catch(() => setErp(null));
+  }, []);
+
+  useEffect(() => {
+    const aplicarParametrizacao = (dados: any) => {
+      if (!dados) return;
+      if (dados.ncm) setNcmManual(dados.ncm);
+      if (dados.descricao) setTexto(dados.descricao);
+      setCtx((c) => ({
+        ...c,
+        operacao: dados.operacao || c.operacao,
+        regime: dados.regime || c.regime,
+        finalidade: dados.finalidade || c.finalidade,
+        ufEmi: dados.ufOrigem || c.ufEmi,
+        ufDest: dados.ufDestino || c.ufDest,
+        cClassTribForcado: dados.cClassTrib || c.cClassTribForcado,
+      }));
+    };
+
+    try {
+      const salvo = sessionStorage.getItem('ncm-para-parametrizar');
+      if (salvo) {
+        aplicarParametrizacao(JSON.parse(salvo));
+        sessionStorage.removeItem('ncm-para-parametrizar');
+      }
+    } catch { /* sem storage */ }
+
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) {
+        aplicarParametrizacao(detail);
+      }
+    };
+    window.addEventListener('navegar-aba', handler);
+    return () => window.removeEventListener('navegar-aba', handler);
   }, []);
 
   // Todos os hooks abaixo têm de rodar em qualquer render — um `return` antecipado antes
@@ -189,10 +333,15 @@ export default function Parametrizar() {
           <label className="field"><span>cClass da nota referenciada (crédito presumido)</span>
             <input value={ctx.cClassReferenciada} onChange={(e) => set('cClassReferenciada', e.target.value)} placeholder="410014" /></label>
         </div>
-        <div className="row" style={{ marginTop: 6 }}>
+        <div className="row" style={{ marginTop: 6, gap: 8 }}>
           {rec ? (
             <span className="badge blue">{rec.ncm} — {rec.desc.replace(/^[-–\s]+/, '').slice(0, 62)}</span>
           ) : <span className="badge red">sem NCM válido — o item de mercadoria seria rejeitado</span>}
+          {ncmManual && (
+            <button className="mini" type="button" onClick={() => setNcmManual('')} title="reverter para NCM automático via descrição">
+              limpar NCM manual (×)
+            </button>
+          )}
           {cls && cls.candidates[0] && cls.candidates[0].rec.ncm === rec?.ncm && (
             <span className="small muted">aderência {Math.round(cls.candidates[0].coverage * 100)}%</span>
           )}
@@ -219,6 +368,32 @@ export default function Parametrizar() {
           </span>
           <button className="mini" style={{ alignSelf: 'center' }} type="button" onClick={() => copiar('xml', p!.maqueta)}>
             copiar XML {copiado === 'xml' && <span className="copia">copiado ✓</span>}
+          </button>
+        </div>
+
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center',
+          marginBottom: 14, padding: '10px 14px', background: '#f8fafc',
+          borderRadius: 6, border: '1px solid #e2e8f0'
+        }}>
+          <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#2d3748' }}>Relatório para ERP:</span>
+          <button
+            type="button"
+            className="chip"
+            style={{ background: '#2b6cb0', color: 'white', fontWeight: 600, padding: '6px 14px', cursor: 'pointer' }}
+            onClick={() => { setModalRelatorio({ aberto: true, modo: 'resumido' }); setFormatoModal('html'); }}
+            title="Gerar relatório de parametrização no modo resumido (somente campo e código correspondente)"
+          >
+            📋 Gerar Relatório ERP (Modo Resumido)
+          </button>
+          <button
+            type="button"
+            className="chip"
+            style={{ background: '#276749', color: 'white', fontWeight: 600, padding: '6px 14px', cursor: 'pointer' }}
+            onClick={() => { setModalRelatorio({ aberto: true, modo: 'detalhado' }); setFormatoModal('html'); }}
+            title="Gerar laudo pericial no modo detalhado com citação legal completa (lei, dispositivo, artigo)"
+          >
+            ⚖️ Gerar Relatório ERP (Modo Detalhado com Citação Legal)
           </button>
         </div>
         <p className="small muted">{p.resumo}</p>
@@ -327,6 +502,156 @@ export default function Parametrizar() {
           )}
         </div>
       )}
+
+      {modalRelatorio.aberto && (() => {
+        const payloadRelatorio = extrairPayloadErp(ctx, rec, p, texto);
+        const relatorioHtml = modalRelatorio.modo === 'resumido'
+          ? gerarRelatorioErpResumidoHtml(payloadRelatorio)
+          : gerarRelatorioErpDetalhadoHtml(payloadRelatorio);
+        const relatorioTxt = modalRelatorio.modo === 'resumido'
+          ? gerarRelatorioErpResumidoTxt(payloadRelatorio)
+          : gerarRelatorioErpDetalhadoTxt(payloadRelatorio);
+
+        const copiarModal = async (conteudo: string) => {
+          try {
+            await navigator.clipboard.writeText(conteudo);
+            setRelatorioCopiado('copiado ✓');
+            setTimeout(() => setRelatorioCopiado(''), 2000);
+          } catch {
+            setRelatorioCopiado('use Ctrl+C');
+            setTimeout(() => setRelatorioCopiado(''), 2000);
+          }
+        };
+
+        return (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9999, padding: 16
+          }}>
+            <div style={{
+              background: 'white', borderRadius: 8, width: '100%', maxWidth: 960, maxHeight: '90vh',
+              display: 'flex', flexDirection: 'column', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', overflow: 'hidden'
+            }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc'
+              }}>
+                <div>
+                  <strong style={{ fontSize: '1.1rem', color: '#1a365d' }}>
+                    {modalRelatorio.modo === 'resumido'
+                      ? 'Relatório ERP — Modo Resumido (Somente Campo e Código)'
+                      : 'Laudo Pericial ERP — Modo Detalhado com Citação Legal'}
+                  </strong>
+                  <div style={{ fontSize: '0.8rem', color: '#718096' }}>
+                    Contabilidade Portela (Desde 1970) · Codificação Parametrizada & Reforma Tributária
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido' })}
+                  className="mini"
+                  style={{ fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{
+                display: 'flex', gap: 10, padding: '10px 20px', borderBottom: '1px solid #edf2f7',
+                alignItems: 'center', flexWrap: 'wrap', background: '#ffffff'
+              }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Visualização:</span>
+                <button
+                  type="button"
+                  className={`mini ${formatoModal === 'html' ? 'on' : ''}`}
+                  style={{ background: formatoModal === 'html' ? '#2b6cb0' : '#edf2f7', color: formatoModal === 'html' ? 'white' : '#2d3748' }}
+                  onClick={() => setFormatoModal('html')}
+                >
+                  Formatada (HTML)
+                </button>
+                <button
+                  type="button"
+                  className={`mini ${formatoModal === 'txt' ? 'on' : ''}`}
+                  style={{ background: formatoModal === 'txt' ? '#2b6cb0' : '#edf2f7', color: formatoModal === 'txt' ? 'white' : '#2d3748' }}
+                  onClick={() => setFormatoModal('txt')}
+                >
+                  Texto Puro (TXT)
+                </button>
+
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="mini"
+                    onClick={() => abrirEmNovaAba(relatorioHtml)}
+                    style={{ background: '#4a5568', color: 'white' }}
+                  >
+                    ↗ Abrir em Nova Aba / Imprimir
+                  </button>
+                  <button
+                    type="button"
+                    className="mini"
+                    onClick={() => baixarArquivo(
+                      relatorioHtml,
+                      `relatorio_erp_${modalRelatorio.modo}.html`,
+                      'text/html; charset=utf-8'
+                    )}
+                    style={{ background: '#2b6cb0', color: 'white' }}
+                  >
+                    ⬇ Baixar HTML
+                  </button>
+                  <button
+                    type="button"
+                    className="mini"
+                    onClick={() => baixarArquivo(
+                      relatorioTxt,
+                      `relatorio_erp_${modalRelatorio.modo}.txt`,
+                      'text/plain; charset=utf-8'
+                    )}
+                    style={{ background: '#2d3748', color: 'white' }}
+                  >
+                    ⬇ Baixar TXT
+                  </button>
+                  <button
+                    type="button"
+                    className="mini"
+                    onClick={() => copiarModal(formatoModal === 'html' ? relatorioHtml : relatorioTxt)}
+                  >
+                    Copiar {relatorioCopiado ? '✓' : ''}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ flex: 1, overflow: 'auto', padding: 20, background: '#f7fafc' }}>
+                {formatoModal === 'html' ? (
+                  <iframe
+                    title="Pré-visualização do Relatório"
+                    srcDoc={relatorioHtml}
+                    style={{ width: '100%', height: '550px', border: 'none', background: 'white', borderRadius: 4 }}
+                  />
+                ) : (
+                  <pre style={{
+                    background: 'white', padding: 16, borderRadius: 4, border: '1px solid #cbd5e0',
+                    fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap', maxHeight: '550px', overflow: 'auto'
+                  }}>
+                    {relatorioTxt}
+                  </pre>
+                )}
+              </div>
+
+              <div style={{ padding: '10px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', textAlign: 'right' }}>
+                <button
+                  type="button"
+                  onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido' })}
+                  className="mini"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }

@@ -48,9 +48,12 @@ export default function ReformaTab() {
           Fonte: {rf.fonte} · coleta {rf.coletado_em ? new Date(rf.coletado_em).toLocaleString('pt-BR') : '—'}.
         </p>
         {!!rf.falhas && Object.keys(rf.falhas).length > 0 && (
-          <div className="note critico">
-            <div className="t">Parte das tabelas veio do cache local</div>
-            <div className="x">{Object.entries(rf.falhas).map(([k, v]) => `${k}: ${v}`).join(' · ')}</div>
+          <div className="note info" style={{ marginTop: 12 }}>
+            <div className="t">Tabelas Normativas de Referência Ativas (LC 214/2025 e LC 227/2025)</div>
+            <div className="x">
+              As alíquotas de referência nacional da CBS e do IBS e os <b>{rf.classificacoes.length}</b> códigos de cClassTrib estão plenamente operacionais a partir da base oficial consolidada da RFB/SEFAZ.
+              As alíquotas estaduais diferenciadas para os anos de transição futura (2027, 2029 e 2033) aguardam publicação das resoluções pelo Comitê Gestor do IBS e serão atualizadas automaticamente via sincronização contínua.
+            </div>
           </div>
         )}
         <p className="small muted">

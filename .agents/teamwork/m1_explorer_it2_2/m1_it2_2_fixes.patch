@@ -1,0 +1,66 @@
+--- a/lib/extrator-nfe.ts
++++ b/lib/extrator-nfe.ts
+@@ -320,4 +320,4 @@
+   if (imp.ICMS && typeof imp.ICMS === 'object') {
+-    const subKey = Object.keys(imp.ICMS)[0];
+-    const icmsGroup = imp.ICMS[subKey];
++    const subKey = Object.keys(imp.ICMS).find((k) => !k.startsWith('@_'));
++    const icmsGroup = subKey ? imp.ICMS[subKey] : undefined;
+     if (icmsGroup && typeof icmsGroup === 'object') {
+@@ -353,4 +353,4 @@
+   if (imp.PIS && typeof imp.PIS === 'object') {
+-    const subKey = Object.keys(imp.PIS)[0];
+-    const pisGroup = imp.PIS[subKey];
++    const subKey = Object.keys(imp.PIS).find((k) => !k.startsWith('@_'));
++    const pisGroup = subKey ? imp.PIS[subKey] : undefined;
+     if (pisGroup && typeof pisGroup === 'object') {
+@@ -365,4 +365,4 @@
+   if (imp.COFINS && typeof imp.COFINS === 'object') {
+-    const subKey = Object.keys(imp.COFINS)[0];
+-    const cofinsGroup = imp.COFINS[subKey];
++    const subKey = Object.keys(imp.COFINS).find((k) => !k.startsWith('@_'));
++    const cofinsGroup = subKey ? imp.COFINS[subKey] : undefined;
+     if (cofinsGroup && typeof cofinsGroup === 'object') {
+--- a/app/api/auditoria-entrada/route.ts
++++ b/app/api/auditoria-entrada/route.ts
+@@ -147,4 +147,5 @@
+-        if (imp.ICMS) {
+-          const icmsGroup = Object.values(imp.ICMS)[0] as any;
+-          if (icmsGroup) {
++        if (imp.ICMS && typeof imp.ICMS === 'object') {
++          const subKey = Object.keys(imp.ICMS).find((k) => !k.startsWith('@_'));
++          const icmsGroup = subKey ? (imp.ICMS[subKey] as any) : undefined;
++          if (icmsGroup && typeof icmsGroup === 'object') {
+@@ -171,4 +172,5 @@
+-        if (imp.PIS) {
+-          const pisGroup = Object.values(imp.PIS)[0] as any;
+-          if (pisGroup) {
++        if (imp.PIS && typeof imp.PIS === 'object') {
++          const subKey = Object.keys(imp.PIS).find((k) => !k.startsWith('@_'));
++          const pisGroup = subKey ? (imp.PIS[subKey] as any) : undefined;
++          if (pisGroup && typeof pisGroup === 'object') {
+@@ -180,4 +182,5 @@
+-        if (imp.COFINS) {
+-          const cofinsGroup = Object.values(imp.COFINS)[0] as any;
+-          if (cofinsGroup) {
++        if (imp.COFINS && typeof imp.COFINS === 'object') {
++          const subKey = Object.keys(imp.COFINS).find((k) => !k.startsWith('@_'));
++          const cofinsGroup = subKey ? (imp.COFINS[subKey] as any) : undefined;
++          if (cofinsGroup && typeof cofinsGroup === 'object') {
+@@ -191,8 +194,7 @@
+-      const itensLimitados = itens.slice(0, 15);
+-      const detExtraido = itensLimitados.map((d: any) => ({
++      const detExtraido = itens.map((d: any) => ({
+         cProd: d.prod?.cProd,
+         xProd: d.prod?.xProd,
+         NCM: d.prod?.NCM,
+         CEST: d.prod?.CEST,
+         CFOP: d.prod?.CFOP,
+         vProd: d.prod?.vProd,
+         tributosFornecedor: extrairResumoImposto(d.imposto)
+       }));
+@@ -205,2 +207,2 @@
+         totalItensNaNota: itens.length,
+-        itensAuditados: itensLimitados.length,
++        itensAuditados: itens.length,
+         itens: detExtraido

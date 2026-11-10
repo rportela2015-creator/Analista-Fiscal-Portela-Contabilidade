@@ -5,6 +5,24 @@ import { Dataset, Record8, Reforma, describePath, labelForLevel, loadDataset, lo
 import { ReformaSugestao, sugerirReforma } from '@/lib/reforma';
 import { Candidate, ParsedQuery, RuleNote, buildNotes, classify, taxes } from '@/lib/engine';
 import { Operacao, Param, ParamInput, Regime, Finalidade, catalogChecklist, parameterize } from '@/lib/parametrizacao';
+import {
+  ParametrosErpPayload,
+  ParametrosErpItem,
+  gerarRelatorioErpResumidoTxt,
+  gerarRelatorioErpResumidoHtml,
+  gerarRelatorioErpDetalhadoTxt,
+  gerarRelatorioErpDetalhadoHtml,
+} from '@/lib/relatorio-erp';
+
+function baixarArquivo(conteudo: string, nomeArquivo: string, mime: string) {
+  const blob = new Blob([conteudo], { type: mime });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeArquivo;
+  a.click();
+  setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+}
 
 const EXEMPLOS = [
   'Notebook Dell Latitude 1,4 kg com tela 14 polegadas',
@@ -37,6 +55,9 @@ interface AiResponse {
   cClassTrib?: string;
   sujeitoImpostoSeletivo: boolean;
   fundamentacao: string;
+  motor?: string;
+  valido?: boolean;
+  aviso?: string;
 }
 
 export default function Classificar() {
@@ -57,6 +78,15 @@ export default function Classificar() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiResponse | null>(null);
   const [aiError, setAiError] = useState('');
+
+  // Estados do Modal de Relatório ERP
+  const [modalRelatorio, setModalRelatorio] = useState<{
+    aberto: boolean;
+    modo: 'resumido' | 'detalhado';
+    payload: ParametrosErpPayload | null;
+  }>({ aberto: false, modo: 'resumido', payload: null });
+  const [formatoModal, setFormatoModal] = useState<'html' | 'txt'>('html');
+  const [relatorioCopiado, setRelatorioCopiado] = useState(false);
 
   useEffect(() => {
     loadDataset().then(async (d) => { setDs(d); await d.pronto; setFrio(true); })
@@ -79,13 +109,21 @@ export default function Classificar() {
     setAiError('');
     try {
       const contexto = `Operação: ${operacao}, Regime: ${regime}, Finalidade: ${finalidade}, Origem: ${ufO}, Destino: ${ufD}`;
-      const res = await fetch('/api/classificar-ia', {
+      const candidatosEngine = res?.candidates?.slice(0, 6).map((c) => ({
+        ncm: c.rec.ncm,
+        desc: c.rec.desc,
+      }));
+      const r = await fetch('/api/classificar-ia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ descricao: texto, contextoOperacao: contexto }),
+        body: JSON.stringify({
+          descricao: texto,
+          contextoOperacao: contexto,
+          candidatos: candidatosEngine,
+        }),
       });
-      const data = await res.json();
-      if (!res.ok) {
+      const data = await r.json();
+      if (!r.ok) {
         throw new Error(data.error || 'Erro na resposta do servidor.');
       }
       setAiResult(data);
@@ -194,7 +232,14 @@ export default function Classificar() {
       {aiResult && (
         <div className="card" style={{ border: '2px solid #2563eb', background: '#f8fafc', margin: '14px 0' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, color: '#1e40af' }}>Parecer Técnico Tributário (IA Especialista)</h3>
+            <div>
+              <h3 style={{ margin: 0, color: '#1e40af' }}>Parecer Técnico Tributário (IA Especialista)</h3>
+              {aiResult.motor && (
+                <span className="small muted" style={{ display: 'block', marginTop: 2 }}>
+                  Motor: <b style={{ color: '#1e40af' }}>{aiResult.motor}</b>
+                </span>
+              )}
+            </div>
             <span className={`badge ${aiResult.confianca === 'ALTA' ? 'alta' : aiResult.confianca === 'MEDIA' ? 'media' : 'baixa'}`}>
               Confiabilidade {aiResult.confianca}
             </span>
@@ -212,6 +257,142 @@ export default function Classificar() {
             <div className="t">Fundamentação Normativa (NESH / LC 214 e 227)</div>
             <div className="x">{aiResult.fundamentacao}</div>
           </div>
+
+          <div className="row" style={{ marginTop: 12, justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="chip"
+              style={{ background: '#2b6cb0', color: 'white', fontWeight: 600, padding: '6px 12px', cursor: 'pointer' }}
+              onClick={() => {
+                const payload: ParametrosErpPayload = {
+                  contexto: {
+                    emitente: {
+                      nome: 'Empresa Emitente',
+                      regime: regime === 'simples' ? 'Simples Nacional' : regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
+                      crt: regime === 'simples' ? '1' : '3',
+                      uf: ufO,
+                    },
+                    destinatario: { uf: ufD },
+                    operacao: {
+                      tipo: operacao,
+                      finalidade,
+                      modelo: '55',
+                      anoReforma: 2026,
+                    },
+                  },
+                  itens: [{
+                    cProd: 'PROD-001',
+                    xProd: texto.trim() || aiResult.descricaoNcm,
+                    ncm: aiResult.ncm.replace(/\D/g, ''),
+                    descricaoNcm: aiResult.descricaoNcm,
+                    cest: '',
+                    cfop: operacao === 'interna' ? '5.102' : '6.102',
+                    cstIcms: regime === 'simples' ? '' : '00',
+                    csosn: regime === 'simples' ? '102' : '',
+                    cstIpi: '50',
+                    cstPis: '01',
+                    cstCofins: '01',
+                    cstIbsCbs: aiResult.cstIbsCbs || '000',
+                    cClassTrib: aiResult.cClassTrib || '000001',
+                    aliqCbs: '0.90',
+                    aliqIbsUf: '0.10',
+                    isTributa: aiResult.sujeitoImpostoSeletivo,
+                    cstIs: aiResult.sujeitoImpostoSeletivo ? '01' : '',
+                    instrucao: aiResult.fundamentacao,
+                  }],
+                };
+                setModalRelatorio({ aberto: true, modo: 'resumido', payload });
+                setFormatoModal('html');
+                setRelatorioCopiado(false);
+              }}
+              title="Gerar relatório de parametrização no modo resumido (somente campo e código correspondente)"
+            >
+              📋 Relatório ERP (Modo Resumido)
+            </button>
+            <button
+              type="button"
+              className="chip"
+              style={{ background: '#276749', color: 'white', fontWeight: 600, padding: '6px 12px', cursor: 'pointer' }}
+              onClick={() => {
+                const payload: ParametrosErpPayload = {
+                  contexto: {
+                    emitente: {
+                      nome: 'Empresa Emitente',
+                      regime: regime === 'simples' ? 'Simples Nacional' : regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
+                      crt: regime === 'simples' ? '1' : '3',
+                      uf: ufO,
+                    },
+                    destinatario: { uf: ufD },
+                    operacao: {
+                      tipo: operacao,
+                      finalidade,
+                      modelo: '55',
+                      anoReforma: 2026,
+                    },
+                  },
+                  itens: [{
+                    cProd: 'PROD-001',
+                    xProd: texto.trim() || aiResult.descricaoNcm,
+                    ncm: aiResult.ncm.replace(/\D/g, ''),
+                    descricaoNcm: aiResult.descricaoNcm,
+                    cest: '',
+                    cfop: operacao === 'interna' ? '5.102' : '6.102',
+                    cstIcms: regime === 'simples' ? '' : '00',
+                    csosn: regime === 'simples' ? '102' : '',
+                    cstIpi: '50',
+                    cstPis: '01',
+                    cstCofins: '01',
+                    cstIbsCbs: aiResult.cstIbsCbs || '000',
+                    cClassTrib: aiResult.cClassTrib || '000001',
+                    aliqCbs: '0.90',
+                    aliqIbsUf: '0.10',
+                    isTributa: aiResult.sujeitoImpostoSeletivo,
+                    cstIs: aiResult.sujeitoImpostoSeletivo ? '01' : '',
+                    instrucao: aiResult.fundamentacao,
+                  }],
+                };
+                setModalRelatorio({ aberto: true, modo: 'detalhado', payload });
+                setFormatoModal('html');
+                setRelatorioCopiado(false);
+              }}
+              title="Gerar laudo pericial no modo detalhado com citação legal completa (lei, dispositivo, artigo)"
+            >
+              ⚖️ Relatório ERP (Modo Detalhado com Citação Legal)
+            </button>
+            <a
+              className="mini"
+              href="#parametrizar"
+              style={{
+                background: '#2563eb',
+                color: '#fff',
+                fontWeight: 600,
+                padding: '8px 14px',
+                borderRadius: 4,
+                textDecoration: 'none',
+                display: 'inline-block',
+              }}
+              title="abrir a aba de parametrização de ERP com este NCM sugerido"
+              onClick={() => {
+                const dados = {
+                  ncm: aiResult.ncm,
+                  descricao: texto || aiResult.descricaoNcm,
+                  operacao,
+                  regime,
+                  finalidade,
+                  ufOrigem: ufO,
+                  ufDestino: ufD,
+                  cClassTrib: aiResult.cClassTrib,
+                };
+                try {
+                  sessionStorage.setItem('ncm-para-parametrizar', JSON.stringify(dados));
+                  sessionStorage.setItem('ncm-abas', 'parametrizar');
+                } catch { /* ignora */ }
+                window.dispatchEvent(new CustomEvent('navegar-aba', { detail: { tab: 'parametrizar', ...dados } }));
+              }}
+            >
+              parametrizar no ERP →
+            </a>
+          </div>
         </div>
       )}
 
@@ -227,6 +408,11 @@ export default function Classificar() {
           key={c.rec.d8} ds={ds} idx={i} cand={c} aberto={aberto === i}
           onOpen={() => setAberto(aberto === i ? -1 : i)}
           q={res.query} pin={pinput} forcar={mostrarTudo} frio={frio} reforma={reforma}
+          onGerarRelatorio={(modo, payload) => {
+            setModalRelatorio({ aberto: true, modo, payload });
+            setFormatoModal('html');
+            setRelatorioCopiado(false);
+          }}
         />
       ))}
 
@@ -237,13 +423,205 @@ export default function Classificar() {
           </button>
         </div>
       )}
+
+      {modalRelatorio.aberto && modalRelatorio.payload && (() => {
+        const payload = modalRelatorio.payload;
+        const relatorioHtml = modalRelatorio.modo === 'resumido'
+          ? gerarRelatorioErpResumidoHtml(payload)
+          : gerarRelatorioErpDetalhadoHtml(payload);
+        const relatorioTxt = modalRelatorio.modo === 'resumido'
+          ? gerarRelatorioErpResumidoTxt(payload)
+          : gerarRelatorioErpDetalhadoTxt(payload);
+
+        const copiarTexto = async (conteudo: string) => {
+          try {
+            await navigator.clipboard.writeText(conteudo);
+            setRelatorioCopiado(true);
+            setTimeout(() => setRelatorioCopiado(false), 2000);
+          } catch {
+            /* ignora */
+          }
+        };
+
+        return (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              backgroundColor: 'rgba(0, 0, 0, 0.65)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20,
+              boxSizing: 'border-box',
+            }}
+          >
+            <div
+              style={{
+                background: 'white',
+                borderRadius: 8,
+                maxWidth: 950,
+                width: '100%',
+                maxHeight: '90vh',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '16px 20px',
+                  borderBottom: '1px solid #e2e8f0',
+                  background: '#f8fafc',
+                }}
+              >
+                <div>
+                  <h3 style={{ margin: 0, color: '#1a202c', fontSize: '1.15rem' }}>
+                    Relatório de Parametrização Fiscal para ERP — Modo {modalRelatorio.modo === 'resumido' ? 'Resumido' : 'Detalhado'}
+                  </h3>
+                  <span className="small muted">
+                    {modalRelatorio.modo === 'resumido'
+                      ? 'Exibição técnica enxuta (campo e código correspondente)'
+                      : 'Laudo pericial com fundamentação jurídica (lei, dispositivo, artigo)'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido', payload: null })}
+                  style={{ background: 'transparent', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#718096' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div
+                style={{
+                  padding: '10px 20px',
+                  background: '#edf2f7',
+                  borderBottom: '1px solid #e2e8f0',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    className="mini"
+                    onClick={() => setFormatoModal('html')}
+                    style={{
+                      background: formatoModal === 'html' ? '#3182ce' : '#e2e8f0',
+                      color: formatoModal === 'html' ? 'white' : '#4a5568',
+                      fontWeight: formatoModal === 'html' ? 'bold' : 'normal',
+                    }}
+                  >
+                    HTML
+                  </button>
+                  <button
+                    type="button"
+                    className="mini"
+                    onClick={() => setFormatoModal('txt')}
+                    style={{
+                      background: formatoModal === 'txt' ? '#3182ce' : '#e2e8f0',
+                      color: formatoModal === 'txt' ? 'white' : '#4a5568',
+                      fontWeight: formatoModal === 'txt' ? 'bold' : 'normal',
+                    }}
+                  >
+                    TXT
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    className="mini"
+                    onClick={() => baixarArquivo(
+                      relatorioHtml,
+                      `relatorio_erp_${modalRelatorio.modo}.html`,
+                      'text/html; charset=utf-8'
+                    )}
+                    style={{ background: '#2b6cb0', color: 'white' }}
+                  >
+                    ⬇ Baixar HTML
+                  </button>
+                  <button
+                    type="button"
+                    className="mini"
+                    onClick={() => baixarArquivo(
+                      relatorioTxt,
+                      `relatorio_erp_${modalRelatorio.modo}.txt`,
+                      'text/plain; charset=utf-8'
+                    )}
+                    style={{ background: '#2d3748', color: 'white' }}
+                  >
+                    ⬇ Baixar TXT
+                  </button>
+                  <button
+                    type="button"
+                    className="mini"
+                    onClick={() => copiarTexto(formatoModal === 'html' ? relatorioHtml : relatorioTxt)}
+                  >
+                    Copiar {relatorioCopiado ? '✓' : ''}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ flex: 1, overflow: 'auto', padding: 20, background: '#f7fafc' }}>
+                {formatoModal === 'html' ? (
+                  <iframe
+                    title="Pré-visualização do Relatório ERP"
+                    srcDoc={relatorioHtml}
+                    style={{ width: '100%', height: '550px', border: 'none', background: 'white', borderRadius: 4 }}
+                  />
+                ) : (
+                  <pre
+                    style={{
+                      background: 'white',
+                      padding: 16,
+                      borderRadius: 4,
+                      border: '1px solid #cbd5e0',
+                      fontFamily: 'monospace',
+                      fontSize: '0.85rem',
+                      whiteSpace: 'pre-wrap',
+                      maxHeight: '550px',
+                      overflow: 'auto',
+                    }}
+                  >
+                    {relatorioTxt}
+                  </pre>
+                )}
+              </div>
+
+              <div style={{ padding: '10px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', textAlign: 'right' }}>
+                <button
+                  type="button"
+                  onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido', payload: null })}
+                  className="mini"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }
 
-function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reforma }: {
+function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reforma, onGerarRelatorio }: {
   ds: Dataset; idx: number; cand: Candidate; q: ParsedQuery; aberto: boolean;
   onOpen: () => void; pin: ParamInput; forcar: boolean; frio: boolean; reforma: Reforma | null;
+  onGerarRelatorio?: (modo: 'resumido' | 'detalhado', payload: ParametrosErpPayload) => void;
 }) {
   const { notes, confidence, band } = buildNotes(cand, q, ds, [cand]);
   const rec: Record8 = cand.rec;
@@ -295,8 +673,27 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
         <button className="mini" type="button" onClick={onOpen}>
           {aberto ? 'ocultar fundamentação' : 'ver fundamentação, parametrização e atributos'}
         </button>
-        <a className="mini" href="#parametrizar" title="abrir a aba de parametrização de ERP"
-          onClick={() => { try { sessionStorage.setItem('ncm-abas', 'parametrizar'); } catch { /* ignora */ } }}>
+        <a
+          className="mini"
+          href="#parametrizar"
+          title="abrir a aba de parametrização de ERP com este NCM"
+          onClick={() => {
+            const dados = {
+              ncm: rec.ncm,
+              descricao: q.raw || rec.desc,
+              operacao: pin.operacao,
+              regime: pin.regime,
+              finalidade: pin.finalidade,
+              ufOrigem: pin.ufOrigem,
+              ufDestino: pin.ufDestino,
+            };
+            try {
+              sessionStorage.setItem('ncm-para-parametrizar', JSON.stringify(dados));
+              sessionStorage.setItem('ncm-abas', 'parametrizar');
+            } catch { /* ignora */ }
+            window.dispatchEvent(new CustomEvent('navegar-aba', { detail: { tab: 'parametrizar', ...dados } }));
+          }}
+        >
           parametrizar no ERP →
         </a>
       </div>
@@ -334,6 +731,111 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
           <p className="small muted" style={{ marginTop: 8 }}>
             CFOPs compatíveis: {param.cfops.slice(0, 6).map((c) => `${c.c} (${c.a})`).join(' · ')}
           </p>
+
+          <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="chip"
+              style={{ background: '#2b6cb0', color: 'white', fontWeight: 600, padding: '5px 12px', cursor: 'pointer' }}
+              onClick={() => {
+                if (!onGerarRelatorio) return;
+                const payload: ParametrosErpPayload = {
+                  contexto: {
+                    emitente: {
+                      nome: 'Empresa Emitente',
+                      regime: pin.regime === 'simples' ? 'Simples Nacional' : pin.regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
+                      crt: pin.regime === 'simples' ? '1' : '3',
+                      uf: pin.ufOrigem,
+                    },
+                    destinatario: { uf: pin.ufDestino },
+                    operacao: {
+                      tipo: pin.operacao,
+                      finalidade: pin.finalidade,
+                      modelo: '55',
+                      anoReforma: anoReforma,
+                    },
+                  },
+                  itens: [{
+                    cProd: 'PROD-001',
+                    xProd: q.raw || rec.desc.replace(/^[-–\s]+/, ''),
+                    ncm: rec.d8,
+                    descricaoNcm: rec.desc.replace(/^[-–\s]+/, ''),
+                    cest: tx.cest[0]?.code || '',
+                    cfop: param.cfops[0]?.c || (pin.operacao === 'interna' ? '5.102' : '6.102'),
+                    cstIcms: param.blocks.find((b) => /ICMS/.test(b.titulo))?.codigo || '',
+                    csosn: param.blocks.find((b) => /CSOSN/.test(b.titulo))?.codigo || '',
+                    cstIpi: param.blocks.find((b) => /IPI/.test(b.titulo))?.codigo || '',
+                    aliqIpi: rec.ipi != null ? String(rec.ipi) : '',
+                    cstPis: param.blocks.find((b) => /PIS/.test(b.titulo))?.codigo || '',
+                    cstCofins: param.blocks.find((b) => /COFINS/.test(b.titulo))?.codigo || '',
+                    cstIbsCbs: ref?.cbsibs?.[0]?.cst || '000',
+                    cClassTrib: ref?.cbsibs?.[0]?.codigo || '000001',
+                    aliqCbs: '0.90',
+                    aliqIbsUf: '0.10',
+                    aliqIbsMun: '0.00',
+                    isTributa: rec.is === 1,
+                    cstIs: rec.is === 1 ? '01' : '',
+                    instrucao: `Classificação NCM ${rec.ncm} com confiança ${Math.round(confidence * 100)}%. ${ref?.cbsibs?.[0]?.descricao || ''}`,
+                  }],
+                };
+                onGerarRelatorio('resumido', payload);
+              }}
+              title="Gerar relatório de parametrização no modo resumido (somente campo e código correspondente)"
+            >
+              📋 Gerar Relatório ERP (Modo Resumido)
+            </button>
+            <button
+              type="button"
+              className="chip"
+              style={{ background: '#276749', color: 'white', fontWeight: 600, padding: '5px 12px', cursor: 'pointer' }}
+              onClick={() => {
+                if (!onGerarRelatorio) return;
+                const payload: ParametrosErpPayload = {
+                  contexto: {
+                    emitente: {
+                      nome: 'Empresa Emitente',
+                      regime: pin.regime === 'simples' ? 'Simples Nacional' : pin.regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
+                      crt: pin.regime === 'simples' ? '1' : '3',
+                      uf: pin.ufOrigem,
+                    },
+                    destinatario: { uf: pin.ufDestino },
+                    operacao: {
+                      tipo: pin.operacao,
+                      finalidade: pin.finalidade,
+                      modelo: '55',
+                      anoReforma: anoReforma,
+                    },
+                  },
+                  itens: [{
+                    cProd: 'PROD-001',
+                    xProd: q.raw || rec.desc.replace(/^[-–\s]+/, ''),
+                    ncm: rec.d8,
+                    descricaoNcm: rec.desc.replace(/^[-–\s]+/, ''),
+                    cest: tx.cest[0]?.code || '',
+                    cfop: param.cfops[0]?.c || (pin.operacao === 'interna' ? '5.102' : '6.102'),
+                    cstIcms: param.blocks.find((b) => /ICMS/.test(b.titulo))?.codigo || '',
+                    csosn: param.blocks.find((b) => /CSOSN/.test(b.titulo))?.codigo || '',
+                    cstIpi: param.blocks.find((b) => /IPI/.test(b.titulo))?.codigo || '',
+                    aliqIpi: rec.ipi != null ? String(rec.ipi) : '',
+                    cstPis: param.blocks.find((b) => /PIS/.test(b.titulo))?.codigo || '',
+                    cstCofins: param.blocks.find((b) => /COFINS/.test(b.titulo))?.codigo || '',
+                    cstIbsCbs: ref?.cbsibs?.[0]?.cst || '000',
+                    cClassTrib: ref?.cbsibs?.[0]?.codigo || '000001',
+                    aliqCbs: '0.90',
+                    aliqIbsUf: '0.10',
+                    aliqIbsMun: '0.00',
+                    isTributa: rec.is === 1,
+                    cstIs: rec.is === 1 ? '01' : '',
+                    instrucao: `Classificação NCM ${rec.ncm} com confiança ${Math.round(confidence * 100)}%. ${ref?.cbsibs?.[0]?.descricao || ''}`,
+                  }],
+                };
+                onGerarRelatorio('detalhado', payload);
+              }}
+              title="Gerar laudo pericial no modo detalhado com citação legal completa (lei, dispositivo, artigo)"
+            >
+              ⚖️ Gerar Relatório ERP (Modo Detalhado com Citação Legal)
+            </button>
+          </div>
 
           <h3>Reforma tributária do consumo — IBS / CBS / IS (LC 214/2025)</h3>
           <ReformaCard r={ref} ano={anoReforma} />

@@ -1,3 +1,8 @@
+﻿---
+name: jules-master-executor
+description: "Executor principal de refatoracao TypeScript, Next.js e automacao de tarefas arquiteturais no Aplicativo MCM."
+---
+
 # Skill: Execução Autônoma e Guarda de Regressão
 
 **Descrição:** Habilidade para aplicar alterações de código no repositório mantendo as regras de integridade e protegendo contra quebras de pipelines/testes.
@@ -12,3 +17,4 @@
 6. **Integridade via Verificação de Tipos:** Sempre rode `npm run typecheck` antes de finalizar e reportar a entrega do pull request.
 
 **Objetivo Central:** Acelerar e dar segurança nas mudanças, garantindo o funcionamento do projeto original sem adicionar dependências estruturais não solicitadas.
+

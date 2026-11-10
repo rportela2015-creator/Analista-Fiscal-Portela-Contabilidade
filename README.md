@@ -1,234 +1,200 @@
-# Classificador de NCM + Parametrização Fiscal
+# Aplicativo_MCM- · Classificador de NCM + Auditoria Fiscal e Precificação
 
-Agente que recebe a **descrição comercial de um produto** e devolve a **NCM sugerida** com
-justificativa auditável, **tributos** (IPI da TIPI, II da TEC com exceção nacional, PIS/COFINS de
-referência, ICMS de referência, NT/zeros onde a tabela assim determina), a **parametrização para o
-ERP** (CST/CSOSN, CEST, CFOP, NCM-Ex/ex-tarifário, checklist do Catálogo de Produtos/DUIMP) e o
-**enquadramento na reforma do consumo** (CST-IBS/CBS + `cClassTrib`, Imposto Seletivo por NCM,
-alíquotas da transição). Interface em português.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+[![Ollama](https://img.shields.io/badge/Ollama-Local%20GPU%20RX%20580-orange.svg)](https://ollama.com/)
+[![Tests](https://img.shields.io/badge/Tests-100%25%20Passing-brightgreen.svg)](#testes-e-garantia-de-qualidade)
 
-**Direitos antidumping não são cobertos** — não há feed público legível por máquina para as
-Resoluções Gecex de encerramento/reaplicação de direitos; o app não finge cobrir o que não tem.
+Plataforma integrada de **Inteligência Artificial Soberana, Auditoria Pericial Fiscal e Formação Científica de Preços** desenvolvida para a **Portela Contabilidade**.
 
-> **Isto é apoio à decisão, não parecer fiscal.** Toda sugestão vem com a hierarquia oficial,
-> as regras aplicadas e os dados que faltam para fechar o código. Quem assina a classificação
-> é o contribuinte (ou seu contador/advogado).
+O sistema combina a precisão determinística do vocabulário oficial do Siscomex (10.515 NCMs vigentes) com o motor pericial local via Ollama na GPU AMD Radeon RX 580 (Vulkan / ROCm), fallback em nuvem para Google Gemini Cloud (3.8-flash / 3.6-flash), auditoria de entrada de NF-e (Modelo 55) e DANFE (PDF), parametrização de ERP e o motor de precificação multi-regime fundamentado no Marco Legal Brasileiro (NBC TG 16/CPC 16, RIR/2018, LC 87/96, RICMS/PR e Reforma Tributária do Consumo LC 214/2025 e LC 227/2025).
+
+> **Aviso de Conformidade Fiscal:** O aplicativo opera como ferramenta pericial de apoio à tomada de decisão contábil e tributária fundamentada. Todas as classificações fiscais, De-Para de CFOP e formações de preço trazem as notas legais, fundamentações normativas e memórias de cálculo auditáveis.
 
 ---
 
-## O que tem na tela
-
-| Aba | Faz o quê |
-|---|---|
-| **1 · Classificar produto** | Descrição → ranking de NCMs com barra de confiança, badges (CEST, NCM-Ex, residual), grade de tributos e a dobra “por que este código” (hierarquia, RGI/RLI aplicadas, notas legais, armadilhas, transparência do score) + checklist CADA/DUIMP. |
-| **2 · Lote (CSV)** | Colar texto ou subir CSV (`;`, `,` ou tab, RFC-4180). Classifica em lotes com progresso, exporta CSV para Excel (`;` + BOM, 15 colunas — inclui `cclasstrib_candidatos`, `is_2027` e `cfop`)
-e triagem APROVAR / CONFERIR / NÃO USAR. Arquivo de amostra: `exemplos/produtos-exemplo.csv`. |
-| **3 · Consultar NCM** | Busca por dígitos (prefixo de código) ou por palavra, filtro por capítulo e “só com CEST”, tabela paginada com painel lateral (hierarquia, tributação, atributos). |
-| **4 · Parametrização de ERP** | Formulário de cadastro + cenário (CNPJ, IE, município, regime, modelo,
-operação, destinatário, ST, frete…) → os **códigos** que o emissor precisa (`NCM`, `CEF`, CFOP, CST/CSOSN,
-CST do IPI, PIS/COFINS, `CST-IBS/CBS` + `cClassTrib`, IS) com a **maqueta de XML** por grupo de tag,
-a conferência de schema e a tabela de campos (planilha) selada contra as fontes oficiais. |
-| **5 · Reforma (IBS/CBS/IS)** | Tabelas oficiais da reforma do consumo: 18 CST-IBS/CBS, 164 `cClassTrib`
-com a fundamentação da LC 214/2025, 30 códigos do Imposto Seletivo, alíquotas de referência por ano/UF e a
-destinação da arrecadação na transição. |
-| **6 · Regras e fontes** | A rotina de classificação, RGI/RLI, notas legais por capítulo, as armadilhas com sua base legal, contagens por fonte, vigência e botão que baixa as fontes e regenera o dataset (`POST /api/atualizar`). |
-
-## Reforma do consumo (IBS / CBS / IS)
-
-O app **não improvisa código da reforma**: as tabelas vêm dos dados abertos da Calculadora de
-Tributos do Consumo (RFB), obtidos ao ler o bundle público do próprio serviço (sem chave, sem
-captcha) — `scripts/baixar_reforma.py`:
-
-| Endpoint oficial | O que entra no app |
-|---|---|
-| `situacoes-tributarias/cbs-ibs` | 18 CST-IBS/CBS (000 … 830) |
-| `classificacoes-tributarias/cbs-ibs/<CST>` | 164 `cClassTrib` com tipo de alíquota, tratamento, indicadores (redução, vedação c/ suspensão, exige `gDeson`, crédito presumido) e DFe habilitados |
-| `fundamentacoes-legais` | a norma por código (LC 214/2025 + trecho do livro/artigo) |
-| `situacoes-tributarias/imposto-seletivo` e `classificacoes-tributarias/imposto-seletivo/<CST>` | 7 CST do IS e 30 `cClassTribIS` (vigor em 2027) |
-| `aliquota-uniao` / `aliquota-uf` | valores de referência lidos da API, ano a ano: União 0,9% (2026) → 8,4% (2027) → 8,5% (2029/2033) e IBS-UF 0,1% (2026) → 0,05% (2027) → 1,6% (2029) → 16% (2033). O app mostra **exatamente esses números**, com o ano ao lado — não soma nem projeta alíquota-padrão cheia. |
-| `transferencias-cbs` / `transferencias-ibs` | destinação da arrecadação na transição (CBS 0% → 100% em 2033) |
-
-`scripts/baixar_is.py` consulta **1 requisição por NCM** (10.515) na tabela oficial de 2027 e grava
-`is`/`adv`/`are`/`un` nos registros — hoje **99 NCMs com IS** (charutos/cigarros, bebidas alcoólicas e
-açucaradas, veículos 8703/8802/8903, minérios 2601/2603 e derivados de tabaco). O script é retomável
-(cache em `data/raw/reforma/is_por_ncm.part.json`) e o app só marca `IS 2027` quando a tabela
-respondeu: `is = null` significa “não consultado”, nunca “não tributado”.
-
-No resultado da classificação, o bloco **“Reforma tributária do consumo”** mostra as candidatas
-CST/cClassTrib do *cenário* informado (operação, regime, finalidade, CST de PIS/COFINS derivado pela
-parametrização), a faixa de alíquota do ano e **o que falta para fechar** — porque o `cClassTrib`
-codifica a situação da operação, não o produto. A aba 5 deixa navegar/filtrar os 164 códigos e abrir
-a base legal de cada um.
-
-## Parametrização de ERP (a tela que devolve o código pronto)
-
-Aba 4. Você informa o **que o ERP sabe** e o app devolve o **que o XML precisa**:
-
-| Bloco do formulário | O que muda na saída |
-|---|---|
-| CNPJ, IE, município (IBGE), UF, **regime** | `emit/CNPJ`, `emit/IE`, `emit/CRT` (1 Simples · 3 normal), `emit/cMun`, `emit/regApIBSCBSSN` |
-| Modelo (55 · 65 · 57 · NFS-e), `tpAmb`, `finNFe`, `indFinal`, `indPres`, `modFrete` | bloco `ide` inteiro, com as exigências do modelo (NFC-e exige `indFinal=1` e presença) |
-| Operação (interna/interestadual/importação/exportação), finalidade, UF e doc. do destinatário | `idDest`, bloco `dest` (com `indIEDest`), grupo `importaII`/`indDir`, e o CST-IBS/CBS de saída |
-| ST, benefício fiscal, industrial | `ICMS00`/`ICMS101`/`ICMSSN10x` + `vBCST/pICMSST/vICMSST`, `gIPI` |
-| Item (descrição → NCM, ou NCM digitado) e `cClassTrib` | `prod/NCM`, `prod/CEF` (CEST), `gIBSCBS/CST` + `cClassTrib`, `gDUIMP`, grupo `IS` quando o NCM está na lista |
-
-Três saídas: **(1)** tabela por grupo de tag, com o *porquê* e a origem de cada valor — `tabela oficial`,
-`regra do app` ou `a preencher`; **(2)** a maqueta de XML pronta para mapear no emissor (tags aninhadas,
-códigos preenchidos, valores em branco); **(3)** a lista de conferências — CNPJ/CPF com dígito verificador,
-IE de SP/PR (regra do SINTEC), tamanho do `cMun`, `cClassTrib` **conferido contra a tabela da RFB**
-(999999 é bloqueado como rejeição 1065/1067), `regApIBSCBSSN` faltando no Simples, CEST presente sem ST,
-NFC-e com `indPres=0`.
-
-**O que o app não faz:** não inventa alíquota de ICMS/ISS nem valor de base — sem tabela estadual
-pública, esses campos saem vazios e marcados “a preencher”. A maqueta é estrutura, não arquivo
-transmissível (sem assinatura, sem totalizadores); valide contra o XSD da sua Autorizada.
-
-### A tabela de campos (planilha) 
-
-`data/raw/erp/*.csv` (a planilha “Códigos e Parâmetros dos Documentos Fiscais (NF-e e NFS-e)”) entra no app
-por `scripts/baixar_erp.py` → `public/data/erp-parametros.json`: 447 linhas normalizadas, deduplicadas e
-**confrontadas com as tabelas oficiais** que o app já baixou. Cada linha ganha um selo:
-`oficial` (o exemplo bate com cClassTrib/NCM/CFOP/CST oficiais — 71 linhas), `derivada`, `inferido`
-(100 linhas marcadas “Inferred/Not in source” na própria planilha) e `duvidoso` (exemplo que não consta
-na tabela oficial — 0 hoje). O selo aparece na aba, e é por isso que a planilha é tratada como
-**dicionário de tags**, não como fonte de código: onde ela diverge da tabela da RFB, vence a RFB.
-
-## Garantias estruturais (por que ele não alucina código)
-
-- A saída é **restrita aos 10.515 NCMs de 8 dígitos vigentes** carregados da tabela oficial:
-  o motor só pode escolher `d8` já existentes — não há geração de código livre.
-- **Determinístico e local**: idf + cobertura hierárquica + notas legais + armadilhas. Nenhuma
-  rede, nenhum LLM em runtime. A mesma entrada sempre devolve a mesma saída.
-- **Anti-chute**: quando falta dado, o agente desce a confiança e diz o que falta
-  (ex.: “sem peso e tela, o 8º dígito de 8471 não pode ser firmado”; “sem o material, a escolha
-  entre 9401.3x/6x/7x é indistinguível”). Banda alta nunca sai de descrição vaga — é asserção de teste.
-- NCM inexistente digitada à mão é **rejeitada** (`não_encontrado`), não “corrigida”.
-
-## Arquitetura
+## 🏛️ Arquitetura das 4 Abas Principais
 
 ```
-Portal Único Siscomex ─┐
-                       ├─ scripts/baixar_fontes.py → data/raw/*.json
-TIPI/TEC/CEST/CFOP ────┘                                │
-                                             scripts/pipeline.py  (valida NCM de toda regra)
-                                                        ↓
-                       public/data/{ncm,ncm-frio,regras,atributos,cest,cfop,search,hierarquia,meta}.json
-                                                        ↓
-   lib/data.ts (loadDataset) → lib/engine.ts (classify/buildNotes/taxes) → lib/parametrizacao.ts → componentes
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                         APLICATIVO MCM - ARQUITETURA                             │
+├─────────────────────┬──────────────────────┬───────────────────┬─────────────────┤
+│ 1. CLASSIFICAÇÃO IA │ 2. AUDITORIA ENTRADA │ 3. PARAMETRIZAÇÃO │ 4. PRECIFICAÇÃO │
+│ • BM25 Siscomex     │ • XML NF-e & PDF     │ • Cadastro & DF-e │ • NBC TG 16     │
+│ • Ollama GPU RX 580 │ • De-Para CFOP       │ • Maqueta de tags │ • 4 Regimes     │
+│ • Gemini Cloud Fall.│ • Travas CRT/ST/MVA  │ • Validação XSD   │ • PEC & VRL     │
+│ • Ranking & RGI 1-6 │ • Estorno Anexo II PR│ • Laudo Executivo │ • Gráficos & CSV│
+└─────────────────────┴──────────────────────┴───────────────────┴─────────────────┘
 ```
 
-**Carga quente/fria.** O primeiro paint não espera o dataset inteiro: `loadDataset()` publica
-`ncm.json` (1,9 MB) — descrição, hierarquia, IPI/II, nível — e a classificação já roda. CEST,
-atributos, base legal, ex-tarifário e CFOP vêm em `ncm-frio.json` (2,8 MB) + `cest/cfop/atributos`
-e são mesclados nos registros (`Object.assign`), com `ds.pronto` sinalizando a conclusão.
-Os componentes mostram “carregando detalhes fiscais…” enquanto o frio não chega; os campos
-frios são opcionais nos tipos (`rec.cest?`, `rec.attrs?`), então nada quebra se o arquivo falhar.
+### 1 · Classificação Fiscal & IA Híbrida
+- **Motor Determinístico BM25**: Busca instantânea indexada sobre 10.515 subitens de 8 dígitos vigentes na Tabela NCM/SH do Siscomex com ponderação por TF-IDF, penalização de termos residuais e aplicação automática das Regras Gerais de Interpretação (RGI 1 a 6).
+- **Inteligência Soberana Local (Ollama)**: Inferência 100% local e privada com os modelos `qwen2.5:7b` e `qwen3.5:4b` acelerados por hardware na GPU AMD Radeon RX 580 8GB (Vulkan). Garante conformidade total com a LGPD e sigilo contábil estrito sem consumo de cotas externas.
+- **Fallback Resiliente em Nuvem (Gemini)**: Caso o motor local esteja desligado e o ambiente não exija soberania estrita (`local_strict`), aciona a API do Google Gemini com esquema JSON estrito e governança centralizada (`lib/ai/config.ts`).
 
-## Como o score é montado
+### 2 · Auditoria Pericial de Entrada (XML NF-e e PDF DANFE)
+- **Extração Determinística de 25 Campos**: Processa arquivos XML de NF-e (Modelo 55) e documentos DANFE em PDF com extração completa de emitente, destinatário, frete, seguro, outras despesas, descontos, IPI, ICMS normal, ICMS-ST, PIS/COFINS e campos da Reforma Tributária (`cClassTrib`, IBS e CBS).
+- **De-Para Inteligente de CFOP de Entrada**: Mapeia automaticamente o CFOP de saída do fornecedor para o CFOP correto de entrada do adquirente (ex.: 5.102/6.102 ➔ 1.102 para revenda, 1.403 para ST, 1.556 para uso/consumo).
+- **Travas Fiscais de Exceção**:
+  - *Bloqueio de PIS/COFINS*: Impede tomada indevida de créditos quando o fornecedor for optante pelo Simples Nacional (CRT 1 ou 2) conforme Lei 10.637/02 art. 3º e Lei 10.833/03 art. 3º.
+  - *Operações com ST*: Detecta CST 60 e CSOSN 500 informando que o imposto já foi retido na etapa anterior.
+  - *Base de ST com IPI e MVA Ajustada*: Incorpora IPI na base de cálculo de ST para empresas comerciais e aplica a MVA Ajustada do Paraná (RICMS/PR Decreto 7.871/2017 Anexo IX).
+  - *Estorno Proporcional de ICMS*: Alerta e aplica o estorno de crédito nas entradas de mercadorias com benefício de redução de base de cálculo na saída (RICMS/PR Anexo II).
+- **Conexão Direta**: Botão "Precificar Itens da Nota" transfere os dados extraídos diretamente para o motor de precificação sem redigitação.
 
-```
-score = 58·cov                                     cobertura dos termos da query (idf)
-      + 118·√(ownW + 0,3·ancW)/√idfSum·(0,55+0,45·tfq)   evidência própria vs. ancestral
-      + 16·frase                                   sequência literal de ≥7 chars
-      + 5·min(3, tf−1)                             repetição
-      ± 20 / −13                                   matéria declarada × capítulo da matéria
-      ± armadilhas                                 reforço leve, penalidade multiplicativa
-      ×0,93                                        item residual (“Outros”)
-      − 42·(1−cov)                                 termos órfãos (marca, jargão de catálogo)
-```
+### 3 · Parametrização de ERP
+- **Geração de Códigos Fiscais**: Gera a combinação exata de códigos para emissão de DF-e (NCM, CEST, CFOP, CST/CSOSN, CST do IPI, PIS/COFINS, `CST-IBS/CBS`, `cClassTrib` e Imposto Seletivo).
+- **Maqueta de XML**: Visualização hierárquica das tags XML do documento fiscal prontas para integração no ERP.
+- **Conferências Cadastrais Rigorosas**: Validação de CNPJ/CPF com dígito verificador, regras de Inscrição Estadual (SINTEC) e bloqueio de códigos rejeitados pela RFB.
+- **Laudos Executivos Sanitizados**: Geração de relatórios executivos em HTML e TXT formatados e imunes a vulnerabilidades XSS.
 
-Banda de confiança: `0,30·|top1| + 0,24·margin + 0,26·cov + 0,14 + 0,12·frase − penalidades
-− 0,14·sem-substantivo`, limitada a [0, 0,96]; **alta** exige `margin ≥ 0,78` **e** `cov ≥ 0,62`.
-`margin = (top1 − top2)/top1`. Rótulos na UI: *consistente* / *confirmar dados* / *não feche o código*.
+### 4 · Precificação & Margens (Custo Real NBC TG 16)
+- **Demonstração do Custo de Aquisição Real**: Em estrita conformidade com a NBC TG 16 (R2) / CPC 16 e os arts. 304 a 310 do RIR/2018 (Decreto 9.580/2018):
+  - `(+)` Valor Bruto dos Produtos
+  - `(+)` Frete (FOB com rateio por peso ou valor) e Seguro
+  - `(+)` Outras Despesas Acessórias
+  - `(+)` Tributos não recuperáveis (ICMS-ST retido/antecipado, IPI não creditável, DIFAL)
+  - `(-)` Descontos Incondicionais obtidos
+  - `(-)` Créditos Tributários Recuperáveis (ICMS próprio, PIS e COFINS não-cumulativos, IBS e CBS)
+- **Comparativo Multi-Regime dos 4 Regimes Tributários**:
+  1. *Simples Nacional* (Anexo I da LC 123/2006, com segregação automática de receitas com ST e PIS/COFINS monofásico no DAS)
+  2. *Simples Híbrido 2027+* (DAS com ICMS/ISS + apuração de IBS/CBS pelo regime regular não-cumulativo)
+  3. *Lucro Presumido* (PIS 0,65% e COFINS 3% cumulativos + ICMS por dentro + IRPJ e CSLL presumidos)
+  4. *Lucro Real* (PIS 1,65% e COFINS 7,6% não-cumulativos com recuperação ampla de créditos na entrada)
+- **Ponto de Equilíbrio Contábil (PEC)**: Calcula a receita mínima e o volume de unidades necessárias para cobrir os custos fixos da operação comercial.
+- **Valor Realizável Líquido (VRL / Impairment / Arbitramento Fiscal)**: Avalia o preço de venda estimado deduzido dos custos de acabamento e despesas de venda conforme o item 9 da NBC TG 16 e o art. 304 do RIR/2018.
+- **Gráficos e Exportação Segura**:
+  - Gráfico Waterfall Stacked Bar 100% interativo demonstrando a decomposição visual do preço.
+  - Exportação segura em HTML executivo pronto para impressão e CSV detalhado para planilhas.
 
-## Regras (os arquivos que você pode auditar e estender)
+---
 
-`rules/rules.json` e `rules/reforma-extra.json` (para novidades da reforma)
+## 📚 Marco Legal e Fontes Normativas Integradas
 
-Você pode testar a injeção de novas regras com `node scripts/sync_notebook_rules.mjs --dry-run`.
+O sistema integra e valida **28 diplomas legais e fontes oficiais**, gerenciados pelo script atômico com Circuit Breaker (`scripts/atualizar_marco_legal.py`):
 
-- `rgi` — as 8 Regras Gerais (mais a RLI) com texto e efeito.
-- `notas_legais` — notas por capítulo que mudam o resultado (ex.: Seção XVI Nota 2 sobre partes).
-- `armadilhas` (18) — cada uma com `quando`, `materiais?`, `capitulos?`, `candidatos?`,
-  `penalizar_prefijos?` e três guardas que evitam falso positivo:
-  - `exceto_quando` — desliga a armadilha se a descrição traz um destes termos
-    (ex.: “cadeira/estofado” desliga o critério material do Cap. 39, porque assento tem
-    posição nominal em 94.01);
-  - `nao_quando` — desliga se o item já se anuncia como peça/unidade isolada;
-  - as armadilhas **nunca** impõem código: no máximo reordenam e anotam.
-- `sinonimos` (359) — apelido comercial → **termos que existem no texto da tabela**
-  (`notebook` → “máquina automática para processamento de dados”). Regra de ouro ao editar:
-  sinônimo que aponta para frase que a tabela não usa é lixo (os postings são por token) —
-  valide co-ocorrência em `data/raw/ncm.json` antes de acrescentar.
-- `materiais` / `usos` / `genericas` / `jargao_sem_valor_fiscal` / `palavras_comuns_na_tabela`.
+1. **NBC TG 16 (R2) / CPC 16**: Mensuração e Composição do Custo de Estoques.
+2. **RIR/2018 (Decreto nº 9.580/2018, arts. 304-310)**: Determinação dos Custos de Aquisição para fins de IRPJ e CSLL.
+3. **Lei Federal nº 6.404/1976 (art. 183)**: Critérios de Avaliação do Ativo Circulante e Estoques.
+4. **Lei Complementar nº 87/1996 (Lei Kandir)**: Princípio da Não-Cumulatividade e Créditos de ICMS.
+5. **RICMS/PR (Decreto Estadual nº 7.871/2017)**: Regulamento do ICMS do Estado do Paraná.
+6. **RICMS/PR Anexo II**: Benefícios Fiscais de Redução de Base de Cálculo e Estorno Proporcional.
+7. **RICMS/PR Anexo IX**: Regime de Substituição Tributária e MVA Original/Ajustada.
+8. **Lei Federal nº 10.637/2002**: Regime Não-Cumulativo do PIS/PASEP e vedações a créditos.
+9. **Lei Federal nº 10.833/2003**: Regime Não-Cumulativo da COFINS e regras de apropriação.
+10. **Lei Complementar nº 123/2006**: Estatuto Nacional da Microempresa e EPP (Simples Nacional).
+11. **Resolução SF nº 13/2012**: Alíquota interestadual de 4% para mercadorias importadas.
+12. **Resolução SF nº 22/1989**: Alíquotas do ICMS nas operações interestaduais (7% e 12%).
+13. **Emenda Constitucional nº 87/2015**: Sistemática de partilha do DIFAL nas operações para consumidor final.
+14. **Lei Complementar nº 190/2022**: Regulamentação nacional da cobrança do DIFAL de ICMS.
+15. **Convênio ICMS 142/2018**: Normas gerais de Substituição Tributária e MVA Ajustada pelo CONFAZ.
+16. **Emenda Constitucional nº 132/2023**: Reforma Tributária do Consumo e criação do IVA Dual.
+17. **Lei Complementar nº 214/2025**: Instituição do Imposto sobre Bens e Serviços (IBS) e Contribuição sobre Bens e Serviços (CBS).
+18. **Lei Complementar nº 227/2025**: Regimes Específicos e Diferenciados da Reforma Tributária.
+19. **IN RFB nº 2.169/2023**: Notas Explicativas do Sistema Harmonizado (NESH).
+20. **Tabela NCM/SH Siscomex**: Nomenclatura Comum do Mercosul (MDIC/Secex/RFB).
+21. **Tabela TIPI (Decreto nº 11.158/2022)**: Tabela de Incidência do IPI.
+22. **Tarifa Externa Comum (TEC)**: Resolução Gecex nº 272/2021 (Mercosul).
+23. **Código Tributário Nacional (Lei nº 5.172/1966)**: Normas gerais de direito tributário.
+24. **Decreto nº 70.235/1972**: Processo Administrativo Fiscal (PAF) e defesas periciais.
+25. **Regras Gerais de Interpretação (RGI 1 a 6)**: Metodologia internacional da OMA para classificação de mercadorias.
+26. **Soluções de Consulta COSIT/RFB**: Precedentes administrativos e orientações fiscais federais.
+27. **Soluções de Consulta DISIT/SRRF**: Uniformização de interpretação da legislação tributária.
+28. **Decreto nº 72.122/1973 (RIR Histórico)**: Princípios consolidados de apropriação de despesas operacionais.
 
-O `pipeline.py` falha a geração se qualquer NCM citada nas regras não existir na tabela — é o
-mesmo controle que já pegou um `4011.90.00` inventado.
+---
 
-## Rodando
+## 🔒 Hardening de Segurança e Rotas de API
 
-```bash
-cd ncm-agent
-npm install
-npm run build:dados     # baixar_fontes.py (Siscomex + agregador) e pipeline.py → public/data/*.json
-npm run build:reforma   # tabelas da reforma (cClassTrib/IS/alíquotas) + IS por NCM + pipeline
-                        # (a parte do IS é 1 request por NCM, ~18 min; retomável se cair)
-npm run dev             # http://localhost:3000  (bind 0.0.0.0)
-npm test                # suíte completa (motor real, parseCsv do componente, probes)
-npm run typecheck
-```
+O aplicativo possui uma camada defensiva de segurança e isolamento:
 
-Scripts: `fontes`, `dados`, `build:dados`, `reforma`, `build:reforma`, `erp`, `ui:test`, `dev`, `build`,
-`start`, `typecheck`, `test`.
-`POST /api/atualizar` chama `baixar_fontes.py` (240 s) e `pipeline.py` (180 s) e devolve o
-stdout — é o botão da aba 6. `?tipo=reforma` roda `baixar_reforma.py` + `baixar_is.py` + o pipeline.
+| Rota | Método | Proteção / Hardening | Descrição |
+|---|---|---|---|
+| `/api/atualizar` | `POST` | `ENABLE_UPDATE_ROUTE=true`<br>`Bearer <UPDATE_TOKEN>`<br>`timingSafeEqual`<br>Zod Enum<br>Lock de concorrência | Dispara atualização dos dados fiscais (`fontes`, `completo`, `reforma`, `marco-legal`). Exige autenticação com tempo constante e trunca logs em 20 KB. |
+| `/api/atualizar` | `GET` | Público | Retorna informações de uso e status de ativação da rota administrativa. |
+| `/api/classificar-ia` | `POST` | Rate Limit (20 req/min/IP)<br>Modo Soberano Local | Classifica descrições via BM25 + Ollama local GPU RX 580 ou fallback Gemini Cloud. Retorna 429 com `Retry-After: 60` se excedido. |
+| `/api/auditoria-entrada` | `POST` | Rate Limit (20 req/min/IP)<br>Limite de Upload 5 MB (413)<br>Magic Bytes XML/PDF (400)<br>Truncamento 60k chars | Processa XML de NF-e e PDF de DANFE com checagem estrita de integridade e headers de tempo de execução. |
+| `/api/auditoria-relatorio` | `POST` | Validação Zod<br>Sanitização `esc()` (XSS)<br>CSP rígido | Gera laudos periciais em HTML e TXT com cabeçalho `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'`. |
+| `/api/parametrizacao-relatorio` | `POST` | Validação de Payload<br>Sanitização de saída | Gera relatórios resumidos e detalhados de parametrização fiscal para ERPs. |
 
-### Fontes
+### Cabeçalhos de Segurança (`next.config.mjs`)
+- `Content-Security-Policy`: `frame-ancestors 'self' ${process.env.FRAME_ANCESTORS}` (impede clickjacking, eliminando `ALLOWALL`).
+- `X-Content-Type-Options`: `nosniff` (impede MIME-sniffing malicioso).
+- `Referrer-Policy`: `strict-origin-when-cross-origin`.
+- **Cache Inteligente**: Arquivos estáticos em `/data/:path*?v=...` contam com `Cache-Control: public, max-age=31536000, immutable`, enquanto `/data/meta.json` opera com `no-cache` para detecção imediata de novas versões.
 
-| Dado | Fonte | Situação |
-|---|---|---|
-| Tabela NCM (descrição, hierarquia, vigência, ato) | Portal Único Siscomex — `GET /classif/api/publico/nomenclatura/download/json` | **oficial**, sem captcha/autenticação; em `data/raw/siscomex_ncm.json` |
-| Atributos do Catálogo de Produtos (CADA/DUIMP) | Portal Único Siscomex — `GET /cadatributos/api/atributo-ncm/download/json` | **oficial** (10.571 linhas) |
-| IPI (TIPI), II (TEC + exceções), CEST, CFOP | agregador público de tabelas fiscais | derivada — o app sempre manda conferir o texto legal |
-| ICMS por UF, PIS/COFINS | — | **sem fonte pública consolidada**: o app mostra valor de *referência* e exige confirmação |
-| Reforma do consumo (CST-IBS/CBS, `cClassTrib`, IS, alíquotas) | dados abertos da Calculadora de Tributos do Consumo (RFB) — `consumo.tributos.gov.br/servico/calcular-tributos-consumo/api/calculadora/dados-abertos` | **oficial**; alternativa: Portal da Conformidade Fácil (SVRS) |
-| Direitos antidumping | Resoluções Gecex (publicação no DOU) | **fora do escopo**: sem feed estruturado |
+---
 
-Validação feita na coleta: a tabela do agregador e a do Siscomex batem em **10.515 NCMs de 8
-dígitos, zero ausentes, zero inválidos**, “Vigente em 09/09/2026 / Resolução Gecex nº 926/2026”.
-**Degradação explícita (verificada).** `baixar_fontes.py` grava `data/raw/fontes.json` com cada
-fonte que falhou (e a data do cache aproveitado); o `pipeline.py` publica isso em
-`meta.aviso_fontes`, e a aba 6 mostra o alerta “Dados nem frescos — fonte indisponível na última
-coleta”. Se a Tabela NCM oficial não estiver na pasta e não der para baixar, o pipeline
-**recusa** a geração em vez de montar dataset com dado velho (`FALTA o arquivo ...`).
-Testado com rede bloqueada: os 8 avisos de cache saíram no log e a geração parou.
-`--forcar` rebaixa tudo ignorando o cache.
+## 🚀 Instalação e Execução
 
-## Testes
+### Pré-requisitos
+- **Node.js**: v20+ ou v22+
+- **Python**: 3.10+ com bibliotecas padrão (`urllib`, `json`, `hashlib`, etc.)
+- **Ollama (Opcional para IA Soberana)**: Rodando com `qwen2.5:7b` ou `qwen3.5:4b` na GPU AMD Radeon RX 580.
 
-`node scripts/test.mjs` gera bundles esbuild sobre o **TypeScript real** (`lib/*.ts`) e o
-`parseCsv` extraído de `components/Lote.tsx` — nada é reimplementado no teste. Cobre: 13 casos de
-classificação com top-1/banda esperados, `taxes()` (`8471.30.12` → IPI 15, II 16, CEST 21.028.00),
-CSOSN 101 / CFOP 5.102 e exportação → CST 02, checklist de catálogo, cadeia hierárquica completa,
-integridade (10.515 registros, 73.233 referências de atributo sem órfãs), `meta.validacao` /
-`meta.aviso_fontes`, lote sobre o CSV de exemplo e os probes de guarda
-(split × unidade isolada, kit vago fora da banda alta). 38 asserções no total: **SUÍTES COMPLETAS ✓**.
-`npm run ui:test` (`scripts/ui-smoke.mjs` + `scripts/ui-entry.tsx`) monta os **6** componentes num
-DOM real (jsdom, com `public/data` servido por `fetch` stub), digita na descrição, troca selects, abre
-abas e exige o texto certo entre renders — é o que pega **ordem de hooks** (o React estoura
-“Rendered more hooks than during the previous render” e a tela fica branca). `scripts/hookcheck.mjs`
-faz a varredura estática da mesma classe de erro (hook depois de `return`/dentro de `if`) e roda dentro
-do `npm test`. Controle negativo feito: reintroduzir o bug fez os dois falarem
-(`XX Parametrizar.tsx:49 — useMemo() ... depois de um return antecipado` + o erro do React no smoke).
+### Passo a Passo
 
-## Para evoluir
+1. **Clonar e instalar dependências**:
+   ```bash
+   git clone https://github.com/usuario/Aplicativo_MCM-.git
+   cd Aplicativo_MCM-
+   npm install
+   ```
 
-1. **ICMS estadual real**: a tabela por UF só existe em legislação (CONFAZ/ajustes) — o caminho é
-   ingestão manual por estado + vigência, não scraping. Hoje o bloco diz “referência, confirmar na UF”
-   (4% estrangeiro / 12% nacional, EC 87/2015 + Res. SF 22/2019, com nota de FCP na ST interestadual).
-2. **TTCE** para imposto de importação calculado no dia: exige token do Portal Único; o payload é
-   `{"ncm":"84149039","codigoPais":158,"dataFatoGerador":"AAAA-MM-DD","tipoOperacao":"I"}`.
-3. **Ex-tarifário**: hoje é sinalização por NCM-Ex (a tabela oficial não traz código de 9 dígitos) —
-   para o valor certo, ligar na lista do Gecex/TEC com vigência.
-4. **Histórico/usuário**: `classify()` é pura e o dataset é estático, então login + gravação de
-   resultados é camada nova, sem tocar no motor.
+2. **Configurar variáveis de ambiente**:
+   ```bash
+   cp .env.example .env.local
+   ```
+   Edite o arquivo `.env.local` conforme necessário:
+   - `AI_SOVEREIGNTY_MODE=local_first` (ou `local_strict` para travar nuvem)
+   - `GEMINI_API_KEY=sua_chave_opcional`
+   - `ENABLE_UPDATE_ROUTE=false`
+
+3. **Verificar integridade do Marco Legal**:
+   ```bash
+   python scripts/atualizar_marco_legal.py --check
+   ```
+
+4. **Compilar dados fiscais (Pipeline)**:
+   ```bash
+   python scripts/pipeline.py
+   ```
+
+5. **Iniciar ambiente de desenvolvimento**:
+   ```bash
+   npm run dev
+   ```
+   Acesse `http://localhost:3000`.
+
+---
+
+## 🧪 Testes e Garantia de Qualidade
+
+O projeto adota uma política rigorosa de **Definition of Done (DoD)** com testes automatizados:
+
+- **Verificação Estática de Tipos**:
+  ```bash
+  npm run typecheck
+  ```
+- **Auditoria de Hooks do React e Integridade de Render**:
+  ```bash
+  node scripts/hookcheck.mjs
+  ```
+- **Suíte Completa de Testes**:
+  ```bash
+  npm test
+  ```
+  Executa todas as suítes de testes:
+  - `tests/auditoria.test.mjs`: Testes do motor de auditoria de entrada.
+  - `tests/precificacao.test.mjs`: 32 testes de cálculo de custo real, 4 regimes e margens.
+  - `tests/exportacao-precificacao.test.mjs`: Testes de integridade da exportação HTML e CSV.
+  - `tests/headers.test.mjs`: Validação dos headers de cache e CSP no `next.config.mjs`.
+  - `tests/api-security.test.mjs`: Testes de autenticação, rate limit, limites de 5 MB e magic bytes.
+  - `tests/engine.test.mjs`: Testes do motor BM25 e classificação fiscal.
+  - E mais 18 suítes complementares.
+
+---
+
+## 📄 Licença e Responsabilidade
+
+Desenvolvido para uso profissional por contadores, analistas fiscais e advogados tributaristas. Os cálculos fiscais refletem a legislação vigente em 2026 e o cronograma de transição da Reforma Tributária até 2033.
