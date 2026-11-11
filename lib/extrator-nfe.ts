@@ -9,10 +9,17 @@
  */
 
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
-import { getMapaD8 } from '@/lib/ai/ncm-server';
-import type { Record8 } from '@/lib/data';
-import { padronizarNcm, soDigitos } from '@/lib/extrator-multifonte';
-import { mapearCfopEntrada } from '@/lib/marco-legal';
+import { getMapaD8 } from './ai/ncm-server';
+import type { Record8 } from './data';
+import { padronizarNcm, soDigitos } from './extrator-multifonte';
+import {
+  mapearCfopEntrada,
+  detectarReducoesFiscaisPorNcm,
+  obterFcpPorUf,
+  type DestinacaoMercadoria,
+  type RegimeTributario,
+} from './marco-legal';
+import type { ParametrizacaoItemInput } from './extrator-nfe-types';
 
 /* =========================================================================
  * 0. CLASSE DE ERRO PADRONIZADA
@@ -121,6 +128,8 @@ export interface ExtractedItem {
   pMVAST?: number;
   pRedBCST?: number;
   cfopEntradaMapeado?: string;
+  infAdProd?: string;
+  aliquotaCreditoIcmsSimplesPct?: number;
   tributos: ExtractedTributosResumo;
   sensivelParaAuditoria: boolean; // Flagged true if high-risk fiscal indicators detected
   motivosSensibilidade?: string[]; // Specific triggers (e.g. "NCM_INVALIDO_SISCOMEX", "SUBSTITUICAO_TRIBUTARIA")
@@ -130,6 +139,7 @@ export interface ExtractedInvoiceData {
   tipoDocumento: 'XML' | 'PDF';
   versaoSchema?: string;
   tempoExtracaoMs?: number;
+  infCpl?: string;
   identificacao: {
     chaveAcesso?: string;
     numero?: string;
@@ -588,6 +598,10 @@ export function extrairDadosXmlNfe(
     vOutroTotal: parseOptionalNumber(icmsTot.vOutro),
   };
 
+  // Informações Complementares da Nota (<infAdic><infCpl>)
+  const infAdic = nfe.infAdic || {};
+  const infCpl = infAdic.infCpl ? String(infAdic.infCpl).trim() : undefined;
+
   // Extração Completa de Itens (ZERO Truncamento - todos os itens det[0..N])
   const detList: any[] = Array.isArray(nfe.det) ? nfe.det : (nfe.det ? [nfe.det] : []);
   const mapaD8 = mapaD8Override || getMapaD8();
@@ -595,6 +609,30 @@ export function extrairDadosXmlNfe(
   const itens: ExtractedItem[] = detList.map((d: any, idx: number) => {
     const prod = d.prod || {};
     const imposto = d.imposto || {};
+    const infAdProd = d.infAdProd ? String(d.infAdProd).trim() : undefined;
+
+    // Alíquota de crédito de ICMS do Simples Nacional (LC 123/2006 art. 23)
+    // 1º Prioridade: tag XML <ICMSSN101><pCredSN>
+    // 2º Fallback: regex em infAdProd ou infCpl
+    let aliqCredSimples: number | undefined;
+    const tributos = extrairTributosXml(imposto);
+
+    if (tributos.pCredSN !== undefined && tributos.pCredSN > 0) {
+      aliqCredSimples = tributos.pCredSN;
+    } else {
+      const textoParaBusca = `${infAdProd || ''} ${infCpl || ''}`;
+      if (textoParaBusca.trim()) {
+        const m1 = textoParaBusca.match(/al[ií]quota\s+de\s+(\d+[.,]\d+)\s*%/i);
+        const m2 = textoParaBusca.match(/cr[eé]dito\s+de\s+icms.*?(\d+[.,]\d+)\s*%/i);
+        const matched = m1 ? m1[1] : (m2 ? m2[1] : undefined);
+        if (matched) {
+          const numParsed = parseFloat(matched.replace(',', '.'));
+          if (!isNaN(numParsed) && numParsed > 0) {
+            aliqCredSimples = numParsed;
+          }
+        }
+      }
+    }
 
     const rawNcm = String(prod.NCM ?? '');
     const ncmNorm = normalizarNcm(rawNcm);
@@ -607,7 +645,6 @@ export function extrairDadosXmlNfe(
     const cestDeclarado = prod.CEST ? soDigitos(prod.CEST) : undefined;
     const cest = cestDeclarado || (recSiscomex?.cest?.[0] ? soDigitos(recSiscomex.cest[0]) : undefined);
 
-    const tributos = extrairTributosXml(imposto);
     const orig =
       tributos.orig !== undefined
         ? (String(tributos.orig) as '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8')
@@ -651,6 +688,8 @@ export function extrairDadosXmlNfe(
       pMVAST: tributos.pMVAST,
       pRedBCST: tributos.pRedBCST,
       cfopEntradaMapeado: cfopEntradaInfo.cfopEntrada,
+      infAdProd,
+      aliquotaCreditoIcmsSimplesPct: aliqCredSimples,
       tributos,
     };
 
@@ -666,6 +705,7 @@ export function extrairDadosXmlNfe(
   return {
     tipoDocumento: 'XML',
     versaoSchema,
+    infCpl,
     identificacao,
     emitente,
     destinatario,
@@ -1032,5 +1072,80 @@ export function montarAuditRequestPayload(params: {
 export {
   converterItemExtracaoParaPrecificacao,
   type PrecificacaoItemInput,
+  type ParametrizacaoItemInput,
 } from './extrator-nfe-types';
+
+/**
+ * Converte um item auditado da NF-e para a estrutura consumida pela aba Parametrizar ERP.
+ * Conecta a detecção O(1) de reduções fiscais e alíquotas de FCP.
+ */
+export function converterItemExtracaoParaParametrizacao(
+  item: ExtractedItem,
+  opts?: {
+    ufOrigem?: string;
+    ufDestino?: string;
+    crtEmitente?: string;
+    regimeDestinatario?: RegimeTributario;
+    destinacao?: DestinacaoMercadoria;
+    marco?: any;
+  }
+): ParametrizacaoItemInput {
+  const ufOrigem = (opts?.ufOrigem || 'PR').toUpperCase();
+  const ufDestino = (opts?.ufDestino || 'PR').toUpperCase();
+  const destinacao = opts?.destinacao || 'comercializacao';
+  const t = item.tributos || {};
+
+  // Mapeamento CFOP entrada e saída sugeridos
+  const cfopInfo = mapearCfopEntrada(item.cfop, destinacao, ufOrigem, ufDestino);
+  const cfopEntradaSugerido = item.cfopEntradaMapeado || cfopInfo.cfopEntrada;
+
+  // Derivação simples de CFOP de saída correspondente
+  let cfopSaidaSugerido = '5102';
+  if (ufOrigem !== ufDestino) {
+    cfopSaidaSugerido = cfopInfo.temSt ? '6403' : '6102';
+  } else {
+    cfopSaidaSugerido = cfopInfo.temSt ? '5403' : '5102';
+  }
+
+  // Detecção O(1) de benefícios fiscais
+  const reducoes = detectarReducoesFiscaisPorNcm(item.ncm, ufDestino, opts?.marco);
+  const fcp = obterFcpPorUf(ufDestino, opts?.marco);
+
+  const cClassTribSugerido = t.cClassTrib || reducoes?.reforma?.cClassTrib;
+  const reducaoIbsCbsPct = reducoes?.reforma?.reducaoIbsCbsPct ?? 0;
+  const cstIbsCbsSugerido = t.cstIbsCbs || (reducaoIbsCbsPct === 100 ? '02' : reducaoIbsCbsPct > 0 ? '01' : '01');
+
+  let beneficioIcmsPr: string | undefined;
+  let pRedBC = item.pRedBC ?? t.pRedBC;
+  let percentualDiferimento: number | undefined;
+
+  if (reducoes?.icms) {
+    beneficioIcmsPr = reducoes.icms.convenioCorrelato;
+    if (reducoes.icms.diferimentoPct) {
+      percentualDiferimento = reducoes.icms.diferimentoPct;
+    }
+  }
+
+  return {
+    codigoProduto: item.cProd || `ITEM-${item.index}`,
+    descricao: item.xProd,
+    ncm: item.ncm,
+    cest: item.cest,
+    cfopOrigem: item.cfop,
+    cfopEntradaSugerido,
+    cfopSaidaSugerido,
+    cstIcmsOrigem: t.cstIcms,
+    csosnOrigem: t.csosn,
+    cClassTribSugerido,
+    cstIbsCbsSugerido,
+    reducaoIbsCbsPct,
+    beneficioIcmsPr,
+    pRedBC,
+    percentualDiferimento,
+    fcpPct: fcp,
+    valorUnitario: item.vUnCom,
+    quantidade: item.qCom > 0 ? item.qCom : 1,
+  };
+}
+
 

@@ -7,9 +7,17 @@
  */
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { extrairDadosXmlNfe, converterItemExtracaoParaPrecificacao } from '../lib/extrator-nfe.ts';
-import { calcularCustoAquisicaoReal, simular, compararQuatroRegimes, ratearDespesasAcessoriaEFrete } from '../lib/precificacao.ts';
-import { mapearCfopEntrada } from '../lib/marco-legal.ts';
+import { extrairDadosXmlNfe, converterItemExtracaoParaPrecificacao, converterItemExtracaoParaParametrizacao } from '../lib/extrator-nfe.ts';
+import { calcularCustoAquisicaoReal, simular, compararQuatroRegimes, ratearDespesasAcessoriaEFrete, sugerirAliquotasPrecificacao } from '../lib/precificacao.ts';
+import { parametrizarLoteNfe } from '../lib/parametrizacao.ts';
+import {
+  mapearCfopEntrada,
+  calcularDifalDetalhado,
+  detectarReducoesFiscaisPorNcm,
+  calcularReducaoConvenioIcms,
+  calcularDetalhamentoSimplesHibrido,
+  obterFcpPorUf,
+} from '../lib/marco-legal.ts';
 import { esc } from '../lib/html.ts';
 import { getMapaD8 } from '../lib/ai/ncm-server.ts';
 import { mods } from 'ncm:libs';
@@ -458,6 +466,288 @@ t('Etapa 7: Sanitização estrita contra XSS via esc() no Laudo HTML', () => {
   assert.ok(sanitizado.includes('&quot;aspas&quot;'), 'Deve converter aspas duplas');
   assert.ok(sanitizado.includes('&#39;simples&#39;'), 'Deve converter aspas simples');
   assert.ok(sanitizado.includes('&amp;'), 'Deve converter & em &amp;');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ETAPA 10: TESTES DE CONEXÃO O(1), SIMPLES CRÉDITO, DIFAL E PARAMETRIZAÇÃO ERP
+// ─────────────────────────────────────────────────────────────────────────────
+
+t('Etapa 10: Extração de crédito ICMS Simples Nacional (<infAdProd> / <pCredSN>) abatendo no Lucro Real', () => {
+  const xmlSimplesComCredito = `<?xml version="1.0" encoding="UTF-8"?>
+<NFe xmlns="http://www.portalfiscal.inf.br/nfe">
+  <infNFe versao="4.00" Id="NFe41261100000000000191550010000000011000000010">
+    <ide><nNF>1</nNF><serie>1</serie><cUF>41</cUF><natOp>Venda Simples</natOp><mod>55</mod></ide>
+    <emit><CNPJ>12345678000195</CNPJ><xNome>Fornecedor Simples ME</xNome><CRT>1</CRT><enderEmit><UF>PR</UF></enderEmit></emit>
+    <dest><CNPJ>98765432000199</CNPJ><xNome>Adquirente Lucro Real S/A</xNome><enderDest><UF>PR</UF></enderDest></dest>
+    <det nItem="1">
+      <prod><cProd>PROD-SN</cProd><xProd>Mercadoria com Credito</xProd><NCM>84321000</NCM><CFOP>5102</CFOP><uCom>UN</uCom><qCom>1.00</qCom><vUnCom>1000.00</vUnCom><vProd>1000.00</vProd></prod>
+      <imposto>
+        <ICMS><ICMSSN101><orig>0</orig><CSOSN>101</CSOSN><pCredSN>3.50</pCredSN><vCredICMSSN>35.00</vCredICMSSN></ICMSSN101></ICMS>
+        <PIS><PISNT><CST>07</CST></PISNT></PIS>
+        <COFINS><COFINSNT><CST>07</CST></COFINSNT></COFINS>
+      </imposto>
+      <infAdProd>Permite o aproveitamento do credito de ICMS no valor de R$ 35,00 correspondente a aliquota de 3,50% nos termos do art. 23 da LC 123/2006</infAdProd>
+    </det>
+    <total><ICMSTot><vProd>1000.00</vProd><vNF>1000.00</vNF></ICMSTot></total>
+  </infNFe>
+</NFe>`;
+
+  const extracao = extrairDadosXmlNfe(xmlSimplesComCredito, mapaD8);
+  assert.equal(extracao.itens.length, 1);
+  const it = extracao.itens[0];
+  assert.equal(it.tributos.pCredSN, 3.5);
+  assert.equal(it.aliquotaCreditoIcmsSimplesPct, 3.5);
+  assert.ok(it.infAdProd?.includes('art. 23 da LC 123/2006'));
+
+  // Conversão para precificação
+  const itPreco = converterItemExtracaoParaPrecificacao(it);
+  assert.equal(itPreco.aliquotaCreditoIcmsSimplesPct, 3.5);
+
+  // Cálculo de Custo no Lucro Real:
+  // Deve aproveitar R$ 35,00 de crédito de ICMS, mas crédito de PIS/COFINS DEVE permanecer bloqueado em ZERO!
+  const custoReal = calcularCustoAquisicaoReal(itPreco, 'real', { marco });
+  assert.equal(custoReal.impostosARecuperar.creditoIcms, 35.0, 'Deve aproveitar R$ 35 de crédito de ICMS do Simples');
+  assert.equal(custoReal.impostosARecuperar.creditoPisCofins, 0, 'PIS/COFINS DEVE ser rigorosamente bloqueado (0)');
+  assert.equal(custoReal.custoAquisicaoReal, 965.0, 'Custo = 1000 - 35 = 965');
+});
+
+t('Etapa 10: Convênio ICMS 52/1991 dispensa estorno de crédito na entrada com base reduzida', () => {
+  const itemMaqAgricola = {
+    codigo: 'MAQ-01',
+    descricao: 'Arado Agrícola Conv 52/91',
+    ncm: '84321000',
+    quantidade: 1,
+    valorBrutoEntrada: 1000,
+    freteSeguroOutrasEntrada: 0,
+    descontoIncondicionalEntrada: 0,
+    ipiEntrada: 0,
+    icmsStEntrada: 0,
+    iiEntrada: 0,
+    isEntrada: 0,
+    credIcmsEntrada: 120, // 12% destacado na compra interestadual
+    credPisCofinsEntrada: 92.5,
+    credCbsEntrada: 0,
+    credIbsEntrada: 0,
+    dispensaEstornoEntrada: true, // Item com Convênio 52/91
+    baseReduzidaSaidaPct: 28.72, // Redução de BC na saída para carga de 5,6%
+  };
+
+  const custoReal = calcularCustoAquisicaoReal(itemMaqAgricola, 'real', {
+    baseReduzidaSaidaPct: 28.72,
+    marco,
+  });
+
+  // Graças a dispensaEstornoEntrada: true, o crédito de entrada de R$ 120 NÃO deve ser estornado!
+  assert.equal(custoReal.impostosARecuperar.creditoIcms, 120, 'Crédito de R$ 120 deve ser mantido integralmente');
+  assert.equal(custoReal.tributosNaoRecuperaveis.tributosEntradaNaoAproveitados, 0, 'Estorno estornado para custo = 0');
+});
+
+t('Etapa 10: DIFAL Base Dupla (Real/Presumido) vs Base Única (Simples) em Uso/Consumo', () => {
+  const itemUsoConsumo = {
+    codigo: 'CONSUMO-01',
+    descricao: 'Material de escritório interestadual',
+    ncm: '48025610',
+    quantidade: 1,
+    valorBrutoEntrada: 1000,
+    freteSeguroOutrasEntrada: 0,
+    descontoIncondicionalEntrada: 0,
+    ipiEntrada: 0,
+    icmsStEntrada: 0,
+    iiEntrada: 0,
+    isEntrada: 0,
+    credIcmsEntrada: 120,
+    credPisCofinsEntrada: 0,
+    credCbsEntrada: 0,
+    credIbsEntrada: 0,
+    destinacao: 'uso_consumo',
+    ufOrigem: 'SP',
+    ufDestino: 'PR',
+  };
+
+  // 1. Lucro Real: aplica Base Dupla (com FCP 2% no PR -> total destino 21,5%)
+  // ICMS de compra (120) é glosado em uso e consumo (+120) e soma com DIFAL devido (121.02) = 241.02
+  const custoReal = calcularCustoAquisicaoReal(itemUsoConsumo, 'real', {
+    destinoItem: 'uso_consumo',
+    ufOrigem: 'SP',
+    ufDestino: 'PR',
+    marco,
+  });
+  assert.equal(custoReal.tributosNaoRecuperaveis.total, 241.02, 'Tributos não recuperáveis com DIFAL e ICMS glosado');
+  assert.equal(custoReal.custoAquisicaoReal, 1241.02, 'Custo de Aquisição Real com DIFAL');
+
+  // 2. Simples Nacional: aplica Base Única
+  // ICMS compra (120) não aproveitado (+120) e soma com DIFAL devido (95.00) = 215.00
+  const custoSimples = calcularCustoAquisicaoReal(itemUsoConsumo, 'simples', {
+    destinoItem: 'uso_consumo',
+    ufOrigem: 'SP',
+    ufDestino: 'PR',
+    marco,
+  });
+  assert.equal(custoSimples.tributosNaoRecuperaveis.total, 215.0, 'Tributos não recuperáveis Simples com DIFAL');
+  assert.equal(custoSimples.custoAquisicaoReal, 1215.0, 'Custo Simples com DIFAL Base Única');
+});
+
+t('Etapa 10: Conversão converterItemExtracaoParaParametrizacao e parametrizarLoteNfe', () => {
+  const itensSimulados = [
+    {
+      index: 1,
+      cProd: 'MAQ-01',
+      xProd: 'Colheitadeira Agrícola',
+      ncm: '84335100',
+      ncmValidoSiscomex: true,
+      cfop: '6102',
+      uCom: 'UN',
+      qCom: 1,
+      vUnCom: 500000,
+      vProd: 500000,
+      tributos: {
+        cstIcms: '20',
+        pRedBC: 71.28,
+        pICMS: 12,
+        vICMS: 17232,
+      },
+      sensivelParaAuditoria: false,
+    },
+    {
+      index: 2,
+      cProd: 'ARROZ-01',
+      xProd: 'Arroz Branco Tipo 1',
+      ncm: '10063021',
+      ncmValidoSiscomex: true,
+      cfop: '5102',
+      uCom: 'FD',
+      qCom: 100,
+      vUnCom: 30,
+      vProd: 3000,
+      tributos: {
+        cstIcms: '00',
+        pICMS: 7,
+      },
+      sensivelParaAuditoria: false,
+    },
+  ];
+
+  const resultadoLote = parametrizarLoteNfe(itensSimulados, {
+    ufOrigem: 'SP',
+    ufDestino: 'PR',
+    regimeDestinatario: 'real',
+    destinacao: 'comercializacao',
+    marco,
+  });
+
+  assert.equal(resultadoLote.itensParametrizados.length, 2);
+  assert.equal(resultadoLote.totalBloqueantes, 0, 'Zero bloqueantes em lote auditado');
+
+  // Item 1 (Máquina Agrícola NCM 8433)
+  const it1 = resultadoLote.itensParametrizados[0];
+  assert.equal(it1.cClassTribSugerido, '200003', 'cClassTrib de Máquinas Agrícolas');
+  assert.equal(it1.reducaoIbsCbsPct, 60.0, 'Redução 60% IBS/CBS');
+  assert.equal(it1.beneficioIcmsPr, 'CONV-ICMS-52-1991', 'Convênio 52/91 vinculado');
+  assert.equal(it1.cfopEntradaSugerido, '2102', 'CFOP 6102 de SP para PR revenda -> 2102');
+
+  // Item 2 (Arroz NCM 1006)
+  const it2 = resultadoLote.itensParametrizados[1];
+  assert.equal(it2.cClassTribSugerido, '100001', 'cClassTrib Cesta Básica Nacional');
+  assert.equal(it2.reducaoIbsCbsPct, 100.0, 'Alíquota Zero de IBS/CBS');
+  assert.equal(it2.cstIbsCbsSugerido, '02', 'CST 02 para alíquota zero');
+});
+
+t('Etapa 12: Detecção de reduções da Reforma e Convênio 52/1991 (dispensa de estorno na entrada)', () => {
+  const reducoes = detectarReducoesFiscaisPorNcm('84335100', marco);
+  assert.equal(reducoes.reforma.cClassTrib, '200003');
+  assert.equal(reducoes.reforma.reducaoIbsCbsPct, 60.0);
+  assert.equal(reducoes.icms.convenioCorrelato, 'CONV-ICMS-52-1991');
+  assert.equal(reducoes.icms.dispensaEstornoEntrada, true);
+
+  const icms52 = calcularReducaoConvenioIcms({
+    tipoConvenio: 'CONV_52_91_MAQ_AGRICOLA',
+    ufOrigem: 'SP',
+    ufDestino: 'PR',
+    aliqNominalIcmsPct: 19.5,
+    marco,
+  });
+  assert.equal(icms52.convenioId, 'CONV-ICMS-52-1991');
+  assert.equal(icms52.dispensaEstornoEntrada, true, 'Convênio 52/91 possui dispensa legal expressa de estorno');
+  assert.equal(icms52.aliqEfetivaPct, 5.6);
+  assert.equal(icms52.cstSugerido, '20');
+});
+
+t('Etapa 12: Detecção do Convênio 100/1997 e Cesta Básica PR (estorno proporcional)', () => {
+  const icms100 = calcularReducaoConvenioIcms({
+    tipoConvenio: 'CONV_100_97_INSUMO_AGRO',
+    ufOrigem: 'SP',
+    ufDestino: 'PR',
+    aliqNominalIcmsPct: 12.0,
+    marco,
+  });
+  assert.equal(icms100.dispensaEstornoEntrada, false, 'Convênio 100/97 exige estorno proporcional de crédito na entrada');
+  assert.equal(icms100.pRedBC, 60.0);
+  assert.equal(icms100.aliqEfetivaPct, 4.8);
+});
+
+t('Etapa 12: Decomposição e cálculo do Ponto de Inflexão do Simples Híbrido (LC 214/25 & Res. CGSN 186/26)', () => {
+  const hibrido = calcularDetalhamentoSimplesHibrido({
+    ano: 2027,
+    faturamentoMensal: 100000,
+    aliquotaDasEfetivaPct: 9.5,
+    comprasInsumosMercadorias: 50000,
+    aliquotaMediaCreditoEntradaPct: 26.5,
+    aliquotaIbsCbsVendaPct: 26.5,
+    marco,
+  });
+
+  assert.equal(hibrido.ano, 2027);
+  assert.equal(hibrido.fatorExpurgoDasPct, 18);
+  assert.ok(hibrido.aliquotaDasAjustadaPct < 9.5, 'DAS Híbrido deve ser menor que o DAS integral');
+  assert.ok(hibrido.pontoInflexao.creditoMinimoEntradaParaEmpatePct > 0, 'Ponto de inflexão deve ser calculado');
+  assert.ok(hibrido.pontoInflexao.regimeVencedor === 'simples_hibrido' || hibrido.pontoInflexao.regimeVencedor === 'simples');
+  assert.ok(typeof hibrido.pontoInflexao.justificativa === 'string' && hibrido.pontoInflexao.justificativa.length > 20);
+});
+
+t('Etapa 12: Apuração de DIFAL Base Dupla vs Base Única e FCP', () => {
+  const fcpPr = obterFcpPorUf('PR', marco);
+  assert.equal(fcpPr, 2.0, 'PR possui 2.0% de FECOP registrado');
+
+  const difalDupla = calcularDifalDetalhado({
+    valorOperacao: 10000,
+    aliqInterestadualPct: 12,
+    aliqInternaDestinoPct: 19.5,
+    ufDestino: 'PR',
+    metodologia: 'base_dupla',
+    incluirFcp: true,
+    marco,
+  });
+  assert.equal(difalDupla.metodologia, 'base_dupla');
+  assert.ok(difalDupla.valorDifalLiquido > 0);
+  assert.ok(difalDupla.valorFcpDestino > 0);
+
+  const fcpRj = obterFcpPorUf('RJ', marco);
+  assert.equal(fcpRj, 4.0, 'RJ possui 4.0% de FECP na tabela atualizada');
+
+  const difalUnica = calcularDifalDetalhado({
+    valorOperacao: 10000,
+    aliqInterestadualPct: 12,
+    aliqInternaDestinoPct: 20.0,
+    ufDestino: 'RJ',
+    metodologia: 'base_unica',
+    incluirFcp: true,
+    marco,
+  });
+  assert.equal(difalUnica.metodologia, 'base_unica');
+  assert.equal(difalUnica.aliquotaEfetivaTotalDestinoPct, 24.0); // 20% ICMS + 4% FCP
+  assert.equal(difalUnica.valorTotalDevidoDestino, 1200); // 10000 * (24 - 12)% = 1200
+  assert.equal(difalUnica.valorFcpDestino, 400);   // 10000 * 4.0%
+  assert.equal(difalUnica.valorDifalLiquido, 800); // 1200 - 400 = 800
+});
+
+t('Etapa 12: Sanitização de saída no Laudo HTML com esc()', () => {
+  const stringMaliciosa = '<script>alert("xss")</script>&"\'';
+  const sanitizado = esc(stringMaliciosa);
+  assert.ok(!sanitizado.includes('<script>'), 'Tag de script não pode estar crua');
+  assert.ok(sanitizado.includes('&lt;script&gt;'));
+  assert.ok(sanitizado.includes('&amp;'));
+  assert.ok(sanitizado.includes('&quot;'));
+  assert.ok(sanitizado.includes('&#39;'));
 });
 
 console.log('\nSUÍTE EXPORTAÇÃO-PRECIFICAÇÃO OK ✓');

@@ -1,0 +1,44 @@
+services:
+  # Servidor Principal Next.js (Web / Produção)
+  mcm-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcm-web-server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - ENABLE_UPDATE_ROUTE=false
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_KEEP_ALIVE=5m
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./public/data:/app/public/data:ro
+      - ./rules:/app/rules:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Atualizador Legal Efêmero Sob Demanda (Profile: updater)
+  # Execução manual: docker compose --profile updater run --rm mcm-legal-updater
+  mcm-legal-updater:
+    image: python:3.11-slim
+    container_name: mcm-legal-updater
+    profiles:
+      - updater
+    working_dir: /app
+    volumes:
+      - .:/app
+      - ./rules:/app/rules
+      - ./public/data:/app/public/data
+    command: >
+      sh -c "pip install --no-cache-dir requests urllib3 &&
+             python scripts/atualizar_marco_legal.py --check &&
+             python scripts/pipeline.py &&
+             echo '[OK] Atualizacao legal concluida com sucesso.'"

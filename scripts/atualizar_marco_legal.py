@@ -4,23 +4,29 @@ Metodologia de Atualização Atômica, Idempotente e com Circuit Breaker
 para o Arcabouço Legal do Motor de Precificação (rules/marco-legal.json).
 
 Garante:
-  1. Circuit Breaker com limites mínimos de integridade jurídica e contábil.
-  2. Merge Aditivo (nenhuma regressão em relação a versões anteriores).
-  3. Escrita atômica com arquivo temporário (.tmp) e os.replace().
-  4. Rastreabilidade com SHA-256 e data de conferência.
+  1. Hash-Gate SHA-256 (se não houver alterações, ignora e economiza processamento).
+  2. Circuit Breaker com limites mínimos de integridade jurídica e contábil (>= 35 normas).
+  3. Micro-diff de normas e parâmetros (--diff-file).
+  4. Explicação via LLM Local (Ollama qwen2.5:7b na GPU RX 580) sob demanda (--explain-with-ollama).
+  5. Merge Aditivo (nenhuma regressão em relação a versões anteriores).
+  6. Escrita atômica com arquivo temporário (.tmp) e os.replace().
+  7. Rastreabilidade com SHA-256 e data de conferência.
 """
 import argparse
+import difflib
 import hashlib
 import json
 import os
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RULES_MARCO = ROOT / "rules" / "marco-legal.json"
 PUBLIC_MARCO = ROOT / "public" / "data" / "marco-legal.json"
 
-MIN_NORMAS_CIRCUIT_BREAKER = 20
+MIN_NORMAS_CIRCUIT_BREAKER = 35
 REQUIRED_PARAM_KEYS = [
     "transicao",
     "credito_estoque",
@@ -30,6 +36,10 @@ REQUIRED_PARAM_KEYS = [
     "cfop_de_para",
     "regras_icms_pr_vizinhos",
     "contabilidade_custos",
+    "fcp_por_uf",
+    "ricms_pr_regras",
+    "reforma_reducoes_mapeamento",
+    "simples_hibrido_regras",
 ]
 
 
@@ -119,11 +129,67 @@ def escrita_atomica(destino: Path, dados: dict):
     os.replace(temp_path, destino)
 
 
+def gerar_micro_diff(caminho_velho: Path, dados_novos: dict) -> str:
+    """Gera um diff unificado textual entre o arquivo existente e os novos dados."""
+    if not caminho_velho.exists():
+        return "Arquivo anterior não existe (criação inicial)."
+
+    linhas_velhas = caminho_velho.read_text(encoding="utf-8").splitlines(keepends=True)
+    linhas_novas = json.dumps(dados_novos, ensure_ascii=False, indent=2).splitlines(keepends=True)
+
+    diff = difflib.unified_diff(
+        linhas_velhas,
+        linhas_novas,
+        fromfile=str(caminho_velho.name),
+        tofile="novos_dados",
+        n=3,
+    )
+    return "".join(diff)
+
+
+def explicar_com_ollama(diff_text: str, modelo: str = "qwen2.5:7b") -> str:
+    """
+    Chama o servidor Ollama local (se disponível) para sintetizar as mudanças legais.
+    Retorna a explicação textual.
+    """
+    if not diff_text.strip():
+        return "Nenhuma alteração detectada para explicar."
+
+    prompt = (
+        "Você é um Auditor Fiscal especialista em Direito Tributário Brasileiro.\n"
+        "Analise o seguinte diff de atualização do Marco Legal e elabore um resumo conciso "
+        "com o impacto prático e a fundamentação legal das alterações:\n\n"
+        f"{diff_text[:4000]}"
+    )
+
+    corpo = {
+        "model": modelo,
+        "prompt": prompt,
+        "stream": False,
+        "keep_alive": "5m",
+    }
+
+    try:
+        req = urllib.request.Request(
+            "http://127.0.0.1:11434/api/generate",
+            data=json.dumps(corpo).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            resp_data = json.loads(resp.read().decode("utf-8"))
+            return resp_data.get("response", "Sem resposta do modelo.")
+    except Exception as e:
+        return f"[Aviso: Ollama indisponível ou tempo limite esgotado: {e}]"
+
+
 def main():
     parser = argparse.ArgumentParser(description="Atualização segura e atômica do Marco Legal")
     parser.add_argument("--check", action="store_true", help="Apenas valida a integridade do arquivo atual")
     parser.add_argument("--file", type=Path, help="Arquivo JSON de entrada para atualizar rules/marco-legal.json")
     parser.add_argument("--publicar", action="store_true", help="Copia atomicamente para public/data/marco-legal.json")
+    parser.add_argument("--diff-file", type=Path, help="Caminho para gravar o micro-diff das alterações")
+    parser.add_argument("--explain-with-ollama", action="store_true", help="Usa LLM local (Ollama) para explicar as mudanças")
+    parser.add_argument("--model", type=str, default="qwen2.5:7b", help="Modelo Ollama a utilizar")
     args = parser.parse_args()
 
     alvo = args.file if args.file else RULES_MARCO
@@ -138,6 +204,15 @@ def main():
         print(f"ERRO: Falha ao ler JSON de {alvo}: {e}", file=sys.stderr)
         sys.exit(2)
 
+    # 1. Hash-Gate: se destino já existe e hash for idêntico, podemos verificar precocemente
+    sha_origem = calcular_sha256(alvo)
+    if args.publicar and PUBLIC_MARCO.exists() and not args.file:
+        sha_destino = calcular_sha256(PUBLIC_MARCO)
+        if sha_origem == sha_destino and not args.diff_file and not args.explain_with_ollama:
+            print(f"Hash-Gate: Nenhum byte alterado (SHA-256: {sha_origem[:16]}...). Pulo seguro ativado.")
+            sys.exit(0)
+
+    # 2. Circuit Breaker
     erros = validar_circuit_breaker(dados, caminho_anterior=PUBLIC_MARCO if PUBLIC_MARCO.exists() else None)
 
     if erros:
@@ -146,9 +221,25 @@ def main():
             print(f"  ✘ {err}", file=sys.stderr)
         sys.exit(2)
 
-    sha = calcular_sha256(alvo)
     print(f"OK Circuit Breaker Aprovado: {len(dados.get('normas', []))} normas válidas.")
-    print(f"   Arquivo: {alvo.name} | SHA-256: {sha[:16]}...{sha[-8:]}")
+    print(f"   Arquivo: {alvo.name} | SHA-256: {sha_origem[:16]}...{sha_origem[-8:]}")
+
+    # 3. Micro-diff
+    diff_text = ""
+    if args.diff_file or args.explain_with_ollama:
+        arquivo_base = PUBLIC_MARCO if PUBLIC_MARCO.exists() else RULES_MARCO
+        diff_text = gerar_micro_diff(arquivo_base, dados)
+        if args.diff_file:
+            args.diff_file.write_text(diff_text, encoding="utf-8")
+            print(f"OK Micro-diff gravado em: {args.diff_file}")
+
+    # 4. Explicação via Ollama
+    if args.explain_with_ollama:
+        print(f"Consultando Ollama ({args.model}) para síntese explicativa...")
+        explicacao = explicar_com_ollama(diff_text, modelo=args.model)
+        print("\n--- SÍNTESE EXPLICATIVA DO AUDITOR (OLLAMA LOCAL) ---")
+        print(explicacao)
+        print("----------------------------------------------------\n")
 
     if args.check:
         sys.exit(0)
@@ -156,11 +247,11 @@ def main():
     # Se informado novo arquivo via --file, grava em rules/marco-legal.json atomicamente
     if args.file and args.file != RULES_MARCO:
         escrita_atomica(RULES_MARCO, dados)
-        print(f"OK Atualizado rules/marco-legal.json atomicamente.")
+        print("OK Atualizado rules/marco-legal.json atomicamente.")
 
     if args.publicar:
         escrita_atomica(PUBLIC_MARCO, dados)
-        print(f"OK Publicado public/data/marco-legal.json atomicamente.")
+        print("OK Publicado public/data/marco-legal.json atomicamente.")
 
 
 if __name__ == "__main__":

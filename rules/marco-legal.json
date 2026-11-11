@@ -453,6 +453,163 @@
       "efeito_motor": "vedacao_pis_cofins_crt1, credito_icms_simples_adicional, credito_frete_fob",
       "vigencia_inicio": "2003-02-01",
       "vigencia_fim": null
+    },
+    {
+      "id": "CONV-ICMS-52-1991",
+      "norma": "Convênio ICMS 52/1991 c/c Item 22 do Anexo VI do RICMS/PR (Decreto 7.871/2017)",
+      "dispositivo": "Cláusulas 1ª e 2ª do Convênio ICMS 52/91; Item 22 do Anexo VI do Decreto 7.871/2017",
+      "tema": "Redução de base de cálculo do ICMS para máquinas agrícolas e industriais",
+      "titulo": "Convênio ICMS 52/1991 - Redução de Base de Cálculo para Máquinas Agrícolas e Industriais",
+      "diploma": "Convênio ICMS nº 52/1991 c/c Decreto Estadual nº 7.871/2017 (Anexo VI, Item 22)",
+      "artigos": "Cláusula 1ª e 2ª Conv. 52/91; Item 22 Anexo VI RICMS/PR",
+      "orgao": "CONFAZ / SEFA-PR",
+      "esfera": "Nacional / Estadual",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "https://www.confaz.fazenda.gov.br/legislacao/convenios/1991/CV052_91",
+      "fontes": [
+        "https://www.confaz.fazenda.gov.br/legislacao/convenios/1991/CV052_91",
+        "https://www.fazenda.pr.gov.br/Pagina/Regulamento-do-ICMS"
+      ],
+      "resumo": "Concede redução da base de cálculo do ICMS nas operações com máquinas, aparelhos e equipamentos industriais (Anexo I) e agrícolas (Anexo II). Carga tributária efetiva para máquinas agrícolas: 5,6% nas operações internas no PR e interestaduais com alíquota de 12%; 4,1% nas interestaduais com alíquota de 7%; 7,0% nas interestaduais com alíquota de 12% destinadas a não contribuintes/outros estados. Para máquinas industriais: 8,8% nas operações internas no PR e com alíquota de 12%; 5,14% nas operações com alíquota de 7%. Estabelece a dispensa expressa de estorno proporcional de crédito de ICMS na entrada para os produtos beneficiados.",
+      "efeito_motor": "reducao_bc_icms_maquinas, dispensa_estorno_icms_entrada",
+      "vigencia_inicio": "1991-10-01",
+      "vigencia_fim": "2032-12-31"
+    },
+    {
+      "id": "CONV-ICMS-100-1997",
+      "norma": "Convênio ICMS 100/1997 c/c Anexo VI e Anexo VIII do RICMS/PR",
+      "dispositivo": "Cláusulas 1ª a 3ª do Convênio ICMS 100/97; Anexos VI e VIII do Decreto 7.871/2017",
+      "tema": "Benefícios fiscais do ICMS para insumos agropecuários (redução e diferimento total)",
+      "titulo": "Convênio ICMS 100/1997 - Reduções e Diferimento Total em Insumos Agropecuários",
+      "diploma": "Convênio ICMS nº 100/1997 c/c Decreto Estadual nº 7.871/2017 (Anexos VI e VIII)",
+      "artigos": "Cláusulas 1ª a 3ª Conv. 100/97; Anexos VI e VIII RICMS/PR",
+      "orgao": "CONFAZ / SEFA-PR",
+      "esfera": "Nacional / Estadual",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "https://www.confaz.fazenda.gov.br/legislacao/convenios/1997/cv100_97",
+      "fontes": [
+        "https://www.confaz.fazenda.gov.br/legislacao/convenios/1997/cv100_97",
+        "https://www.fazenda.pr.gov.br/Pagina/Regulamento-do-ICMS"
+      ],
+      "resumo": "Reduz a base de cálculo do ICMS em 60% ou 30% nas saídas interestaduais de insumos agropecuários (fertilizantes, defensivos, rações, sementes e adubos). No Paraná, estabelece o Diferimento Total do ICMS (100% diferido, CST 51) nas operações internas entre produtores ou para estabelecimentos agropecuários/industriais, transferindo o recolhimento do imposto para etapas posteriores.",
+      "efeito_motor": "reducao_insumos_agropecuarios, diferimento_total_insumos_pr",
+      "vigencia_inicio": "1997-11-27",
+      "vigencia_fim": "2032-12-31"
+    },
+    {
+      "id": "RICMS-PR-ART17-ANEXOS-VI-VIII",
+      "norma": "Decreto Estadual nº 7.871/2017 (Art. 17, Anexo VI Cesta Básica e Art. 28 do Anexo VIII)",
+      "dispositivo": "Art. 17, Anexo VI (Cesta Básica) e Art. 28 do Anexo VIII do Decreto 7.871/2017",
+      "tema": "Alíquotas internas seletivas do Paraná e diferimento parcial B2B (38,4615%)",
+      "titulo": "RICMS/PR - Alíquotas Internas Seletivas, Cesta Básica e Diferimento Parcial B2B",
+      "diploma": "Decreto Estadual nº 7.871/2017 e alterações",
+      "artigos": "Art. 17, Anexo VI e Art. 28 do Anexo VIII",
+      "orgao": "SEFA-PR",
+      "esfera": "Estadual",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "https://www.fazenda.pr.gov.br/Pagina/Regulamento-do-ICMS",
+      "fontes": [
+        "https://www.fazenda.pr.gov.br/Pagina/Regulamento-do-ICMS"
+      ],
+      "resumo": "Estrutura as alíquotas internas seletivas no Paraná: 7% para alimentos da cesta básica (Anexo VI); 12% para produtos industriais/hospitalares selecionados; 19,5% alíquota modal geral; e 25% a 29% acrescidas de adicional de combate à pobreza (FCP 2%) para supérfluos, bebidas e fumo. Disciplina o Diferimento Parcial de 38,4615% previsto no Art. 28 do Anexo VIII nas saídas internas entre contribuintes (B2B) tributadas a 19,5%, resultando em recolhimento efetivo imediato de 12,00% (CST 51).",
+      "efeito_motor": "aliquotas_seletivas_pr, diferimento_parcial_art28_anexo8",
+      "vigencia_inicio": "2017-10-01",
+      "vigencia_fim": "2032-12-31"
+    },
+    {
+      "id": "CONV-ICMS-142-2018",
+      "norma": "Convênio ICMS 142/2018 (CONFAZ)",
+      "dispositivo": "Cláusulas 1ª a 36ª; Anexos I a XXVI",
+      "tema": "Regime geral de Substituição Tributária (ICMS-ST), CEST e Fundo de Combate à Pobreza (FCP)",
+      "titulo": "Convênio ICMS 142/2018 - Regime Geral de Substituição Tributária e CEST",
+      "diploma": "Convênio ICMS nº 142/2018",
+      "artigos": "Cláusulas 1ª a 36ª; Anexos I a XXVI",
+      "orgao": "CONFAZ / Secretarias de Fazenda Estaduais",
+      "esfera": "Nacional",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "https://www.confaz.fazenda.gov.br/legislacao/convenios/2018/CV142_18",
+      "fontes": [
+        "https://www.confaz.fazenda.gov.br/legislacao/convenios/2018/CV142_18"
+      ],
+      "resumo": "Consolida as regras gerais aplicáveis aos regimes de Substituição Tributária e de Antecipação do Recolhimento do ICMS com Encerramento de Tributação, relativos às operações subsequentes. Padroniza a tabela de Código Especificador da Substituição Tributária (CEST), as regras de cálculo do ICMS-ST, Margem de Valor Agregado (MVA original e MVA ajustada) e a agregação do Fundo de Combate à Pobreza (FCP) na base e alíquota de ST.",
+      "efeito_motor": "regras_gerais_icms_st, tabela_cest_nacional, fcp_na_st",
+      "vigencia_inicio": "2019-01-01",
+      "vigencia_fim": "2032-12-31"
+    },
+    {
+      "id": "EC87-2015-LC190-DIFAL",
+      "norma": "Emenda Constitucional nº 87/2015 e Lei Complementar nº 190/2021",
+      "dispositivo": "Art. 155, § 2º, VII e VIII da CF/88; Arts. 4º, 9º e 20 da LC 87/96 (com redação da LC 190/2021)",
+      "tema": "Diferencial de Alíquotas (DIFAL) nas operações interestaduais e FCP de destino",
+      "titulo": "EC 87/2015 e LC 190/2021 - Disciplina Nacional do Diferencial de Alíquotas (DIFAL)",
+      "diploma": "Emenda Constitucional nº 87/2015 e Lei Complementar nº 190/2021",
+      "artigos": "CF/88 art. 155, § 2º, VII e VIII; LC 87/96 arts. 4º e 9º",
+      "orgao": "Congresso Nacional",
+      "esfera": "Federal",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "http://www.planalto.gov.br/ccivil_03/leis/lcp/lcp190.htm",
+      "fontes": [
+        "http://www.planalto.gov.br/ccivil_03/leis/lcp/lcp190.htm",
+        "http://www.planalto.gov.br/ccivil_03/constituicao/emendas/emc/emc87.htm"
+      ],
+      "resumo": "Regulamenta a cobrança do Diferencial de Alíquotas (DIFAL) nas operações interestaduais destinadas a consumidor final não contribuinte ou a contribuinte para uso/consumo ou ativo imobilizado. O imposto correspondente à diferença entre a alíquota interna da UF de destino e a alíquota interestadual cabe ao Estado destinatário, somando-se a este o adicional destinado ao Fundo de Combate à Pobreza (FCP) de até 2% ou 4% conforme legislação estadual. Disciplina as metodologias de cálculo por Base Dupla ou Base Única conforme regras da UF de destino.",
+      "efeito_motor": "difal_interestadual, difal_base_dupla_unica, fcp_destino",
+      "vigencia_inicio": "2022-01-05",
+      "vigencia_fim": "2032-12-31"
+    },
+    {
+      "id": "LC214-ANEXOS-REDUCOES",
+      "norma": "Lei Complementar nº 214/2025 (Anexos I a XII e Arts. 115 a 140)",
+      "dispositivo": "Arts. 115 a 140; Anexos I a XII da LC 214/2025",
+      "tema": "Regimes diferenciados de IBS e CBS: reduções de 60%, 100% (alíquota zero) e cClassTrib",
+      "titulo": "LC 214/2025 - Regimes Diferenciados, Reduções de 60% e 100% de IBS/CBS e Mapeamento cClassTrib",
+      "diploma": "Lei Complementar nº 214/2025",
+      "artigos": "Arts. 115 a 140; Anexos I a XII",
+      "orgao": "Comitê Gestor do IBS / RFB / Presidência da República",
+      "esfera": "Federal / Nacional",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "http://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm",
+      "fontes": [
+        "http://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm"
+      ],
+      "resumo": "Institui as listas positivas e regimes diferenciados de tributação do IBS e da CBS. Estabelece redução de 60% da alíquota padrão para insumos agropecuários, produtos de cuidados básicos à saúde menstrual, medicamentos, dispositivos médicos, alimentos destinados ao consumo humano e bens de capital. Fixa redução de 100% (alíquota zero) para itens da Cesta Básica Nacional de Alimentos, medicamentos essenciais e hortifrutigranjeiros. Cada redução vincula-se obrigatoriamente a um Código de Classificação Tributária (cClassTrib) de 6 dígitos para validação de NF-e.",
+      "efeito_motor": "reducao_ibs_cbs_60_100, vinculacao_cClassTrib",
+      "vigencia_inicio": "2026-01-01",
+      "vigencia_fim": null
+    },
+    {
+      "id": "LC214-APURACAO-ASSISTIDA-SPLIT",
+      "norma": "Lei Complementar nº 214/2025 (Arts. 31 a 58)",
+      "dispositivo": "Arts. 31 a 58 da LC 214/2025",
+      "tema": "Apuração Assistida do IBS e CBS, Conciliação Digital e Liquidação por Split Payment",
+      "titulo": "LC 214/2025 - Apuração Assistida, Não-Cumulatividade Plena e Liquidação por Split Payment",
+      "diploma": "Lei Complementar nº 214/2025",
+      "artigos": "Arts. 31 a 58",
+      "orgao": "Comitê Gestor do IBS / Receita Federal do Brasil",
+      "esfera": "Federal / Nacional",
+      "vigencia": "vigente",
+      "status": "confirmado",
+      "status_vigencia": "vigente",
+      "fonte_oficial": "http://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm",
+      "fontes": [
+        "http://www.planalto.gov.br/ccivil_03/leis/lcp/lcp214.htm"
+      ],
+      "resumo": "Estabelece o sistema de Apuração Assistida do IBS e da CBS pelas administrações tributárias com base nas informações constantes dos documentos fiscais eletrônicos. Disciplina a liquidação financeira no momento do pagamento (Split Payment Inteligente), no qual as instituições do Sistema de Pagamentos Brasileiro (SPB) efetuam a retenção imediata dos tributos devidos, assegurando a não-cumulatividade plena mediante apropriação automática dos créditos financeiros vinculados ao pagamento do imposto incidente nas etapas anteriores.",
+      "efeito_motor": "apuracao_assistida, split_payment_inteligente, conciliacao_credito_pagamento",
+      "vigencia_inicio": "2026-01-01",
+      "vigencia_fim": null
     }
   ],
   "parametros": {
@@ -953,6 +1110,211 @@
         "peso"
       ],
       "ajuste_vrl_obrigatorio": true
+    },
+    "fcp_por_uf": {
+      "AC": 0.0,
+      "AL": 2.0,
+      "AM": 2.0,
+      "AP": 0.0,
+      "BA": 2.0,
+      "CE": 2.0,
+      "DF": 2.0,
+      "ES": 0.0,
+      "GO": 2.0,
+      "MA": 2.0,
+      "MG": 2.0,
+      "MS": 2.0,
+      "MT": 2.0,
+      "PA": 0.0,
+      "PB": 2.0,
+      "PE": 2.0,
+      "PI": 2.0,
+      "PR": 2.0,
+      "RJ": 4.0,
+      "RN": 2.0,
+      "RO": 2.0,
+      "RR": 0.0,
+      "RS": 2.0,
+      "SC": 0.0,
+      "SE": 2.0,
+      "SP": 2.0,
+      "TO": 2.0
+    },
+    "ricms_pr_regras": {
+      "norma_ids": [
+        "RICMS-PR-DEC7871",
+        "RICMS-PR-ART17-ANEXOS-VI-VIII",
+        "CONV-ICMS-52-1991",
+        "CONV-ICMS-100-1997"
+      ],
+      "aliquotas_seletivas_art17": {
+        "cesta_basica_alimentos_pct": 7.0,
+        "produtos_selecionados_pct": 12.0,
+        "modal_geral_pct": 19.5,
+        "superfluos_base_pct": 25.0,
+        "superfluos_com_fcp_pct": 27.0,
+        "fumo_bebidas_max_com_fcp_pct": 29.0
+      },
+      "diferimento_parcial_art28_anexo8": {
+        "percentual_diferimento_pct": 38.4615,
+        "aliquota_efetiva_resultante_pct": 12.0,
+        "cst_padrao": "51",
+        "operacoes": "B2B_interna_pr_entre_contribuintes"
+      },
+      "anexo_vi_reducoes_bc": {
+        "item22_maquinas_agricolas": {
+          "convenio": "CONV-ICMS-52-1991",
+          "carga_efetiva_interna_pr_pct": 5.6,
+          "carga_efetiva_interestadual_12_pct": 5.6,
+          "carga_efetiva_interestadual_7_pct": 4.1,
+          "dispensa_estorno_entrada": true,
+          "cst_padrao": "20"
+        },
+        "item22_maquinas_industriais": {
+          "convenio": "CONV-ICMS-52-1991",
+          "carga_efetiva_interna_pr_pct": 8.8,
+          "carga_efetiva_interestadual_12_pct": 8.8,
+          "carga_efetiva_interestadual_7_pct": 5.14,
+          "dispensa_estorno_entrada": true,
+          "cst_padrao": "20"
+        },
+        "insumos_agropecuarios": {
+          "convenio": "CONV-ICMS-100-1997",
+          "reducao_bc_interestadual_padrao_pct": 60.0,
+          "reducao_bc_interestadual_alternativa_pct": 30.0,
+          "diferimento_total_interno_pr": true,
+          "cst_interno_pr": "51",
+          "cst_interestadual": "20"
+        }
+      }
+    },
+    "reforma_reducoes_mapeamento": {
+      "norma_ids": [
+        "LC214-ANEXOS-REDUCOES",
+        "LC214-APURACAO-ASSISTIDA-SPLIT"
+      ],
+      "prefixos": {
+        "3105": {
+          "tema": "Fertilizantes e Adubos Minerais ou Químicos",
+          "reducao_ibs_cbs_pct": 60.0,
+          "cClassTrib": "200001",
+          "convenio_icms_correlato": "CONV-ICMS-100-1997"
+        },
+        "3101": {
+          "tema": "Adubos de Origem Animal ou Vegetal",
+          "reducao_ibs_cbs_pct": 60.0,
+          "cClassTrib": "200001",
+          "convenio_icms_correlato": "CONV-ICMS-100-1997"
+        },
+        "3808": {
+          "tema": "Defensivos Agrícolas, Inseticidas, Fungicidas e Herbicidas",
+          "reducao_ibs_cbs_pct": 60.0,
+          "cClassTrib": "200002",
+          "convenio_icms_correlato": "CONV-ICMS-100-1997"
+        },
+        "8432": {
+          "tema": "Máquinas e Aparelhos de Uso Agrícola, Hortícola ou Florestal",
+          "reducao_ibs_cbs_pct": 60.0,
+          "cClassTrib": "200003",
+          "convenio_icms_correlato": "CONV-ICMS-52-1991"
+        },
+        "8433": {
+          "tema": "Máquinas e Aparelhos de Colheita, Debulha e Limpeza de Produtos Agrícolas",
+          "reducao_ibs_cbs_pct": 60.0,
+          "cClassTrib": "200003",
+          "convenio_icms_correlato": "CONV-ICMS-52-1991"
+        },
+        "8436": {
+          "tema": "Outras Máquinas e Aparelhos para Agricultura, Horticultura e Avicultura",
+          "reducao_ibs_cbs_pct": 60.0,
+          "cClassTrib": "200003",
+          "convenio_icms_correlato": "CONV-ICMS-52-1991"
+        },
+        "8437": {
+          "tema": "Máquinas para Limpeza, Seleção ou Peneiração de Grãos",
+          "reducao_ibs_cbs_pct": 60.0,
+          "cClassTrib": "200003",
+          "convenio_icms_correlato": "CONV-ICMS-52-1991"
+        },
+        "8701": {
+          "tema": "Tratores Agrícolas e Florestais",
+          "reducao_ibs_cbs_pct": 60.0,
+          "cClassTrib": "200003",
+          "convenio_icms_correlato": "CONV-ICMS-52-1991"
+        },
+        "3004": {
+          "tema": "Medicamentos para Medicina Humana",
+          "reducao_ibs_cbs_pct": 60.0,
+          "cClassTrib": "200004"
+        },
+        "3003": {
+          "tema": "Medicamentos Compostos",
+          "reducao_ibs_cbs_pct": 60.0,
+          "cClassTrib": "200004"
+        },
+        "1006": {
+          "tema": "Arroz para Alimentação Humana (Cesta Básica Nacional)",
+          "reducao_ibs_cbs_pct": 100.0,
+          "cClassTrib": "100001"
+        },
+        "0713": {
+          "tema": "Feijão e Leguminosas (Cesta Básica Nacional)",
+          "reducao_ibs_cbs_pct": 100.0,
+          "cClassTrib": "100001"
+        }
+      }
+    },
+    "simples_hibrido_regras": {
+      "norma_ids": [
+        "LC214-SIMPLES-HIBRIDO",
+        "LC214-APURACAO-ASSISTIDA-SPLIT"
+      ],
+      "cronograma_fatores": {
+        "2026": {
+          "expurgo_das_pct": 0.0,
+          "aproveitamento_credito_entrada_pct": 0.0,
+          "ibs_cbs_venda_modo": "none"
+        },
+        "2027": {
+          "expurgo_das_pct": 18.0,
+          "aproveitamento_credito_entrada_pct": 100.0,
+          "ibs_cbs_venda_modo": "dual_pleno"
+        },
+        "2028": {
+          "expurgo_das_pct": 18.0,
+          "aproveitamento_credito_entrada_pct": 100.0,
+          "ibs_cbs_venda_modo": "dual_pleno"
+        },
+        "2029": {
+          "expurgo_das_pct": 22.0,
+          "aproveitamento_credito_entrada_pct": 100.0,
+          "ibs_cbs_venda_modo": "dual_pleno"
+        },
+        "2030": {
+          "expurgo_das_pct": 26.0,
+          "aproveitamento_credito_entrada_pct": 100.0,
+          "ibs_cbs_venda_modo": "dual_pleno"
+        },
+        "2031": {
+          "expurgo_das_pct": 30.0,
+          "aproveitamento_credito_entrada_pct": 100.0,
+          "ibs_cbs_venda_modo": "dual_pleno"
+        },
+        "2032": {
+          "expurgo_das_pct": 34.0,
+          "aproveitamento_credito_entrada_pct": 100.0,
+          "ibs_cbs_venda_modo": "dual_pleno"
+        },
+        "2033": {
+          "expurgo_das_pct": 42.0,
+          "aproveitamento_credito_entrada_pct": 100.0,
+          "ibs_cbs_venda_modo": "dual_pleno"
+        }
+      },
+      "metodologia_ponto_inflexao": {
+        "descricao": "Calcula o volume percentual mínimo de compras com crédito pleno necessário para que o Simples Híbrido supere o Simples Tradicional na apuração líquida do caixa empresarial.",
+        "formula": "credito_minimo_empate = (DAS_sem_expurgo - DAS_com_expurgo) / (aliq_ibs_cbs_venda * margem_agregada)"
+      }
     }
   }
 }

@@ -27,6 +27,7 @@ export type XmlCtx = {
   cClassReferenciada: string;
   tpNFCredito: string; tpNFDebito: string;
   anoReforma: number;
+  exigeGTribRegular?: boolean;
 };
 
 export type XmlCampo = { tag: string; grupo: string; valor: string; obrig: 'sempre' | 'condicional' | 'opcional';
@@ -292,6 +293,14 @@ export function montarXml(ctx: XmlCtx, ds: Dataset, reforma: Reforma | null, rec
   ];
   if (exportacao) ibscbs.push(C('gCredPresOper', 'IBSCBS', '', 'opcional',
     'crédito presumido de exportação: exige a nota referenciada e o cCredPres da tabela', 'a preencher'));
+  if (ctx.exigeGTribRegular) {
+    ibscbs.push(
+      C('gTribRegular/CSTReg', 'IBSCBS', '01', 'condicional', 'CST de Tributação Regular para comparação com benefício', 'tabela oficial'),
+      C('gTribRegular/cClassTribReg', 'IBSCBS', ctx.cClassTribRegForcado || '000001', 'condicional', 'Classificação Tributária Regular de referência', 'tabela oficial'),
+      C('gTribRegular/pAliqEfetRegCBS', 'IBSCBS', aliq?.uniao != null ? String(aliq.uniao).replace('.', ',') : '8,8', 'condicional', 'Alíquota de referência da CBS regular', 'tabela oficial'),
+      C('gTribRegular/vTribRegCBS', 'IBSCBS', '', 'condicional', 'Valor de referência da CBS regular', 'a preencher')
+    );
+  }
   bloco('IBSCBS', `IBS / CBS (${ctx.anoReforma})`, 'obrigatório desde 2026 em alíquotas-teste; pleno em 2027', ibscbs);
 
   if (importado) {
@@ -488,4 +497,6 @@ function naturalOperacao(ctx: XmlCtx, temRec: boolean): string {
 export {
   converterItemExtracaoParaPrecificacao,
   type PrecificacaoItemInput,
+  type ParametrizacaoItemInput,
 } from './extrator-nfe-types';
+export { converterItemExtracaoParaParametrizacao } from './extrator-nfe';

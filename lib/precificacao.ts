@@ -25,10 +25,16 @@ import {
   calcularMvaAjustada,
   calcularEstornoProporcionalIcms,
   mapearCfopEntrada,
+  detectarReducoesFiscaisPorNcm,
+  calcularReducaoConvenioIcms,
+  calcularDifalDetalhado,
+  calcularDetalhamentoSimplesHibrido,
+  obterFcpPorUf,
   type DestinacaoMercadoria,
   type AliquotasAno,
   type MarcoLegal,
   type RegimeTributario,
+  type DetalhamentoSimplesHibrido,
 } from './marco-legal';
 
 export const r2 = (x: number): number => {
@@ -60,6 +66,9 @@ export type ItemPreco = {
   pMVAST?: number;
   pisCofinsMonofasico?: boolean;
   temSt?: boolean;
+  infAdProd?: string;
+  aliquotaCreditoIcmsSimplesPct?: number;
+  dispensaEstornoEntrada?: boolean;
   baseReduzidaSaidaPct?: number;
   tipoEstabelecimento?: 'comercio' | 'industria';
   destinacao?: DestinacaoMercadoria;
@@ -177,6 +186,7 @@ export interface ComparativoRegimesResultado {
     creditoTransferido: number;
     custoEfetivoClienteB2B: number;
   };
+  analiseSimplesHibrido?: DetalhamentoSimplesHibrido;
 }
 
 export type ParamsPreco = {
@@ -214,6 +224,9 @@ export type ParamsPreco = {
   baseReduzidaSaidaPct?: number;
   pisCofinsMonofasico?: boolean;
   temSt?: boolean;
+  operacaoInternaPRB2B?: boolean;
+  destinatarioContribuinte?: boolean;
+  dispensaEstornoEntrada?: boolean;
 };
 
 export type Ctx = { reforma: Reforma | null; marco: MarcoLegal };
@@ -395,6 +408,8 @@ export function sugerirAliquotasPrecificacao(params: {
   cstIcms?: string;
   csosn?: string;
   temSt?: boolean;
+  operacaoInternaPRB2B?: boolean;
+  destinatarioContribuinte?: boolean;
   ano: number;
   regime: RegimeTributario;
   ufOrigem?: string;
@@ -409,6 +424,9 @@ export function sugerirAliquotasPrecificacao(params: {
   const { ncm, cClassTrib, ano, regime, dadosNcm, dadosReforma, marco, overrides } = params;
   const ufOrigem = (params.ufOrigem || 'PR').toUpperCase();
   const ufDestino = (params.ufDestino || 'PR').toUpperCase();
+
+  // Consulta O(1) às reduções fiscais e convênios correlatos
+  const reducoesNcm = detectarReducoesFiscaisPorNcm(ncm, ufDestino, marco);
 
   // IPI e II do NCM
   const ipiPct = typeof dadosNcm?.ipi === 'number' ? dadosNcm.ipi : 0;
@@ -431,6 +449,20 @@ export function sugerirAliquotasPrecificacao(params: {
     Boolean(params.temSt);
   let icmsVendaPct = isStSubstituido ? 0 : (marco ? icmsInternoUf(marco, ufDestino) : 18);
 
+  // Se houver benefício/convênio no PR (ex: Máquinas Agrícolas 5,6% ou diferimento parcial)
+  if (reducoesNcm?.icms?.aliqEfetivaSugeridaPct !== undefined && !isStSubstituido) {
+    icmsVendaPct = reducoesNcm.icms.aliqEfetivaSugeridaPct;
+  }
+
+  // Diferimento Parcial B2B no Paraná (Art. 28 Anexo VIII RICMS/PR -> 12% efetivo)
+  const isOperacaoB2BPr =
+    (params.operacaoInternaPRB2B === true ||
+      (ufOrigem === 'PR' && ufDestino === 'PR' && params.destinatarioContribuinte !== false)) &&
+    !isStSubstituido;
+  if (isOperacaoB2BPr && reducoesNcm?.icms?.aliqEfetivaSugeridaPct === undefined) {
+    icmsVendaPct = 12.0;
+  }
+
   // CBS e IBS
   let cbsPct = 8.8;
   let ibsPct = 0.1;
@@ -449,6 +481,10 @@ export function sugerirAliquotasPrecificacao(params: {
   } else if (ano >= 2033) {
     cbsPct = 8.8;
     ibsPct = 17.7;
+  }
+
+  if (reducoesNcm?.reforma?.reducaoIbsCbsPct) {
+    reducaoIbsCbsPct = reducoesNcm.reforma.reducaoIbsCbsPct;
   }
 
   if (cClassTrib && dadosReforma?.classificacoes) {
@@ -654,6 +690,37 @@ export function calcularCustoAquisicaoReal(
   let credIbs = 0;
   let tribNaoAprov = 0;
 
+  // DIFAL de Uso/Consumo ou Ativo Imobilizado (calculado antes para integrar tribNaoAprov mesmo se houver vedação de crédito)
+  const isUsoOuAtivo =
+    opts.destinoItem === 'uso_consumo' ||
+    opts.destinoItem === 'ativo_imobilizado' ||
+    it.destinacao === 'uso_consumo' ||
+    it.destinacao === 'ativo_imobilizado';
+  const ufOrig = opts.ufOrigem || it.ufOrigem;
+  const ufDest = opts.ufDestino || it.ufDestino || 'PR';
+
+  let difalDevido = 0;
+  if (isUsoOuAtivo && ufOrig && ufDest && ufOrig !== ufDest) {
+    const aliqInterDifal = ['1', '2', '3', '8'].includes(it.origemMercadoria || '') ? 4 : 12;
+    const aliqIntraDifal = 19.5;
+    const valorBaseOperacao = vProd - vDesc + frete + ipi;
+
+    // Real e Presumido: Base Dupla Contribuinte (art. 155 §2º VII CF/88 c/c Lei 190/2021)
+    // Simples e Simples Híbrido: Base Única
+    const metodologiaDifal = (regime === 'real' || regime === 'presumido') ? 'base_dupla' : 'base_unica';
+    const difalCalc = calcularDifalDetalhado({
+      valorOperacao: valorBaseOperacao,
+      aliqInterestadualPct: aliqInterDifal,
+      aliqInternaDestinoPct: aliqIntraDifal,
+      ufDestino: ufDest,
+      metodologia: metodologiaDifal,
+      incluirFcp: true,
+      marco: opts.marco,
+    });
+
+    difalDevido = difalCalc.valorTotalDevidoDestino;
+  }
+
   const isFornecedorSimples = it.crtEmitente === '1' || it.crtEmitente === '2' || (Boolean(it.csosn) && !it.cstIcms);
 
   if (!glosado) {
@@ -694,9 +761,12 @@ export function calcularCustoAquisicaoReal(
         tribNaoAprov += credPisCofins;
         credPisCofins = 0;
       }
-      // Crédito de ICMS: restrito ao valor/alíquota informado na NF-e (Art. 23 LC 123/2006).
-      // CSOSN 102/103/300/400/500 veda crédito integralmente.
-      if (['102', '103', '300', '400', '500'].includes(it.csosn || '')) {
+      // Crédito de ICMS: permitido se informado alíquota em <pCredSN> ou <infAdProd> (Art. 23 LC 123/2006).
+      // Se houver aliquotaCreditoIcmsSimplesPct e estiver no Real ou Presumido:
+      const aliqSimples = it.aliquotaCreditoIcmsSimplesPct ?? 0;
+      if (aliqSimples > 0 && (regime === 'real' || regime === 'presumido') && credIcms === 0) {
+        credIcms = r2((vProd - vDesc) * (aliqSimples / 100));
+      } else if (['102', '103', '300', '400', '500'].includes(it.csosn || '') && aliqSimples === 0) {
         tribNaoAprov += credIcms;
         credIcms = 0;
       }
@@ -734,27 +804,13 @@ export function calcularCustoAquisicaoReal(
     }
 
     // Regra 4: Estorno Proporcional por Redução de Base na Saída (RICMS/PR Anexo II)
+    // Se houver dispensaEstornoEntrada (Convênio 52/91 Item 22 Anexo VI RICMS/PR), valorEstornadoParaCusto = 0
+    const dispensaEstorno = Boolean(it.dispensaEstornoEntrada);
     const baseRedSaida = opts.baseReduzidaSaidaPct ?? it.baseReduzidaSaidaPct;
-    if (baseRedSaida !== undefined && baseRedSaida < 100 && credIcms > 0) {
+    if (baseRedSaida !== undefined && baseRedSaida < 100 && credIcms > 0 && !dispensaEstorno) {
       const estorno = calcularEstornoProporcionalIcms(credIcms, 100 - baseRedSaida);
       tribNaoAprov += estorno.valorEstornadoParaCusto;
       credIcms = estorno.creditoAproveitavel;
-    }
-
-    // DIFAL de Uso/Consumo ou Ativo Imobilizado
-    if (
-      (opts.destinoItem === 'uso_consumo' ||
-        opts.destinoItem === 'ativo_imobilizado' ||
-        it.destinacao === 'uso_consumo' ||
-        it.destinacao === 'ativo_imobilizado') &&
-      ufOrig &&
-      ufDest &&
-      ufOrig !== ufDest
-    ) {
-      const aliqInterDifal = ['1', '2', '3', '8'].includes(it.origemMercadoria || '') ? 4 : 12;
-      const aliqIntraDifal = 19.5;
-      const difalEntrada = r2((vProd - vDesc + frete + ipi) * ((aliqIntraDifal - aliqInterDifal) / 100));
-      tribNaoAprov += difalEntrada;
     }
   } else {
     // Quando glosado, todos os tributos destacados que seriam créditos viram custo
@@ -764,6 +820,9 @@ export function calcularCustoAquisicaoReal(
       (it.credCbsEntrada ?? 0) +
       (it.credIbsEntrada ?? 0);
   }
+
+  // Agrega o DIFAL devido aos tributos não recuperáveis
+  tribNaoAprov += difalDevido;
 
   const totalTribNaoRecup = r2(ipi + isVal + icmsSt + ii + tribNaoAprov);
   const totalImpostosRecup = r2(credIcms + credPisCofins + credCbs + credIbs);
@@ -1160,6 +1219,20 @@ export function compararQuatroRegimes(it: ItemPreco, p: ParamsPreco, ctx: Ctx): 
   const bestMargem = [...list].sort((a, b) => b.margemLiquidaValor - a.margemLiquidaValor)[0];
   const bestB2B = [...list].sort((a, b) => b.creditoTransferidoClienteB2B - a.creditoTransferidoClienteB2B)[0];
 
+  // Análise aprofundada do Simples Híbrido com Ponto de Inflexão (Break-even)
+  const relSimples = res['simples'];
+  const faturamentoEstimado = (relSimples?.precoVendaFinalNota ?? 100) * (it.quantidade > 0 ? it.quantidade : 1);
+  const comprasEstimadas = it.valorBrutoEntrada;
+  const analiseHibrido = calcularDetalhamentoSimplesHibrido({
+    ano: p.ano,
+    faturamentoMensal: faturamentoEstimado,
+    aliquotaDasEfetivaPct: p.overrides?.dasEfetivoPct ?? 10.0,
+    comprasInsumosMercadorias: comprasEstimadas,
+    aliquotaMediaCreditoEntradaPct: (p.overrides?.cbsPct ?? 8.8) + (p.overrides?.ibsPct ?? 0.1),
+    aliquotaIbsCbsVendaPct: (p.overrides?.cbsPct ?? 8.8) + (p.overrides?.ibsPct ?? 0.1),
+    marco: ctx.marco,
+  });
+
   return {
     regimes: res as Record<RegimeTributario, RelatorioMargens>,
     melhorMargemLiquida: {
@@ -1172,6 +1245,7 @@ export function compararQuatroRegimes(it: ItemPreco, p: ParamsPreco, ctx: Ctx): 
       creditoTransferido: bestB2B.creditoTransferidoClienteB2B,
       custoEfetivoClienteB2B: r2(bestB2B.precoVendaFinalNota - bestB2B.creditoTransferidoClienteB2B),
     },
+    analiseSimplesHibrido: analiseHibrido,
   };
 }
 

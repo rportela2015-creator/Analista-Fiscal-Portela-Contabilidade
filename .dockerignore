@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+*.tmp
+*.log
+.env.local
+.env*.local
+.vscode
+.idea
+colab

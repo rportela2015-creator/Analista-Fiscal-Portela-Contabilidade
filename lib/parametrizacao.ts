@@ -5,6 +5,9 @@
  * tributário da empresa e convênios vigentes.
  */
 import { Dataset, Record8, Cfop } from './data';
+import type { ExtractedItem, ParametrizacaoItemInput } from './extrator-nfe-types';
+import { converterItemExtracaoParaParametrizacao } from './extrator-nfe';
+import { detectarReducoesFiscaisPorNcm, obterFcpPorUf, type RegimeTributario, type DestinacaoMercadoria } from './marco-legal';
 
 export type Operacao = 'interna' | 'interestadual' | 'importacao' | 'exportacao';
 export type Finalidade = 'comercializacao' | 'industrializacao' | 'consumo' | 'ativo';
@@ -208,3 +211,79 @@ export function catalogChecklist(rec: Record8, ds: Dataset) {
     };
   }).sort((a, b) => (b.obrig ? 1 : 0) - (a.obrig ? 1 : 0));
 }
+
+export type DiagnosticoParametrizacao = {
+  item: ParametrizacaoItemInput;
+  bloqueantes: string[];
+  alertas: string[];
+  conferido: boolean;
+};
+
+/**
+ * Parametriza em lote múltiplos itens extraídos de NF-e para integração ERP,
+ * detectando em O(1) reduções de IBS/CBS, CSTs, Diferimento Parcial e FCP.
+ * Suporta tanto ExtractedItem (NF-e bruta) quanto ParametrizacaoItemInput.
+ */
+export function parametrizarLoteNfe(
+  itens: (ExtractedItem | ParametrizacaoItemInput)[],
+  opcoes?: {
+    ufOrigem?: string;
+    ufDestino?: string;
+    regimeDestinatario?: RegimeTributario;
+    destinacao?: DestinacaoMercadoria;
+    marco?: any;
+  }
+): {
+  itensParametrizados: ParametrizacaoItemInput[];
+  diagnosticos: DiagnosticoParametrizacao[];
+  totalBloqueantes: number;
+  totalAlertas: number;
+} {
+  const itensParametrizados: ParametrizacaoItemInput[] = [];
+  const diagnosticos: DiagnosticoParametrizacao[] = [];
+  let totalBloqueantes = 0;
+  let totalAlertas = 0;
+
+  for (const it of itens) {
+    const isParamItem = 'codigoProduto' in it && 'cfopEntradaSugerido' in it;
+    const param: ParametrizacaoItemInput = isParamItem
+      ? (it as ParametrizacaoItemInput)
+      : converterItemExtracaoParaParametrizacao(it as ExtractedItem, opcoes);
+
+    itensParametrizados.push(param);
+
+    const bloqueantes: string[] = [];
+    const alertas: string[] = [];
+
+    if (!param.ncm || param.ncm.length !== 8) {
+      bloqueantes.push(`NCM inválido ou ausente no item ${param.codigoProduto}`);
+    }
+    if (!param.cfopEntradaSugerido) {
+      bloqueantes.push(`CFOP de entrada não definido para o CFOP de origem ${param.cfopOrigem}`);
+    }
+    if (param.reducaoIbsCbsPct > 0 && !param.cClassTribSugerido) {
+      alertas.push(`Item com redução de ${param.reducaoIbsCbsPct}% sem cClassTrib definido`);
+    }
+    if (param.beneficioIcmsPr) {
+      alertas.push(`Benefício ICMS/PR detectado: ${param.beneficioIcmsPr}`);
+    }
+
+    totalBloqueantes += bloqueantes.length;
+    totalAlertas += alertas.length;
+
+    diagnosticos.push({
+      item: param,
+      bloqueantes,
+      alertas,
+      conferido: bloqueantes.length === 0,
+    });
+  }
+
+  return {
+    itensParametrizados,
+    diagnosticos,
+    totalBloqueantes,
+    totalAlertas,
+  };
+}
+

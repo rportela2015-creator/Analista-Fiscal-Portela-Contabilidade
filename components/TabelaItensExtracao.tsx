@@ -58,6 +58,10 @@ export interface TabelaItensExtracaoProps {
   onItemClick?: (item: ExtractedItem) => void;
   /** Callback para precificar um item individual */
   onPrecificarItem?: (item: ExtractedItem) => void;
+  /** Callback para parametrizar um item individual no ERP */
+  onParametrizarItem?: (item: ExtractedItem) => void;
+  /** Callback para parametrizar itens selecionados no ERP */
+  onParametrizarSelecionados?: (itens: ExtractedItem[]) => void;
   /** Total de itens sensíveis pré-computado (opcional) */
   totalItensSensiveis?: number;
 }
@@ -108,6 +112,8 @@ export default function TabelaItensExtracao({
   disabled = false,
   onItemClick,
   onPrecificarItem,
+  onParametrizarItem,
+  onParametrizarSelecionados,
   totalItensSensiveis,
 }: TabelaItensExtracaoProps) {
   // ---- Hooks chamados estritamente no topo para cumprir scripts/hookcheck.mjs ----
@@ -334,6 +340,25 @@ export default function TabelaItensExtracao({
           >
             ⚡ Selecionar Apenas Sensíveis ({contagemSensiveis})
           </button>
+          {onParametrizarSelecionados && selectedCount > 0 && (
+            <button
+              type="button"
+              className="mini"
+              onClick={() => {
+                const selItens = itens.filter((it) => selectedSet.has(it.index));
+                onParametrizarSelecionados(selItens);
+              }}
+              style={{
+                background: '#0b3d91',
+                borderColor: '#0b3d91',
+                color: '#fff',
+                fontWeight: 650,
+              }}
+              title="Transferir os itens selecionados para a tela de Parametrização de ERP"
+            >
+              ⚙️ Parametrizar Selecionados ({selectedCount})
+            </button>
+          )}
         </div>
 
         {/* Campo de Busca Rápida */}
@@ -776,6 +801,24 @@ export default function TabelaItensExtracao({
                               title="Enviar este item individualmente para formação de preço e cálculo de margem"
                             >
                               💰 Precificar Item
+                            </button>
+                          )}
+                          {onParametrizarItem && (
+                            <button
+                              type="button"
+                              className="mini"
+                              onClick={() => onParametrizarItem(item)}
+                              style={{
+                                padding: '3px 8px',
+                                fontSize: 11,
+                                background: '#0b3d91',
+                                color: '#fff',
+                                borderColor: '#0b3d91',
+                                fontWeight: 600,
+                              }}
+                              title="Enviar este item individualmente para parametrização fiscal no ERP"
+                            >
+                              ⚙️ Parametrizar ERP
                             </button>
                           )}
                           <button

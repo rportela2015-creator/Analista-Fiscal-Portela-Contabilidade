@@ -9,7 +9,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Dataset, ErpTabela, Reforma, Record8, loadDataset, loadErpTabela, loadReforma, normalizeNcm } from '@/lib/data';
 import { classify } from '@/lib/engine';
 import { XmlCtx, cUF, montarXml, MODELOS, XmlParam } from '@/lib/xml';
-import { Finalidade, Operacao, Regime } from '@/lib/parametrizacao';
+import { Finalidade, Operacao, Regime, parametrizarLoteNfe } from '@/lib/parametrizacao';
+import type { ParametrizacaoItemInput } from '@/lib/extrator-nfe-types';
 import { buscarClassificacoes } from '@/lib/reforma';
 import {
   ParametrosErpPayload,
@@ -126,7 +127,11 @@ const SELO_CLASSE: Record<string, string> = { oficial: 'oficial', duvidoso: 'duv
 
 const FONTES: Record<string, string> = { 'tabela oficial': 'selo-oficial', 'regra do app': 'selo-derivada', 'a preencher': 'selo-inferido' };
 
-export default function Parametrizar() {
+export interface ParametrizarProps {
+  itensImportados?: ParametrizacaoItemInput[];
+}
+
+export default function Parametrizar({ itensImportados }: ParametrizarProps = {}) {
   const [ds, setDs] = useState<Dataset | null>(null);
   const [reforma, setReforma] = useState<Reforma | null>(null);
   const [erp, setErp] = useState<ErpTabela | null>(null);
@@ -146,6 +151,8 @@ export default function Parametrizar() {
   const [modalRelatorio, setModalRelatorio] = useState<{ aberto: boolean; modo: 'resumido' | 'detalhado' }>({ aberto: false, modo: 'resumido' });
   const [formatoModal, setFormatoModal] = useState<'html' | 'txt'>('html');
   const [relatorioCopiado, setRelatorioCopiado] = useState('');
+  const [loteItens, setLoteItens] = useState<ParametrizacaoItemInput[]>(itensImportados || []);
+  const [itemLoteAtivo, setItemLoteAtivo] = useState<number | null>(null);
 
   useEffect(() => {
     loadDataset().then(async (d) => { setDs(d); await d.pronto; }).catch(() => setDs(null));
@@ -154,10 +161,19 @@ export default function Parametrizar() {
   }, []);
 
   useEffect(() => {
+    if (itensImportados && itensImportados.length > 0) {
+      setLoteItens(itensImportados);
+    }
+  }, [itensImportados]);
+
+  useEffect(() => {
     const aplicarParametrizacao = (dados: any) => {
       if (!dados) return;
       if (dados.ncm) setNcmManual(dados.ncm);
       if (dados.descricao) setTexto(dados.descricao);
+      if (dados.itensErp && Array.isArray(dados.itensErp)) {
+        setLoteItens(dados.itensErp);
+      }
       setCtx((c) => ({
         ...c,
         operacao: dados.operacao || c.operacao,
@@ -174,6 +190,13 @@ export default function Parametrizar() {
       if (salvo) {
         aplicarParametrizacao(JSON.parse(salvo));
         sessionStorage.removeItem('ncm-para-parametrizar');
+      }
+      const salvoLote = sessionStorage.getItem('ncm-parametrizar-itens');
+      if (salvoLote) {
+        const parsed = JSON.parse(salvoLote);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setLoteItens(parsed);
+        }
       }
     } catch { /* sem storage */ }
 
@@ -208,8 +231,54 @@ export default function Parametrizar() {
     });
   }, [erp, buscaTabela, soOficial]);
 
+  const resultadoDiagnosticoLote = useMemo(() => {
+    if (!loteItens || loteItens.length === 0) return null;
+    return parametrizarLoteNfe(loteItens, {
+      ufOrigem: ctx.ufEmi,
+      ufDestino: ctx.ufDest,
+    });
+  }, [loteItens, ctx.ufEmi, ctx.ufDest]);
+
   if (!ds || !p) return <div className="card"><span className="spin" /> carregando dataset…</div>;
   const set = <K extends keyof XmlCtx>(k: K, val: XmlCtx[K]) => setCtx((c) => ({ ...c, [k]: val }));
+
+  const exportarLoteCsv = () => {
+    if (!loteItens || loteItens.length === 0) return;
+    const diag = resultadoDiagnosticoLote?.diagnosticos || [];
+    const header = 'Codigo;Descricao;NCM;CEST;CFOP_Origem;CFOP_Entrada;CFOP_Saida;CST_ICMS;CSOSN;cClassTrib;CST_IBS_CBS;Reducao_IBS_CBS_Pct;Beneficio_PR;FCP_Pct;Status;Alertas\r\n';
+    const rows = diag.map((d) => {
+      const it = d.item;
+      const status = d.conferido ? 'CONFERIDO' : 'BLOQUEANTE';
+      const alertas = [...d.bloqueantes, ...d.alertas].join(' | ');
+      return `"${it.codigoProduto}";"${(it.descricao || '').replace(/"/g, '""')}";"${it.ncm}";"${it.cest || ''}";"${it.cfopOrigem}";"${it.cfopEntradaSugerido}";"${it.cfopSaidaSugerido}";"${it.cstIcmsOrigem || ''}";"${it.csosnOrigem || ''}";"${it.cClassTribSugerido || ''}";"${it.cstIbsCbsSugerido || ''}";"${it.reducaoIbsCbsPct}%";"${it.beneficioIcmsPr || ''}";"${it.fcpPct || 0}%";"${status}";"${alertas.replace(/"/g, '""')}"`;
+    }).join('\r\n');
+    baixarArquivo('\uFEFF' + header + rows, 'lote_parametrizado_erp.csv', 'text/csv;charset=utf-8');
+  };
+
+  const exportarLoteJson = () => {
+    if (!loteItens || loteItens.length === 0) return;
+    const dados = resultadoDiagnosticoLote || { itensParametrizados: loteItens };
+    baixarArquivo(JSON.stringify(dados, null, 2), 'lote_parametrizado_erp.json', 'application/json');
+  };
+
+  const carregarItemDoLote = (item: ParametrizacaoItemInput, idx: number) => {
+    setTexto(item.descricao);
+    setNcmManual(item.ncm);
+    setItemLoteAtivo(idx);
+    setCtx((c) => ({
+      ...c,
+      cClassTribForcado: item.cClassTribSugerido || c.cClassTribForcado,
+      st: (item.cfopEntradaSugerido && ['1403', '2403'].includes(item.cfopEntradaSugerido)) || c.st,
+    }));
+  };
+
+  const limparLote = () => {
+    setLoteItens([]);
+    setItemLoteAtivo(null);
+    try {
+      sessionStorage.removeItem('ncm-parametrizar-itens');
+    } catch { /* sem storage */ }
+  };
 
   const copiar = async (rotulo: string, conteudo: string) => {
     try {
@@ -223,6 +292,164 @@ export default function Parametrizar() {
 
   return (
     <>
+      {/* ---------------- PAINEL EXECUTIVO: LOTE DE ENTRADA (NF-E) ---------------- */}
+      {loteItens && loteItens.length > 0 && (
+        <div className="card" style={{ marginBottom: 16, background: '#f8fafc', border: '1px solid #cbd5e1', padding: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--ink)' }}>
+                📦 Itens Recebidos da Auditoria de Entrada (NF-e) — {loteItens.length} {loteItens.length === 1 ? 'item' : 'itens'}
+              </h3>
+              <p className="hint" style={{ margin: '3px 0 0', fontSize: 12.5 }}>
+                Parametrização cadastral em lote com de-para de CFOP, detecção O(1) de benefícios fiscais, cClassTrib da Reforma e FCP.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              {resultadoDiagnosticoLote && (
+                <>
+                  <span
+                    className="badge"
+                    style={{
+                      background: resultadoDiagnosticoLote.totalBloqueantes === 0 ? '#ecfdf5' : '#fee2e2',
+                      color: resultadoDiagnosticoLote.totalBloqueantes === 0 ? '#065f46' : '#991b1b',
+                      border: '1px solid #cbd5e1',
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      fontWeight: 650,
+                    }}
+                  >
+                    {resultadoDiagnosticoLote.totalBloqueantes === 0
+                      ? '✓ 100% dos Itens Aptos'
+                      : `⛔ ${resultadoDiagnosticoLote.totalBloqueantes} bloqueio(s)`}
+                  </span>
+                  {resultadoDiagnosticoLote.totalAlertas > 0 && (
+                    <span
+                      className="badge media"
+                      style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600 }}
+                    >
+                      ⚠️ {resultadoDiagnosticoLote.totalAlertas} alerta(s)
+                    </span>
+                  )}
+                </>
+              )}
+              <button
+                type="button"
+                className="mini"
+                onClick={exportarLoteCsv}
+                style={{ background: '#107c41', color: '#fff', borderColor: '#107c41', fontWeight: 600, padding: '5px 10px' }}
+                title="Exportar parâmetros cadastrais dos itens em formato CSV"
+              >
+                📥 Exportar CSV
+              </button>
+              <button
+                type="button"
+                className="mini"
+                onClick={exportarLoteJson}
+                style={{ background: '#0b3d91', color: '#fff', borderColor: '#0b3d91', fontWeight: 600, padding: '5px 10px' }}
+                title="Exportar parâmetros em formato JSON para integração com ERP"
+              >
+                📥 Exportar JSON
+              </button>
+              <button
+                type="button"
+                className="mini"
+                onClick={limparLote}
+                style={{ color: 'var(--bad)', fontWeight: 600, padding: '5px 8px' }}
+                title="Remover itens importados da NF-e"
+              >
+                ✕ Limpar Lote
+              </button>
+            </div>
+          </div>
+
+          {/* Tabela do Lote */}
+          <div className="scroll" style={{ marginTop: 12, maxHeight: '280px' }}>
+            <table className="tb" style={{ minWidth: 960, fontSize: 12 }}>
+              <thead>
+                <tr>
+                  <th style={{ width: 40, textAlign: 'center' }}>#</th>
+                  <th style={{ width: 100 }}>Cód. Prod</th>
+                  <th style={{ minWidth: 220 }}>Descrição Comercial</th>
+                  <th style={{ width: 95 }}>NCM</th>
+                  <th style={{ width: 130 }}>CFOP Entrada / Saída</th>
+                  <th style={{ width: 140 }}>cClassTrib / IBS-CBS</th>
+                  <th style={{ minWidth: 160 }}>Benefício Fiscal / Status</th>
+                  <th style={{ width: 100, textAlign: 'center' }}>Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(resultadoDiagnosticoLote?.diagnosticos || loteItens.map(it => ({ item: it, bloqueantes: [], alertas: [], conferido: true }))).map((diag, idx) => {
+                  const it = diag.item;
+                  const isAtivo = itemLoteAtivo === idx;
+                  return (
+                    <tr
+                      key={idx}
+                      style={{
+                        background: isAtivo ? '#eff6ff' : idx % 2 === 0 ? '#fff' : '#fcfcfc',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => carregarItemDoLote(it, idx)}
+                    >
+                      <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                      <td className="mono" style={{ fontWeight: 600 }}>{it.codigoProduto}</td>
+                      <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.descricao}>
+                        {it.descricao}
+                      </td>
+                      <td className="mono">{it.ncm}</td>
+                      <td>
+                        <span className="badge" style={{ background: '#f1f5f9', color: '#1e293b', fontSize: 10.5 }}>
+                          {it.cfopEntradaSugerido} ➔ {it.cfopSaidaSugerido}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="badge" style={{ background: '#ecfdf5', color: '#065f46', fontSize: 10.5 }}>
+                          {it.cClassTribSugerido || '000001'} {it.reducaoIbsCbsPct > 0 ? `(-${it.reducaoIbsCbsPct}%)` : ''}
+                        </span>
+                      </td>
+                      <td>
+                        {diag.bloqueantes.length > 0 ? (
+                          <span className="badge baixa" style={{ fontSize: 10.5 }}>
+                            ⛔ {diag.bloqueantes[0]}
+                          </span>
+                        ) : it.beneficioIcmsPr ? (
+                          <span className="badge" style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: 10.5 }} title={it.beneficioIcmsPr}>
+                            🏷️ {it.beneficioIcmsPr}
+                          </span>
+                        ) : (
+                          <span className="badge alta" style={{ fontSize: 10.5 }}>
+                            ✓ Apto
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          className="mini"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            carregarItemDoLote(it, idx);
+                          }}
+                          style={{
+                            padding: '2px 8px',
+                            fontSize: 11,
+                            background: isAtivo ? 'var(--brand)' : '#fff',
+                            color: isAtivo ? '#fff' : 'var(--brand)',
+                            borderColor: 'var(--brand)',
+                            fontWeight: 600,
+                          }}
+                          title="Carregar parâmetros deste item no formulário e gerar XML"
+                        >
+                          {isAtivo ? '✓ Selecionado' : 'Carregar'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
       <div className="card">
         <h2 style={{ marginTop: 0 }}>Parametrização de ERP</h2>
         <p className="hint">

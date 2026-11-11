@@ -32,7 +32,8 @@ const {
 const {
   aliquotasDoAno, reducaoDoClassTrib, icmsInterestadual, icmsInternoUf, irpjCsllPresumidoPct,
   obterFaixaSimples, calcularDasEfetivo, citar,
-  mapearCfopEntrada, calcularMvaAjustada, calcularEstornoProporcionalIcms, listarFontesOficiaisMarcoLegal
+  mapearCfopEntrada, calcularMvaAjustada, calcularEstornoProporcionalIcms, listarFontesOficiaisMarcoLegal,
+  obterFcpPorUf, calcularReducaoConvenioIcms, detectarReducoesFiscaisPorNcm, calcularDifalDetalhado, calcularDetalhamentoSimplesHibrido
 } = mods.marco;
 
 // ---------------------------------------------------------------------------------------------
@@ -712,3 +713,153 @@ t('Métricas Contábeis e Gerenciais: Margem de Contribuição, PEC, VRL e Arbit
     'Arbitramento RIR/2018 = 70% do PV'
   );
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ETAPA 9: TESTES DO NOVO MARCO LEGAL (>= 35 NORMAS), O(1), DIFAL E SIMPLES HÍBRIDO
+// ─────────────────────────────────────────────────────────────────────────────
+
+t('Etapa 9: obterFcpPorUf e integridade de FCP nas 27 UFs em O(1)', () => {
+  assert.equal(obterFcpPorUf('RJ', marco), 4.0, 'RJ deve possuir FCP de 4,0%');
+  assert.equal(obterFcpPorUf('PR', marco), 2.0, 'PR deve possuir FCP de 2,0%');
+  assert.equal(obterFcpPorUf('SP', marco), 2.0, 'SP deve possuir FCP de 2,0%');
+  assert.equal(obterFcpPorUf('SC', marco), 0.0, 'SC não instituiu FCP geral (0,0%)');
+  assert.equal(obterFcpPorUf('ES', marco), 0.0, 'ES não cobra FCP geral (0,0%)');
+  assert.equal(obterFcpPorUf('XX', marco), 2.0, 'Fallback seguro para UF desconhecida');
+});
+
+t('Etapa 9: calcularReducaoConvenioIcms para Convênios 52/91 e 100/97', () => {
+  // Convênio 52/1991 - Máquinas Agrícolas no Paraná
+  const maqAgricola = calcularReducaoConvenioIcms({
+    tipoConvenio: 'CONV_52_91_MAQ_AGRICOLA',
+    ufOrigem: 'PR',
+    ufDestino: 'PR',
+    aliqNominalIcmsPct: 19.5,
+    marco,
+  });
+  assert.equal(maqAgricola.aliqEfetivaPct, 5.6, 'Máquina agrícola no PR deve ter carga efetiva de 5,6%');
+  assert.equal(maqAgricola.dispensaEstornoEntrada, true, 'Convênio 52/91 dispensa expressamente estorno na entrada');
+  assert.equal(maqAgricola.cstSugerido, '20', 'CST deve ser 20 (com redução de base)');
+  near(maqAgricola.pRedBC, 71.28, 0.05, 'Redução de BC de 19,5% para 5,6% é ~71,28%');
+
+  // Convênio 100/1997 - Insumos Agropecuários Interno Paraná (Diferimento Total)
+  const agroInternoPr = calcularReducaoConvenioIcms({
+    tipoConvenio: 'CONV_100_97_INSUMO_AGRO',
+    ufOrigem: 'PR',
+    ufDestino: 'PR',
+    marco,
+  });
+  assert.equal(agroInternoPr.aliqEfetivaPct, 0, 'Interno PR é diferido');
+  assert.equal(agroInternoPr.percentualDiferimento, 100, 'Diferimento total (100%)');
+  assert.equal(agroInternoPr.cstSugerido, '51', 'Diferimento exige CST 51');
+
+  // Convênio 100/1997 - Insumos Agropecuários Interestadual (Redução 60%)
+  const agroInter = calcularReducaoConvenioIcms({
+    tipoConvenio: 'CONV_100_97_INSUMO_AGRO',
+    ufOrigem: 'PR',
+    ufDestino: 'SP',
+    aliqNominalIcmsPct: 12.0,
+    marco,
+  });
+  assert.equal(agroInter.pRedBC, 60.0, 'Redução interestadual de 60%');
+  assert.equal(agroInter.aliqEfetivaPct, 4.8, '12% com 60% de redução = 4,8% efetivo');
+});
+
+t('Etapa 9: detectarReducoesFiscaisPorNcm em O(1) vinculando Reforma e ICMS', () => {
+  // Teste NCM 8432.10.00 (Máquina Agrícola - Arado)
+  const resMaq = detectarReducoesFiscaisPorNcm('8432.10.00', 'PR', marco);
+  assert.ok(resMaq !== null, 'NCM 8432 deve ser reconhecido');
+  assert.equal(resMaq?.reforma?.reducaoIbsCbsPct, 60.0, 'Reforma concede 60% de redução');
+  assert.equal(resMaq?.reforma?.cClassTrib, '200003', 'cClassTrib para máquinas agrícolas é 200003');
+  assert.equal(resMaq?.icms?.convenioCorrelato, 'CONV-ICMS-52-1991', 'ICMS correlato é Convênio 52/91');
+  assert.equal(resMaq?.icms?.aliqEfetivaSugeridaPct, 5.6, 'ICMS interno PR efetivo é 5,6%');
+  assert.equal(resMaq?.icms?.dispensaEstornoEntrada, true, 'Dispensa estorno na entrada');
+
+  // Teste NCM 3105.20.00 (Fertilizantes NPK)
+  const resFert = detectarReducoesFiscaisPorNcm('31052000', 'PR', marco);
+  assert.ok(resFert !== null, 'NCM 3105 deve ser reconhecido');
+  assert.equal(resFert?.reforma?.reducaoIbsCbsPct, 60.0, 'Reforma reduz 60% para fertilizantes');
+  assert.equal(resFert?.reforma?.cClassTrib, '200001', 'cClassTrib de fertilizantes é 200001');
+  assert.equal(resFert?.icms?.convenioCorrelato, 'CONV-ICMS-100-1997', 'Convênio correlato 100/97');
+  assert.equal(resFert?.icms?.diferimentoPct, 100, 'Diferimento interno PR de 100%');
+  assert.equal(resFert?.icms?.cstSugerido, '51', 'CST 51 para fertilizantes no PR');
+
+  // Teste NCM 1006.10.92 (Arroz - Cesta Básica Nacional)
+  const resArroz = detectarReducoesFiscaisPorNcm('1006.10.92', 'PR', marco);
+  assert.ok(resArroz !== null, 'NCM 1006 deve ser reconhecido');
+  assert.equal(resArroz?.reforma?.reducaoIbsCbsPct, 100.0, 'Alíquota Zero / Redução 100%');
+  assert.equal(resArroz?.reforma?.cClassTrib, '100001', 'cClassTrib 100001 cesta básica');
+});
+
+t('Etapa 9: calcularDifalDetalhado com Base Dupla, Base Única e FCP Destino', () => {
+  const paramsBase = {
+    valorOperacao: 1000,
+    aliqInterestadualPct: 12.0,
+    aliqInternaDestinoPct: 19.5,
+    ufDestino: 'PR',
+    incluirFcp: true,
+    marco,
+  };
+
+  // Base Dupla (com FCP PR 2% => total destino 21,5%)
+  // V_sem_icms = 1000 * (1 - 0.12) = 880
+  // Base_Destino = 880 / (1 - 0.215) = 880 / 0.785 = 1121.02
+  // ICMS Destino Total = 1121.02 * 21.5% = 241.02
+  // ICMS Origem = 1000 * 12% = 120.00
+  // DIFAL Total = 241.02 - 120.00 = 121.02
+  const rDupla = calcularDifalDetalhado({ ...paramsBase, metodologia: 'base_dupla' });
+  near(rDupla.baseCalculo, 1121.02, 0.05, 'Base Dupla destino');
+  assert.equal(rDupla.valorIcmsOrigem, 120.0, 'ICMS Origem = R$ 120');
+  near(rDupla.valorTotalDevidoDestino, 121.02, 0.05, 'DIFAL Total devido destino');
+  near(rDupla.valorFcpDestino, 22.42, 0.05, 'FCP Destino (1121.02 * 2%)');
+
+  // Base Única
+  // Base = 1000
+  // ICMS Destino Total = 1000 * 21.5% = 215.00
+  // ICMS Origem = 120.00
+  // DIFAL Total = 95.00
+  const rUnica = calcularDifalDetalhado({ ...paramsBase, metodologia: 'base_unica' });
+  assert.equal(rUnica.baseCalculo, 1000, 'Base Única = 1000');
+  assert.equal(rUnica.valorTotalDevidoDestino, 95.0, 'DIFAL Base Única = R$ 95');
+  assert.equal(rUnica.valorFcpDestino, 20.0, 'FCP Destino = R$ 20');
+});
+
+t('Etapa 9: calcularDetalhamentoSimplesHibrido e Ponto de Inflexão (Break-even)', () => {
+  // Cenário: Faturamento 100.000 / mês, DAS efetivo 10% (R$ 10.000)
+  // Em 2027: expurgo do DAS é 18% => DAS cai para 8,2% (R$ 8.200, economia R$ 1.800)
+  // Débito IBS/CBS na venda a 26,5% = R$ 26.500
+  // Compras 90.000 a 26,5% de crédito = R$ 23.850
+  // Saldo IBS/CBS = 26.500 - 23.850 = R$ 2.650
+  // Total Híbrido = 8.200 + 2.650 = R$ 10.850 (> R$ 10.000, Simples Tradicional vence)
+  const h1 = calcularDetalhamentoSimplesHibrido({
+    ano: 2027,
+    faturamentoMensal: 100000,
+    aliquotaDasEfetivaPct: 10.0,
+    comprasInsumosMercadorias: 90000,
+    aliquotaMediaCreditoEntradaPct: 26.5,
+    aliquotaIbsCbsVendaPct: 26.5,
+    marco,
+  });
+  assert.equal(h1.fatorExpurgoDasPct, 18.0, 'Expurgo em 2027 deve ser 18%');
+  assert.equal(h1.valorDasSemExpurgo, 10000, 'DAS Tradicional = R$ 10.000');
+  assert.equal(h1.valorDasComExpurgo, 8200, 'DAS Híbrido = R$ 8.200');
+  assert.equal(h1.economiaDas, 1800, 'Economia DAS = R$ 1.800');
+  assert.equal(h1.pontoInflexao.regimeVencedor, 'simples', 'Tradicional vence sem compras suficientes');
+
+  // Agora com compras de 95.000 a 26,5%:
+  // Crédito = 25.175
+  // Saldo IBS/CBS = 26.500 - 25.175 = R$ 1.325
+  // Total Híbrido = 8.200 + 1.325 = R$ 9.525 (< R$ 10.000, Simples Híbrido vence!)
+  const h2 = calcularDetalhamentoSimplesHibrido({
+    ano: 2027,
+    faturamentoMensal: 100000,
+    aliquotaDasEfetivaPct: 10.0,
+    comprasInsumosMercadorias: 95000,
+    aliquotaMediaCreditoEntradaPct: 26.5,
+    aliquotaIbsCbsVendaPct: 26.5,
+    marco,
+  });
+  assert.equal(h2.pontoInflexao.regimeVencedor, 'simples_hibrido', 'Híbrido vence quando créditos cobrem saldo');
+  near(h2.cargaTributariaTotal, 9525, 0.5, 'Carga híbrida R$ 9.525');
+  assert.ok(h2.pontoInflexao.creditoMinimoEntradaParaEmpatePct > 0, 'Ponto de empate calculado');
+});
+

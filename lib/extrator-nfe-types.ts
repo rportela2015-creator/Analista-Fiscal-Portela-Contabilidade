@@ -97,6 +97,8 @@ export interface ExtractedItem {
   pMVAST?: number;
   pRedBCST?: number;
   cfopEntradaMapeado?: string;
+  infAdProd?: string;
+  aliquotaCreditoIcmsSimplesPct?: number;
   tributos: ExtractedTributosResumo;
   sensivelParaAuditoria: boolean;
   motivosSensibilidade?: string[];
@@ -106,6 +108,7 @@ export interface ExtractedInvoiceData {
   tipoDocumento: 'XML' | 'PDF';
   versaoSchema?: string;
   tempoExtracaoMs?: number;
+  infCpl?: string;
   identificacao: {
     chaveAcesso?: string;
     numero?: string;
@@ -340,6 +343,8 @@ export interface PrecificacaoItemInput {
   vICMSDeson?: number;
   motDesICMS?: string;
   pMVAST?: number;
+  infAdProd?: string;
+  aliquotaCreditoIcmsSimplesPct?: number;
   temSt?: boolean;
   pisCofinsMonofasico?: boolean;
   baseReduzidaSaidaPct?: number;
@@ -443,6 +448,8 @@ export function converterItemExtracaoParaPrecificacao(
     vICMSDeson: item.vICMSDeson ?? t.vICMSDeson,
     motDesICMS: item.motDesICMS ?? t.motDesICMS,
     pMVAST: item.pMVAST ?? t.pMVAST,
+    infAdProd: item.infAdProd,
+    aliquotaCreditoIcmsSimplesPct: item.aliquotaCreditoIcmsSimplesPct,
     temSt:
       cfopEntradaInfo.temSt ||
       icmsSt > 0 ||
@@ -484,3 +491,25 @@ export function converterItemExtracaoParaPrecificacao(
     },
   };
 }
+
+export interface ParametrizacaoItemInput {
+  codigoProduto: string;
+  descricao: string;
+  ncm: string;
+  cest?: string;
+  cfopOrigem: string;
+  cfopEntradaSugerido: string;
+  cfopSaidaSugerido: string;
+  cstIcmsOrigem?: string;
+  csosnOrigem?: string;
+  cClassTribSugerido?: string;
+  cstIbsCbsSugerido?: string;
+  reducaoIbsCbsPct: number;
+  beneficioIcmsPr?: string;
+  pRedBC?: number;
+  percentualDiferimento?: number;
+  fcpPct: number;
+  valorUnitario: number;
+  quantidade: number;
+}
+

@@ -10,6 +10,7 @@ import type {
   AuditRequestPayload,
 } from '@/lib/extrator-nfe-types';
 import { montarAuditRequestPayload, converterItemExtracaoParaPrecificacao } from '@/lib/extrator-nfe-types';
+import { converterItemExtracaoParaParametrizacao } from '@/lib/extrator-nfe';
 import TabelaItensExtracao from './TabelaItensExtracao';
 import ParametrizacaoERP from './ParametrizacaoERP';
 
@@ -92,6 +93,7 @@ export default function AuditoriaEntrada() {
   const [file, setFile] = useState<File | null>(null);
   const [regime, setRegime] = useState('Simples Nacional');
   const [finalidade, setFinalidade] = useState('Revenda/Comercialização');
+  const [autoSync, setAutoSync] = useState(true);
 
   // 2. Estados da Etapa 1 (Extração Determinística Imediata)
   const [isExtracting, setIsExtracting] = useState(false);
@@ -146,6 +148,50 @@ export default function AuditoriaEntrada() {
       // Pré-seleciona todos os itens da nota para permitir fluxo com 1 clique
       const todosIndices = new Set(result.itens.map((it) => it.index));
       setSelectedIndices(todosIndices);
+
+      // Sincronização automática silenciosa pós-extração (se habilitada)
+      if (autoSync && result.itens && result.itens.length > 0) {
+        const itensPrec = result.itens.map((it) => converterItemExtracaoParaPrecificacao(it));
+        const regimeDest = regime.toLowerCase().includes('simples')
+          ? 'simples'
+          : regime.toLowerCase().includes('real')
+          ? 'real'
+          : 'presumido';
+        const dest = finalidade.toLowerCase().includes('ind')
+          ? 'industrializacao'
+          : finalidade.toLowerCase().includes('ativo')
+          ? 'ativo_imobilizado'
+          : finalidade.toLowerCase().includes('consumo')
+          ? 'uso_consumo'
+          : 'comercializacao';
+
+        const itensErp = result.itens.map((it) =>
+          converterItemExtracaoParaParametrizacao(it, {
+            ufOrigem: result.emitente?.uf,
+            ufDestino: result.destinatario?.uf || 'PR',
+            regimeDestinatario: regimeDest as any,
+            destinacao: dest as any,
+          })
+        );
+
+        try {
+          sessionStorage.setItem('ncm-precificar-itens', JSON.stringify(itensPrec));
+          sessionStorage.setItem('ncm-parametrizar-itens', JSON.stringify(itensErp));
+        } catch {
+          /* fallback */
+        }
+
+        window.dispatchEvent(
+          new CustomEvent('navegar-aba', {
+            detail: {
+              tab: 'parametrizar',
+              itens: itensPrec,
+              itensErp,
+              manterNaAbaAtual: true,
+            },
+          })
+        );
+      }
     } catch (err: any) {
       setExtractionError(err.message || 'Falha ao processar a extração determinística.');
     } finally {
@@ -345,6 +391,48 @@ export default function AuditoriaEntrada() {
     );
   };
 
+  // ─── Transferência Direta para a Aba de Parametrização ERP ────────────────
+  const handleEnviarParaErp = (itensParaEnviar: ExtractedItem[], manterNaAbaAtual = false) => {
+    if (!itensParaEnviar || itensParaEnviar.length === 0) return;
+    const regimeDestinatario = regime.toLowerCase().includes('simples')
+      ? 'simples'
+      : regime.toLowerCase().includes('real')
+      ? 'real'
+      : 'presumido';
+    const destinacao = finalidade.toLowerCase().includes('ind')
+      ? 'industrializacao'
+      : finalidade.toLowerCase().includes('ativo')
+      ? 'ativo_imobilizado'
+      : finalidade.toLowerCase().includes('consumo')
+      ? 'uso_consumo'
+      : 'comercializacao';
+
+    const convertidos = itensParaEnviar.map((it) =>
+      converterItemExtracaoParaParametrizacao(it, {
+        ufOrigem: extractedInvoice?.emitente?.uf,
+        ufDestino: extractedInvoice?.destinatario?.uf || 'PR',
+        regimeDestinatario,
+        destinacao,
+      })
+    );
+
+    try {
+      sessionStorage.setItem('ncm-parametrizar-itens', JSON.stringify(convertidos));
+    } catch {
+      /* fallback */
+    }
+
+    window.dispatchEvent(
+      new CustomEvent('navegar-aba', {
+        detail: {
+          tab: 'parametrizar',
+          itensErp: convertidos,
+          manterNaAbaAtual,
+        },
+      })
+    );
+  };
+
   return (
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
@@ -385,6 +473,15 @@ export default function AuditoriaEntrada() {
               <option value="Uso/Consumo">Uso/Consumo</option>
               <option value="Ativo Imobilizado">Ativo Imobilizado</option>
             </select>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontSize: 13, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={autoSync}
+              onChange={(e) => setAutoSync(e.target.checked)}
+            />
+            <span>⚡ Sincronizar Automaticamente com Precificação e ERP ao Auditar XML</span>
           </label>
 
           <div style={{ marginTop: 16 }}>
@@ -469,21 +566,44 @@ export default function AuditoriaEntrada() {
                     onClick={() => handleEnviarParaPrecificacao(extractedInvoice.itens)}
                     title="Transferir todos os itens da nota fiscal diretamente para a aba de Precificação"
                   >
-                    💰 Enviar Todos os Itens para Precificação
+                    💰 Enviar Todos para Precificação
+                  </button>
+                  <button
+                    type="button"
+                    className="btn primary"
+                    style={{ background: '#0b3d91', borderColor: '#0b3d91', fontSize: '12.5px', padding: '6px 12px' }}
+                    onClick={() => handleEnviarParaErp(extractedInvoice.itens, false)}
+                    title="Transferir todos os itens da nota fiscal diretamente para a aba de Parametrização ERP"
+                  >
+                    ⚙️ Enviar Todos para Parametrização ERP
                   </button>
                   {selectedIndices.size > 0 && selectedIndices.size < extractedInvoice.itens.length && (
-                    <button
-                      type="button"
-                      className="btn-secundario"
-                      style={{ fontSize: '12.5px', padding: '6px 12px' }}
-                      onClick={() => {
-                        const selecionados = extractedInvoice.itens.filter((it) => selectedIndices.has(it.index));
-                        handleEnviarParaPrecificacao(selecionados);
-                      }}
-                      title="Transferir apenas os itens selecionados para a Precificação"
-                    >
-                      💰 Enviar {selectedIndices.size} Itens Selecionados
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="btn-secundario"
+                        style={{ fontSize: '12.5px', padding: '6px 12px' }}
+                        onClick={() => {
+                          const selecionados = extractedInvoice.itens.filter((it) => selectedIndices.has(it.index));
+                          handleEnviarParaPrecificacao(selecionados);
+                        }}
+                        title="Transferir apenas os itens selecionados para a Precificação"
+                      >
+                        💰 Enviar {selectedIndices.size} Itens Selecionados
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secundario"
+                        style={{ fontSize: '12.5px', padding: '6px 12px' }}
+                        onClick={() => {
+                          const selecionados = extractedInvoice.itens.filter((it) => selectedIndices.has(it.index));
+                          handleEnviarParaErp(selecionados, false);
+                        }}
+                        title="Transferir apenas os itens selecionados para a Parametrização ERP"
+                      >
+                        ⚙️ Enviar {selectedIndices.size} Selecionados p/ ERP
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -546,6 +666,8 @@ export default function AuditoriaEntrada() {
             onSelectOnlySensitive={handleSelectOnlySensitive}
             disabled={isAuditing}
             onPrecificarItem={(item) => handleEnviarParaPrecificacao([item])}
+            onParametrizarItem={(item) => handleEnviarParaErp([item], false)}
+            onParametrizarSelecionados={(itens) => handleEnviarParaErp(itens, false)}
           />
 
           {/* Painel Dual Engine Selector (Seletor de Motor Duplo) */}

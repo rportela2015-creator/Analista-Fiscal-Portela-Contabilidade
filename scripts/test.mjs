@@ -168,6 +168,8 @@ const ALL_TESTS = [
   'tests/ollama-client.test.mjs',
   'tests/headers.test.mjs',
   'tests/api-security.test.mjs',
+  'tests/webhook-e-ponte-erp.test.mjs',
+  'tests/deploy-launcher.test.mjs',
 ];
 
 // Suporte a execução de suíte única via CLI: node scripts/test.mjs tests/foo.test.mjs

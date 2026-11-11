@@ -533,3 +533,448 @@ export function listarFontesOficiaisMarcoLegal(marco?: MarcoLegal | null): {
     fonteOficial: n.fonte_oficial || (n.fontes && n.fontes[0]) || '',
   }));
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ETAPA 9: ARQUITETURA O(1), DIFAL DETALHADO, CONVÊNIOS E SIMPLES HÍBRIDO
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Consulta a alíquota do Fundo de Combate à Pobreza (FCP) de qualquer UF em O(1).
+ * @param uf Sigla da Unidade Federativa (ex: 'PR', 'SP', 'RJ')
+ * @param marco Objeto do marco legal (opcional)
+ */
+export function obterFcpPorUf(uf: string, marco?: MarcoLegal | null): number {
+  const ufNorm = (uf || '').toUpperCase().trim();
+  const fcpMap = (marco?.parametros as any)?.fcp_por_uf;
+  if (fcpMap && typeof fcpMap[ufNorm] === 'number') {
+    return fcpMap[ufNorm];
+  }
+  // Fallback padrão se não informado no marco
+  const fallbackFcp: Record<string, number> = {
+    RJ: 4.0, AC: 0.0, AP: 0.0, ES: 0.0, PA: 0.0, RR: 0.0, SC: 0.0,
+  };
+  return typeof fallbackFcp[ufNorm] === 'number' ? fallbackFcp[ufNorm] : 2.0;
+}
+
+export type TipoConvenioIcms =
+  | 'CONV_52_91_MAQ_AGRICOLA'
+  | 'CONV_52_91_MAQ_INDUSTRIAL'
+  | 'CONV_100_97_INSUMO_AGRO';
+
+export type ResultadoReducaoConvenioIcms = {
+  convenioId: string;
+  aliqEfetivaPct: number;
+  pRedBC: number;
+  percentualDiferimento: number;
+  cstSugerido: string;
+  dispensaEstornoEntrada: boolean;
+  normaId: string;
+  descricaoRegra: string;
+};
+
+/**
+ * Calcula a redução de base de cálculo ou diferimento do ICMS conforme Convênio ICMS 52/1991 ou 100/1997.
+ */
+export function calcularReducaoConvenioIcms(params: {
+  tipoConvenio: TipoConvenioIcms;
+  ufOrigem?: string;
+  ufDestino?: string;
+  aliqNominalIcmsPct?: number;
+  marco?: MarcoLegal | null;
+}): ResultadoReducaoConvenioIcms {
+  const { tipoConvenio, ufOrigem = 'PR', ufDestino = 'PR', marco } = params;
+  const isOperacaoInternaPr = ufOrigem.toUpperCase() === 'PR' && ufDestino.toUpperCase() === 'PR';
+  const aliqNominal = params.aliqNominalIcmsPct ?? (isOperacaoInternaPr ? 19.5 : 12.0);
+
+  if (tipoConvenio === 'CONV_52_91_MAQ_AGRICOLA') {
+    // Convênio 52/1991 - Máquinas Agrícolas (Anexo II)
+    // Carga efetiva: 5,6% interna PR e interestadual a 12%; 4,1% interestadual a 7%
+    let aliqEfetiva = 5.6;
+    if (!isOperacaoInternaPr && aliqNominal <= 7.0) {
+      aliqEfetiva = 4.1;
+    }
+    const pRedBC = aliqNominal > 0 ? Math.max(0, Math.round((1 - aliqEfetiva / aliqNominal) * 10000) / 100) : 0;
+    return {
+      convenioId: 'CONV-ICMS-52-1991',
+      aliqEfetivaPct: aliqEfetiva,
+      pRedBC,
+      percentualDiferimento: 0,
+      cstSugerido: '20',
+      dispensaEstornoEntrada: true,
+      normaId: 'CONV-ICMS-52-1991',
+      descricaoRegra: 'Convênio ICMS 52/1991 c/c Item 22 Anexo VI RICMS/PR: Carga tributária efetiva de 5,6% (ou 4,1% interestadual 7%) com dispensa de estorno na entrada.',
+    };
+  }
+
+  if (tipoConvenio === 'CONV_52_91_MAQ_INDUSTRIAL') {
+    // Convênio 52/1991 - Máquinas Industriais (Anexo I)
+    // Carga efetiva: 8,8% interna PR e interestadual a 12%; 5,14% interestadual a 7%
+    let aliqEfetiva = 8.8;
+    if (!isOperacaoInternaPr && aliqNominal <= 7.0) {
+      aliqEfetiva = 5.14;
+    }
+    const pRedBC = aliqNominal > 0 ? Math.max(0, Math.round((1 - aliqEfetiva / aliqNominal) * 10000) / 100) : 0;
+    return {
+      convenioId: 'CONV-ICMS-52-1991',
+      aliqEfetivaPct: aliqEfetiva,
+      pRedBC,
+      percentualDiferimento: 0,
+      cstSugerido: '20',
+      dispensaEstornoEntrada: true,
+      normaId: 'CONV-ICMS-52-1991',
+      descricaoRegra: 'Convênio ICMS 52/1991 c/c Anexo VI RICMS/PR: Carga efetiva de 8,8% (ou 5,14% interestadual 7%) com dispensa de estorno na entrada.',
+    };
+  }
+
+  // CONV_100_97_INSUMO_AGRO
+  if (isOperacaoInternaPr) {
+    // Diferimento total 100% no Paraná
+    return {
+      convenioId: 'CONV-ICMS-100-1997',
+      aliqEfetivaPct: 0,
+      pRedBC: 100,
+      percentualDiferimento: 100,
+      cstSugerido: '51',
+      dispensaEstornoEntrada: false,
+      normaId: 'CONV-ICMS-100-1997',
+      descricaoRegra: 'Convênio ICMS 100/1997 c/c Anexo VIII do RICMS/PR: Diferimento Total (100%, CST 51) nas operações internas do Paraná.',
+    };
+  } else {
+    // Interestadual: Redução de 60% na base de cálculo
+    const pRedBC = 60.0;
+    const aliqEfetiva = Math.round(aliqNominal * (1 - pRedBC / 100) * 100) / 100;
+    return {
+      convenioId: 'CONV-ICMS-100-1997',
+      aliqEfetivaPct: aliqEfetiva,
+      pRedBC,
+      percentualDiferimento: 0,
+      cstSugerido: '20',
+      dispensaEstornoEntrada: false,
+      normaId: 'CONV-ICMS-100-1997',
+      descricaoRegra: 'Convênio ICMS 100/1997: Redução de 60% na base de cálculo do ICMS interestadual para insumos agropecuários.',
+    };
+  }
+}
+
+export type ReducoesFiscaisPorNcm = {
+  ncm: string;
+  reforma?: {
+    reducaoIbsCbsPct: number;
+    cClassTrib: string;
+    tema: string;
+    normaId: string;
+  };
+  icms?: {
+    convenioCorrelato?: string;
+    aliqEfetivaSugeridaPct?: number;
+    cstSugerido?: string;
+    diferimentoPct?: number;
+    dispensaEstornoEntrada?: boolean;
+    normaId?: string;
+    descricao?: string;
+  };
+};
+
+/**
+ * Detecta reduções de IBS/CBS da Reforma Tributária (LC 214/2025) e benefícios correlatos de ICMS
+ * por meio de indexação por prefixo de NCM em O(1).
+ */
+export function detectarReducoesFiscaisPorNcm(
+  ncmRaw: string,
+  ufDestinoOrMarco?: string | MarcoLegal | null,
+  marcoOptional?: MarcoLegal | null
+): ReducoesFiscaisPorNcm | null {
+  const ncm = (ncmRaw || '').replace(/\D/g, '');
+  if (ncm.length < 4) return null;
+
+  let ufDestino = 'PR';
+  let marco: MarcoLegal | null | undefined = marcoOptional;
+
+  if (typeof ufDestinoOrMarco === 'string') {
+    ufDestino = ufDestinoOrMarco || 'PR';
+  } else if (ufDestinoOrMarco && typeof ufDestinoOrMarco === 'object') {
+    marco = ufDestinoOrMarco;
+    ufDestino = 'PR';
+  }
+
+  const mapping = (marco?.parametros as any)?.reforma_reducoes_mapeamento?.prefixos;
+  let regraEncontrada: any = null;
+
+  // Busca em O(1) pelo prefixo de 4 dígitos
+  const p4 = ncm.substring(0, 4);
+  if (mapping && mapping[p4]) {
+    regraEncontrada = mapping[p4];
+  }
+
+  if (!regraEncontrada) {
+    // Tenta fallback hardcoded dos 12 prefixos cadastrados
+    const fallbackPrefixos: Record<string, any> = {
+      '3105': { tema: 'Fertilizantes e Adubos', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200001', convenio_icms_correlato: 'CONV-ICMS-100-1997' },
+      '3101': { tema: 'Adubos Orgânicos', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200001', convenio_icms_correlato: 'CONV-ICMS-100-1997' },
+      '3808': { tema: 'Defensivos Agrícolas', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200002', convenio_icms_correlato: 'CONV-ICMS-100-1997' },
+      '8432': { tema: 'Máquinas de Plantio e Preparo', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200003', convenio_icms_correlato: 'CONV-ICMS-52-1991' },
+      '8433': { tema: 'Colheitadeiras e Trilhadeiras', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200003', convenio_icms_correlato: 'CONV-ICMS-52-1991' },
+      '8436': { tema: 'Outras Máquinas Agrícolas', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200003', convenio_icms_correlato: 'CONV-ICMS-52-1991' },
+      '8437': { tema: 'Máquinas para Seleção de Grãos', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200003', convenio_icms_correlato: 'CONV-ICMS-52-1991' },
+      '8701': { tema: 'Tratores Agrícolas', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200003', convenio_icms_correlato: 'CONV-ICMS-52-1991' },
+      '3004': { tema: 'Medicamentos Humanos', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200004' },
+      '3003': { tema: 'Medicamentos Compostos', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200004' },
+      '1006': { tema: 'Arroz (Cesta Básica)', reducao_ibs_cbs_pct: 100.0, cClassTrib: '100001' },
+      '0713': { tema: 'Feijão (Cesta Básica)', reducao_ibs_cbs_pct: 100.0, cClassTrib: '100001' },
+    };
+    if (fallbackPrefixos[p4]) {
+      regraEncontrada = fallbackPrefixos[p4];
+    }
+  }
+
+  if (!regraEncontrada) return null;
+
+  const resultado: ReducoesFiscaisPorNcm = {
+    ncm,
+    reforma: {
+      reducaoIbsCbsPct: regraEncontrada.reducao_ibs_cbs_pct,
+      cClassTrib: regraEncontrada.cClassTrib,
+      tema: regraEncontrada.tema,
+      normaId: 'LC214-ANEXOS-REDUCOES',
+    },
+  };
+
+  // Se houver convênio de ICMS correlato
+  if (regraEncontrada.convenio_icms_correlato === 'CONV-ICMS-52-1991') {
+    const calc = calcularReducaoConvenioIcms({
+      tipoConvenio: 'CONV_52_91_MAQ_AGRICOLA',
+      ufOrigem: ufDestino,
+      ufDestino,
+      marco,
+    });
+    resultado.icms = {
+      convenioCorrelato: 'CONV-ICMS-52-1991',
+      aliqEfetivaSugeridaPct: calc.aliqEfetivaPct,
+      cstSugerido: calc.cstSugerido,
+      dispensaEstornoEntrada: calc.dispensaEstornoEntrada,
+      normaId: calc.normaId,
+      descricao: calc.descricaoRegra,
+    };
+  } else if (regraEncontrada.convenio_icms_correlato === 'CONV-ICMS-100-1997') {
+    const calc = calcularReducaoConvenioIcms({
+      tipoConvenio: 'CONV_100_97_INSUMO_AGRO',
+      ufOrigem: ufDestino,
+      ufDestino,
+      marco,
+    });
+    resultado.icms = {
+      convenioCorrelato: 'CONV-ICMS-100-1997',
+      aliqEfetivaSugeridaPct: calc.aliqEfetivaPct,
+      cstSugerido: calc.cstSugerido,
+      diferimentoPct: calc.percentualDiferimento,
+      dispensaEstornoEntrada: calc.dispensaEstornoEntrada,
+      normaId: calc.normaId,
+      descricao: calc.descricaoRegra,
+    };
+  }
+
+  return resultado;
+}
+
+export type MetodologiaDifal = 'base_dupla' | 'base_unica';
+
+export type ResultadoDifalDetalhado = {
+  metodologia: MetodologiaDifal;
+  baseCalculo: number;
+  valorIcmsOrigem: number;
+  valorIcmsDestinoTotal: number;
+  valorDifalLiquido: number;
+  valorFcpDestino: number;
+  valorTotalDevidoDestino: number;
+  aliquotaEfetivaTotalDestinoPct: number;
+  normaId: string;
+};
+
+/**
+ * Calcula o Diferencial de Alíquotas (DIFAL) com suporte a Base Única e Base Dupla (com FCP).
+ */
+export function calcularDifalDetalhado(params: {
+  valorOperacao: number;
+  aliqInterestadualPct: number;
+  aliqInternaDestinoPct: number;
+  ufDestino: string;
+  metodologia?: MetodologiaDifal;
+  incluirFcp?: boolean;
+  marco?: MarcoLegal | null;
+}): ResultadoDifalDetalhado {
+  const {
+    valorOperacao,
+    aliqInterestadualPct,
+    aliqInternaDestinoPct,
+    ufDestino,
+    metodologia = 'base_dupla',
+    incluirFcp = true,
+    marco,
+  } = params;
+
+  const fcpPct = incluirFcp ? obterFcpPorUf(ufDestino, marco) : 0;
+  const aliqDestinoTotalPct = aliqInternaDestinoPct + fcpPct;
+  const alqInter = aliqInterestadualPct / 100;
+  const alqDestTotal = aliqDestinoTotalPct / 100;
+
+  if (metodologia === 'base_unica') {
+    // Base Única: Base = Valor da Operação
+    const baseCalculo = valorOperacao;
+    const valorIcmsOrigem = Math.round(baseCalculo * alqInter * 100) / 100;
+    const valorIcmsDestinoTotal = Math.round(baseCalculo * alqDestTotal * 100) / 100;
+    const valorTotalDevidoDestino = Math.max(0, Math.round((valorIcmsDestinoTotal - valorIcmsOrigem) * 100) / 100);
+    const valorFcpDestino = Math.round(baseCalculo * (fcpPct / 100) * 100) / 100;
+    const valorDifalLiquido = Math.max(0, Math.round((valorTotalDevidoDestino - valorFcpDestino) * 100) / 100);
+
+    return {
+      metodologia: 'base_unica',
+      baseCalculo,
+      valorIcmsOrigem,
+      valorIcmsDestinoTotal,
+      valorDifalLiquido,
+      valorFcpDestino,
+      valorTotalDevidoDestino,
+      aliquotaEfetivaTotalDestinoPct: aliqDestinoTotalPct,
+      normaId: 'EC87-2015-LC190-DIFAL',
+    };
+  }
+
+  // Base Dupla (utilizada no PR, SP, RS, etc.):
+  // 1. Exclui ICMS de origem: V_sem_icms = V_op * (1 - alqInter)
+  // 2. Insere ICMS de destino "por dentro": Base_Destino = V_sem_icms / (1 - alqDestTotal)
+  const vSemIcmsOrigem = valorOperacao * (1 - alqInter);
+  const divisorDestino = Math.max(0.01, 1 - alqDestTotal);
+  const baseCalculo = Math.round((vSemIcmsOrigem / divisorDestino) * 100) / 100;
+
+  const valorIcmsOrigem = Math.round(valorOperacao * alqInter * 100) / 100;
+  const valorIcmsDestinoTotal = Math.round(baseCalculo * alqDestTotal * 100) / 100;
+  const valorTotalDevidoDestino = Math.max(0, Math.round((valorIcmsDestinoTotal - valorIcmsOrigem) * 100) / 100);
+
+  const valorFcpDestino = Math.round(baseCalculo * (fcpPct / 100) * 100) / 100;
+  const valorDifalLiquido = Math.max(0, Math.round((valorTotalDevidoDestino - valorFcpDestino) * 100) / 100);
+
+  return {
+    metodologia: 'base_dupla',
+    baseCalculo,
+    valorIcmsOrigem,
+    valorIcmsDestinoTotal,
+    valorDifalLiquido,
+    valorFcpDestino,
+    valorTotalDevidoDestino,
+    aliquotaEfetivaTotalDestinoPct: aliqDestinoTotalPct,
+    normaId: 'EC87-2015-LC190-DIFAL',
+  };
+}
+
+export type DetalhamentoSimplesHibrido = {
+  ano: number;
+  fatorExpurgoDasPct: number;
+  aliquotaDasOriginalPct: number;
+  aliquotaDasAjustadaPct: number;
+  valorDasSemExpurgo: number;
+  valorDasComExpurgo: number;
+  economiaDas: number;
+  creditoEntradaAproveitado: number;
+  debitoIbsCbsVenda: number;
+  saldoIbsCbsAPagar: number;
+  cargaTributariaTotal: number;
+  pontoInflexao: {
+    creditoMinimoEntradaParaEmpatePct: number;
+    regimeVencedor: 'simples' | 'simples_hibrido';
+    justificativa: string;
+  };
+};
+
+/**
+ * Calcula a decomposição e o Ponto de Inflexão (Break-even) do Simples Híbrido (LC 214/2025).
+ */
+export function calcularDetalhamentoSimplesHibrido(params: {
+  ano: number;
+  faturamentoMensal: number;
+  aliquotaDasEfetivaPct: number;
+  comprasInsumosMercadorias: number;
+  aliquotaMediaCreditoEntradaPct?: number;
+  aliquotaIbsCbsVendaPct?: number;
+  marco?: MarcoLegal | null;
+}): DetalhamentoSimplesHibrido {
+  const {
+    ano,
+    faturamentoMensal,
+    aliquotaDasEfetivaPct,
+    comprasInsumosMercadorias,
+    aliquotaMediaCreditoEntradaPct = 26.5,
+    aliquotaIbsCbsVendaPct = 26.5,
+    marco,
+  } = params;
+
+  // Busca cronograma do marco legal
+  const crono = (marco?.parametros as any)?.simples_hibrido_regras?.cronograma_fatores;
+  let fatorExpurgoDasPct = 18.0;
+  if (crono && crono[String(ano)]) {
+    fatorExpurgoDasPct = crono[String(ano)].expurgo_das_pct;
+  } else if (ano >= 2033) {
+    fatorExpurgoDasPct = 42.0;
+  } else if (ano >= 2029) {
+    fatorExpurgoDasPct = 18.0 + (ano - 2028) * 4.0;
+  }
+
+  const aliquotaDasOriginalPct = aliquotaDasEfetivaPct;
+  const aliquotaDasAjustadaPct = Math.round(aliquotaDasOriginalPct * (1 - fatorExpurgoDasPct / 100) * 100) / 100;
+
+  const valorDasSemExpurgo = Math.round(faturamentoMensal * (aliquotaDasOriginalPct / 100) * 100) / 100;
+  const valorDasComExpurgo = Math.round(faturamentoMensal * (aliquotaDasAjustadaPct / 100) * 100) / 100;
+  const economiaDas = Math.round((valorDasSemExpurgo - valorDasComExpurgo) * 100) / 100;
+
+  // Débito pleno de IBS/CBS na venda
+  const debitoIbsCbsVenda = Math.round(faturamentoMensal * (aliquotaIbsCbsVendaPct / 100) * 100) / 100;
+
+  // Créditos aproveitáveis na compra
+  const creditoEntradaAproveitado = Math.round(comprasInsumosMercadorias * (aliquotaMediaCreditoEntradaPct / 100) * 100) / 100;
+
+  // Saldo a pagar de IBS/CBS
+  const saldoIbsCbsAPagar = Math.max(0, Math.round((debitoIbsCbsVenda - creditoEntradaAproveitado) * 100) / 100);
+
+  // Carga Tributária Total no Híbrido = DAS expurgado + Saldo IBS/CBS
+  const cargaTributariaTotal = Math.round((valorDasComExpurgo + saldoIbsCbsAPagar) * 100) / 100;
+
+  // Ponto de Inflexão (Break-even):
+  // Para empatar com o Simples Tradicional (valorDasSemExpurgo):
+  // valorDasComExpurgo + (debitoIbsCbsVenda - CreditoEmpate) = valorDasSemExpurgo
+  // => CreditoEmpate = debitoIbsCbsVenda - economiaDas
+  // => ComprasMinimas = CreditoEmpate / (aliquotaMediaCreditoEntradaPct / 100)
+  // Em % do faturamento:
+  let creditoMinimoEntradaParaEmpatePct = 0;
+  if (faturamentoMensal > 0 && aliquotaMediaCreditoEntradaPct > 0) {
+    const creditoNecessario = Math.max(0, debitoIbsCbsVenda - economiaDas);
+    const comprasNecessarias = creditoNecessario / (aliquotaMediaCreditoEntradaPct / 100);
+    creditoMinimoEntradaParaEmpatePct = Math.round((comprasNecessarias / faturamentoMensal) * 10000) / 100;
+  }
+
+  const regimeVencedor: 'simples' | 'simples_hibrido' =
+    cargaTributariaTotal < valorDasSemExpurgo ? 'simples_hibrido' : 'simples';
+
+  const justificativa =
+    regimeVencedor === 'simples_hibrido'
+      ? `Simples Híbrido economiza R$ ${(valorDasSemExpurgo - cargaTributariaTotal).toFixed(2)} graças aos créditos de entrada superarem o saldo devedor de IBS/CBS.`
+      : `Simples Tradicional é mais econômico por R$ ${(cargaTributariaTotal - valorDasSemExpurgo).toFixed(2)}. Compras atuais não atingem o piso de empate de ${creditoMinimoEntradaParaEmpatePct}%.`;
+
+  return {
+    ano,
+    fatorExpurgoDasPct,
+    aliquotaDasOriginalPct,
+    aliquotaDasAjustadaPct,
+    valorDasSemExpurgo,
+    valorDasComExpurgo,
+    economiaDas,
+    creditoEntradaAproveitado,
+    debitoIbsCbsVenda,
+    saldoIbsCbsAPagar,
+    cargaTributariaTotal,
+    pontoInflexao: {
+      creditoMinimoEntradaParaEmpatePct,
+      regimeVencedor,
+      justificativa,
+    },
+  };
+}
+

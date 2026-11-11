@@ -12,6 +12,14 @@ import {
   calcularMvaAjustada,
   calcularEstornoProporcionalIcms,
   listarFontesOficiaisMarcoLegal,
+  detectarReducoesFiscaisPorNcm,
+  calcularReducaoConvenioIcms,
+  calcularDifalDetalhado,
+  calcularDetalhamentoSimplesHibrido,
+  obterFcpPorUf,
+  type TipoConvenioIcms,
+  type DetalhamentoSimplesHibrido,
+  type ResultadoDifalDetalhado,
 } from '@/lib/marco-legal';
 import {
   simular,
@@ -104,6 +112,11 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   // Overrides Manuais de Alíquotas
   const [modoEdicao, setModoEdicao] = useState<boolean>(false);
   const [overrides, setOverrides] = useState<Partial<AliquotasSugeridas>>({});
+
+  // Parâmetros Específicos da Etapa 12: Convênios ICMS/PR e Simples Híbrido
+  const [convenioIcmsSelecionado, setConvenioIcmsSelecionado] = useState<string>('auto');
+  const [hibridoComprasCreditoPct, setHibridoComprasCreditoPct] = useState<number>(50);
+  const [hibridoMixB2bPct, setHibridoMixB2bPct] = useState<number>(40);
 
   // ---------------------------------------------------------------------------
   // 2. EFEITOS DE CARGA E SINCRONIZAÇÃO
@@ -381,6 +394,198 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
     return listarFontesOficiaisMarcoLegal(marco);
   }, [marco]);
 
+  // ---------------------------------------------------------------------------
+  // 3.1 DETECÇÃO AUTOMÁTICA DE BENEFÍCIOS FISCAIS (REFORMA + RICMS/PR E CONVÊNIOS)
+  // ---------------------------------------------------------------------------
+  const beneficiosFiscais = useMemo(() => {
+    const reducaoAuto = detectarReducoesFiscaisPorNcm(itemAtual.ncm, ufDestino, marco);
+    const fcpDestino = obterFcpPorUf(ufDestino, marco);
+
+    let convenioEfetivo: string = convenioIcmsSelecionado;
+    if (convenioEfetivo === 'auto') {
+      if (reducaoAuto?.icms?.convenioCorrelato === 'CONV-ICMS-52-1991') {
+        convenioEfetivo = 'conv_52_91_agricola';
+      } else if (reducaoAuto?.icms?.convenioCorrelato === 'CONV-ICMS-100-1997') {
+        convenioEfetivo = 'conv_100_97_60';
+      } else {
+        convenioEfetivo = 'nenhum';
+      }
+    }
+
+    const isInterna = ufOrigem.toUpperCase() === ufDestino.toUpperCase();
+    const aliqNominal = isInterna ? 19.5 : (['PR', 'SP', 'RJ', 'MG', 'RS', 'SC'].includes(ufOrigem.toUpperCase()) ? 12.0 : 7.0);
+    let aliqEfetiva = aliqNominal;
+    let pRedBC = 0;
+    let diferimentoPct = 0;
+    let cstIcms = itemAtual.cstIcms || '00';
+    let dispensaEstorno = true;
+    let descricaoRegra = 'Tributação Integral de ICMS conforme alíquota padrão da UF.';
+    let normaId = 'RICMS-PR-REGRA-GERAL';
+
+    if (convenioEfetivo === 'conv_52_91_agricola') {
+      const c = calcularReducaoConvenioIcms({
+        tipoConvenio: 'CONV_52_91_MAQ_AGRICOLA',
+        ufOrigem,
+        ufDestino,
+        aliqNominalIcmsPct: aliqNominal,
+        marco,
+      });
+      aliqEfetiva = c.aliqEfetivaPct;
+      pRedBC = c.pRedBC;
+      cstIcms = c.cstSugerido;
+      dispensaEstorno = c.dispensaEstornoEntrada;
+      descricaoRegra = c.descricaoRegra;
+      normaId = c.normaId;
+    } else if (convenioEfetivo === 'conv_52_91_industrial') {
+      const c = calcularReducaoConvenioIcms({
+        tipoConvenio: 'CONV_52_91_MAQ_INDUSTRIAL',
+        ufOrigem,
+        ufDestino,
+        aliqNominalIcmsPct: aliqNominal,
+        marco,
+      });
+      aliqEfetiva = c.aliqEfetivaPct;
+      pRedBC = c.pRedBC;
+      cstIcms = c.cstSugerido;
+      dispensaEstorno = c.dispensaEstornoEntrada;
+      descricaoRegra = c.descricaoRegra;
+      normaId = c.normaId;
+    } else if (convenioEfetivo === 'conv_100_97_60') {
+      const c = calcularReducaoConvenioIcms({
+        tipoConvenio: 'CONV_100_97_INSUMO_AGRO',
+        ufOrigem,
+        ufDestino,
+        aliqNominalIcmsPct: aliqNominal,
+        marco,
+      });
+      aliqEfetiva = c.aliqEfetivaPct;
+      pRedBC = c.pRedBC;
+      cstIcms = c.cstSugerido;
+      dispensaEstorno = c.dispensaEstornoEntrada;
+      descricaoRegra = c.descricaoRegra;
+      normaId = c.normaId;
+    } else if (convenioEfetivo === 'conv_100_97_30') {
+      pRedBC = 30.0;
+      aliqEfetiva = Math.round(aliqNominal * 0.7 * 100) / 100;
+      cstIcms = '20';
+      dispensaEstorno = true;
+      descricaoRegra = 'Convênio ICMS 100/1997: Redução de 30% na base de cálculo de insumos agropecuários com manutenção de créditos na entrada.';
+      normaId = 'CONV-ICMS-100-1997';
+    } else if (convenioEfetivo === 'diferimento_parcial_pr_12') {
+      aliqEfetiva = 12.0;
+      diferimentoPct = 38.4615;
+      cstIcms = '51';
+      dispensaEstorno = true;
+      descricaoRegra = 'Art. 28 Anexo VIII RICMS/PR: Diferimento parcial de ICMS na saída interna B2B (carga tributária efetiva de 12%).';
+      normaId = 'RICMS-PR-ART28-ANEXO-VIII';
+    } else if (convenioEfetivo === 'diferimento_total_pr') {
+      aliqEfetiva = 0.0;
+      diferimentoPct = 100.0;
+      cstIcms = '51';
+      dispensaEstorno = true;
+      descricaoRegra = 'Art. 31 Anexo VIII RICMS/PR: Diferimento total de 100% de ICMS para etapa subsequente (CST 51).';
+      normaId = 'RICMS-PR-ART31-ANEXO-VIII';
+    } else if (convenioEfetivo === 'cesta_basica_pr') {
+      aliqEfetiva = 7.0;
+      pRedBC = Math.round((1 - 7.0 / aliqNominal) * 10000) / 100;
+      cstIcms = '20';
+      dispensaEstorno = false;
+      descricaoRegra = 'Item 6 Anexo II RICMS/PR: Redução de base de cálculo da cesta básica para carga de 7%. Exige estorno proporcional de créditos na entrada.';
+      normaId = 'RICMS-PR-ANEXO-II-ISENCAO';
+    }
+
+    // Reforma Tributária
+    const cClassTrib = itemAtual.cClassTrib || reducaoAuto?.reforma?.cClassTrib || '000001';
+    const reducaoIbsCbsPct = reducaoAuto?.reforma?.reducaoIbsCbsPct ?? 0;
+    const cstIbsCbs = reducaoIbsCbsPct === 100 ? '02' : reducaoIbsCbsPct > 0 ? '01' : '01';
+    const exigeTribRegular = reducaoIbsCbsPct > 0;
+    const temaReforma = reducaoAuto?.reforma?.tema || (reducaoIbsCbsPct > 0 ? 'Regime Diferenciado da Reforma' : 'Regime Regular Geral');
+
+    // Apuração do DIFAL quando destinação for consumo ou ativo
+    let difalInfo: ResultadoDifalDetalhado | null = null;
+    const exigeDifal = (destinacao === 'uso_consumo' || destinacao === 'ativo_imobilizado') && ufOrigem !== ufDestino;
+    if (exigeDifal) {
+      const metodologia = regime === 'simples' ? 'base_unica' : 'base_dupla';
+      difalInfo = calcularDifalDetalhado({
+        valorOperacao: compCusto.valorProdutoBruto || 100,
+        aliqInterestadualPct: aliqNominal,
+        aliqInternaDestinoPct: 19.5,
+        ufDestino,
+        metodologia,
+        incluirFcp: true,
+        marco,
+      });
+    }
+
+    return {
+      reforma: {
+        cClassTrib,
+        cstIbsCbs,
+        reducaoIbsCbsPct,
+        exigeTribRegular,
+        tema: temaReforma,
+        normaId: reducaoAuto?.reforma?.normaId || 'LC214-ANEXOS-REDUCOES',
+      },
+      icms: {
+        convenioSelecionado: convenioEfetivo,
+        aliqNominalPct: aliqNominal,
+        aliqEfetivaPct: aliqEfetiva,
+        pRedBC,
+        diferimentoPct,
+        cstIcmsSugerido: cstIcms,
+        dispensaEstornoEntrada: dispensaEstorno,
+        fcpDestinoPct: fcpDestino,
+        descricaoRegra,
+        normaId,
+      },
+      difal: difalInfo,
+    };
+  }, [
+    itemAtual.ncm,
+    itemAtual.cClassTrib,
+    itemAtual.cstIcms,
+    ufOrigem,
+    ufDestino,
+    convenioIcmsSelecionado,
+    destinacao,
+    regime,
+    compCusto.valorProdutoBruto,
+    marco,
+  ]);
+
+  // ---------------------------------------------------------------------------
+  // 3.2 ANÁLISE DO SIMPLES HÍBRIDO E PONTO DE INFLEXÃO (BREAK-EVEN LC 214/25)
+  // ---------------------------------------------------------------------------
+  const analiseSimplesHibrido = useMemo(() => {
+    const faturamentoMensal = Math.max(1, rbt12 / 12);
+    const comprasInsumos = faturamentoMensal * (hibridoComprasCreditoPct / 100);
+    const aliqDasOriginal = sugestao?.aliquotasAplicadas.dasEfetivoPct ?? 9.5;
+    const aliqIbsCbsVenda = 26.5;
+
+    const calc = calcularDetalhamentoSimplesHibrido({
+      ano,
+      faturamentoMensal,
+      aliquotaDasEfetivaPct: aliqDasOriginal,
+      comprasInsumosMercadorias: comprasInsumos,
+      aliquotaMediaCreditoEntradaPct: 26.5,
+      aliquotaIbsCbsVendaPct: aliqIbsCbsVenda,
+      marco,
+    });
+
+    const creditoB2bTradicionalPct = Math.round(aliqDasOriginal * 0.35 * 100) / 100;
+    const creditoB2bHibridoPct = aliqIbsCbsVenda;
+    const ganhoCompetitividadeB2bPct = Math.round((creditoB2bHibridoPct - creditoB2bTradicionalPct) * 100) / 100;
+    const ganhoCompetitividadeB2bValor = Math.round(faturamentoMensal * (hibridoMixB2bPct / 100) * (ganhoCompetitividadeB2bPct / 100) * 100) / 100;
+
+    return {
+      ...calc,
+      creditoB2bTradicionalPct,
+      creditoB2bHibridoPct,
+      ganhoCompetitividadeB2bPct,
+      ganhoCompetitividadeB2bValor,
+    };
+  }, [ano, rbt12, hibridoComprasCreditoPct, hibridoMixB2bPct, sugestao, marco]);
+
   // Callbacks de manipulação
   const aplicarCampoOverride = useCallback((campo: keyof AliquotasSugeridas, valor: number) => {
     setOverrides((prev) => ({ ...prev, [campo]: valor }));
@@ -584,6 +789,83 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   </div>
 
   <div class="card">
+    <h2>Benefícios Fiscais Detectados (Reforma LC 214/25 & RICMS/PR - CONFAZ)</h2>
+    <div class="grid">
+      <div>
+        <strong style="color: #0b3d91;">Reforma Tributária (IBS/CBS):</strong>
+        <div style="font-size: 11.5px; margin-top: 4px;">
+          <div><strong>cClassTrib:</strong> ${esc(beneficiosFiscais.reforma.cClassTrib)}</div>
+          <div><strong>CST IBS/CBS:</strong> CST ${esc(beneficiosFiscais.reforma.cstIbsCbs)}</div>
+          <div><strong>Redução de Alíquota:</strong> ${esc(beneficiosFiscais.reforma.reducaoIbsCbsPct)}%</div>
+          <div><strong>Enquadramento:</strong> ${esc(beneficiosFiscais.reforma.tema)} (${esc(beneficiosFiscais.reforma.normaId)})</div>
+          <div><strong>Grupo NT 2025.002:</strong> ${beneficiosFiscais.reforma.exigeTribRegular ? '<span class="badge badge-green">&lt;gTribRegular&gt; Exigido</span>' : '<span class="badge badge-blue">Tributação Normal</span>'}</div>
+        </div>
+      </div>
+      <div>
+        <strong style="color: #1d4ed8;">ICMS Paraná & Convênios CONFAZ:</strong>
+        <div style="font-size: 11.5px; margin-top: 4px;">
+          <div><strong>Regime / Convênio:</strong> ${esc(beneficiosFiscais.icms.convenioSelecionado)} (${esc(beneficiosFiscais.icms.normaId)})</div>
+          <div><strong>Alíquota Nominal ➔ Efetiva:</strong> ${esc(beneficiosFiscais.icms.aliqNominalPct)}% ➔ <strong class="highlight-green">${esc(beneficiosFiscais.icms.aliqEfetivaPct)}%</strong></div>
+          ${beneficiosFiscais.icms.pRedBC > 0 ? `<div><strong>Redução de Base (pRedBC):</strong> ${esc(beneficiosFiscais.icms.pRedBC)}%</div>` : ''}
+          ${beneficiosFiscais.icms.diferimentoPct > 0 ? `<div><strong>Diferimento:</strong> ${esc(beneficiosFiscais.icms.diferimentoPct)}%</div>` : ''}
+          <div><strong>CST ICMS Sugerido:</strong> CST ${esc(beneficiosFiscais.icms.cstIcmsSugerido)} | FCP Destino: +${esc(beneficiosFiscais.icms.fcpDestinoPct)}%</div>
+          <div style="margin-top: 4px;">
+            ${beneficiosFiscais.icms.dispensaEstornoEntrada
+              ? '<span class="badge badge-green">✅ Dispensa Legal de Estorno na Entrada</span>'
+              : '<span class="badge badge-amber">⚠️ Exige Estorno Proporcional (Anexo II)</span>'}
+          </div>
+        </div>
+      </div>
+    </div>
+    ${beneficiosFiscais.difal ? `
+      <div style="margin-top: 10px; padding: 8px 12px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 4px; font-size: 11.5px;">
+        <strong>Apuração do DIFAL (EC 87/2015 & LC 190/2022):</strong>
+        Metodologia: <strong>${esc(beneficiosFiscais.difal.metodologia === 'base_dupla' ? 'Base Dupla (R$ ' + beneficiosFiscais.difal.baseCalculo.toFixed(2) + ')' : 'Base Única')}</strong> |
+        DIFAL Líquido: <strong>R$ ${esc(beneficiosFiscais.difal.valorDifalLiquido.toFixed(2))}</strong> |
+        FCP Destino: <strong>R$ ${esc(beneficiosFiscais.difal.valorFcpDestino.toFixed(2))}</strong> |
+        Total Devido: <strong class="highlight-red">R$ ${esc(beneficiosFiscais.difal.valorTotalDevidoDestino.toFixed(2))}</strong>
+      </div>
+    ` : ''}
+  </div>
+
+  <div class="card">
+    <h2>Diagnóstico Estratégico do Simples Híbrido (Ponto de Inflexão & Break-Even)</h2>
+    <div class="grid">
+      <div>
+        <div style="font-size: 11.5px;">
+          <div><strong>DAS Tradicional (Sem Expurgo):</strong> R$ ${esc(analiseSimplesHibrido.valorDasSemExpurgo.toFixed(2))} (${esc(analiseSimplesHibrido.aliquotaDasOriginalPct.toFixed(2))}%)</div>
+          <div><strong>Fator de Expurgo PIS/COFINS/ICMS:</strong> -${esc(analiseSimplesHibrido.fatorExpurgoDasPct)}%</div>
+          <div><strong>DAS Híbrido Reduzido:</strong> R$ ${esc(analiseSimplesHibrido.valorDasComExpurgo.toFixed(2))} (${esc(analiseSimplesHibrido.aliquotaDasAjustadaPct.toFixed(2))}%)</div>
+          <div><strong>Economia Bruta no DAS:</strong> <strong class="highlight-green">R$ ${esc(analiseSimplesHibrido.economiaDas.toFixed(2))}</strong></div>
+          <div><strong>Débito IBS/CBS Venda:</strong> R$ ${esc(analiseSimplesHibrido.debitoIbsCbsVenda.toFixed(2))}</div>
+          <div><strong>Crédito IBS/CBS Compras:</strong> -R$ ${esc(analiseSimplesHibrido.creditoEntradaAproveitado.toFixed(2))}</div>
+          <div><strong>Saldo IBS/CBS a Pagar:</strong> R$ ${esc(analiseSimplesHibrido.saldoIbsCbsAPagar.toFixed(2))}</div>
+          <div><strong>Carga Tributária Total Híbrido:</strong> <strong>R$ ${esc(analiseSimplesHibrido.cargaTributariaTotal.toFixed(2))}</strong></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 11.5px;">
+          <div><strong>Crédito B2B Transferido (Tradicional):</strong> ${esc(analiseSimplesHibrido.creditoB2bTradicionalPct)}% (Restrito)</div>
+          <div><strong>Crédito B2B Transferido (Híbrido):</strong> <strong class="highlight-green">${esc(analiseSimplesHibrido.creditoB2bHibridoPct)}% (Integral 26,5%)</strong></div>
+          <div><strong>Ganho de Competitividade PJ:</strong> +${esc(analiseSimplesHibrido.ganhoCompetitividadeB2bPct)}% (R$ ${esc(analiseSimplesHibrido.ganhoCompetitividadeB2bValor.toFixed(2))}/mês)</div>
+          <div style="margin-top: 8px;">
+            <strong>Ponto de Inflexão (Compras com Crédito p/ Empate):</strong>
+            <span class="badge badge-purple" style="font-size: 11px;">${esc(analiseSimplesHibrido.pontoInflexao.creditoMinimoEntradaParaEmpatePct)}% da Receita</span>
+          </div>
+          <div style="margin-top: 8px;">
+            ${analiseSimplesHibrido.pontoInflexao.regimeVencedor === 'simples_hibrido'
+              ? '<span class="badge badge-green" style="font-size: 11.5px;">🏆 RECOMENDADO: SIMPLES HÍBRIDO</span>'
+              : '<span class="badge badge-blue" style="font-size: 11.5px;">🛡️ RECOMENDADO: SIMPLES TRADICIONAL</span>'}
+          </div>
+          <div style="margin-top: 6px; font-style: italic; color: #475569;">
+            ${esc(analiseSimplesHibrido.pontoInflexao.justificativa)}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Fundamentação Legal & Alertas Periciais</h2>
     <div style="font-size: 11px; color: #475569;">
       ${resultado.baseLegal.map((b) => `<div><strong>${esc(b.norma)}</strong> (${esc(b.dispositivo)}): ${esc(b.tema)} — <em>Status: ${esc(b.status)}</em></div>`).join('')}
@@ -623,6 +905,8 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
     ano,
     custosFixosTotais,
     tipoEstabelecimento,
+    beneficiosFiscais,
+    analiseSimplesHibrido,
   ]);
 
   // ---------------------------------------------------------------------------
@@ -668,6 +952,14 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
       'Custo Arbitrado RIR/2018 (R$)',
       'Margem Líquida (R$)',
       'Margem Líquida (%)',
+      'cClassTrib Sugerido',
+      'Redução IBS/CBS (%)',
+      'Regime/Convênio ICMS',
+      'Alíquota ICMS Efetiva (%)',
+      'Dispensa Estorno Entrada',
+      'DIFAL Total Devido (R$)',
+      'Simples Híbrido Vencedor',
+      'Ponto Inflexão Compras (%)',
     ].join(';'));
 
     for (let i = 0; i < itensParaExportar.length; i++) {
@@ -770,6 +1062,14 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           (rel?.analiseVrlEArbitramento?.custoArbitradoRir2018 ?? 0).toFixed(2).replace('.', ','),
           r.resultado.lucroLiquido.toFixed(2).replace('.', ','),
           r.resultado.margemRealizadaPct.toFixed(2).replace('.', ','),
+          `"${beneficiosFiscais.reforma.cClassTrib}"`,
+          beneficiosFiscais.reforma.reducaoIbsCbsPct.toFixed(1).replace('.', ','),
+          `"${beneficiosFiscais.icms.convenioSelecionado}"`,
+          beneficiosFiscais.icms.aliqEfetivaPct.toFixed(2).replace('.', ','),
+          beneficiosFiscais.icms.dispensaEstornoEntrada ? 'SIM' : 'NAO',
+          (beneficiosFiscais.difal?.valorTotalDevidoDestino ?? 0).toFixed(2).replace('.', ','),
+          `"${analiseSimplesHibrido.pontoInflexao.regimeVencedor}"`,
+          analiseSimplesHibrido.pontoInflexao.creditoMinimoEntradaParaEmpatePct.toFixed(2).replace('.', ','),
         ].join(';'));
       } catch {
         /* continua para o próximo item se houver falha de simulação */
@@ -805,6 +1105,8 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
     ano,
     reforma,
     marco,
+    beneficiosFiscais,
+    analiseSimplesHibrido,
   ]);
 
   // ---------------------------------------------------------------------------
@@ -1194,6 +1496,170 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* CARD NOVO: DETECÇÃO AUTOMÁTICA DE BENEFÍCIOS FISCAIS (REFORMA + ICMS-PR/CONFAZ) */}
+              <div className="card" style={{ marginBottom: 20, background: '#fcfdfe', border: '1px solid #cbd5e1' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '14.5px', color: '#0b3d91' }}>
+                      🔍 Detecção Automática de Benefícios Fiscais (Reforma Tributária & RICMS/PR - CONFAZ)
+                    </h3>
+                    <p className="hint" style={{ margin: '3px 0 0', fontSize: '12px' }}>
+                      Enquadramento em O(1) de alíquotas reduzidas, diferimentos estaduais, FCP e apuração de DIFAL.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  {/* COLUNA 1: REFORMA TRIBUTÁRIA (IBS/CBS) */}
+                  <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <strong style={{ fontSize: '13px', color: '#0b3d91' }}>Reforma Tributária (IBS/CBS)</strong>
+                      <span className="badge blue" style={{ fontSize: '10.5px' }}>LC 214/2025</span>
+                    </div>
+
+                    <div style={{ fontSize: '12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <div>
+                        <span style={{ color: '#64748b' }}>cClassTrib Sugerido:</span>{' '}
+                        <strong className="mono" style={{ color: '#0f172a' }}>{beneficiosFiscais.reforma.cClassTrib}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748b' }}>CST IBS/CBS:</span>{' '}
+                        <span className="badge grey" style={{ fontSize: '11px' }}>CST {beneficiosFiscais.reforma.cstIbsCbs}</span>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748b' }}>Redução de Alíquota (IBS/CBS):</span>{' '}
+                        <strong style={{ color: beneficiosFiscais.reforma.reducaoIbsCbsPct > 0 ? '#15803d' : '#475569' }}>
+                          {beneficiosFiscais.reforma.reducaoIbsCbsPct}%
+                        </strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748b' }}>Tema / Fundamentação:</span>{' '}
+                        <span style={{ fontWeight: 600 }}>{beneficiosFiscais.reforma.tema}</span>
+                      </div>
+                      <div style={{ marginTop: 4 }}>
+                        {beneficiosFiscais.reforma.exigeTribRegular ? (
+                          <span
+                            className="badge green"
+                            style={{ fontSize: '11px', padding: '3px 8px' }}
+                            title="Nota Técnica 2025.002: Exige preenchimento do grupo de tributação regular para validação do benefício fiscal na SEFAZ"
+                          >
+                            🏷️ Exige &lt;gTribRegular&gt; (NT 2025.002)
+                          </span>
+                        ) : (
+                          <span className="badge grey" style={{ fontSize: '11px', padding: '3px 8px' }}>
+                            🏷️ Tributação Normal (Sem &lt;gTribRegular&gt;)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* COLUNA 2: MOTOR ICMS PARANÁ & CONVÊNIOS CONFAZ */}
+                  <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <strong style={{ fontSize: '13px', color: '#1d4ed8' }}>ICMS Paraná & Convênios CONFAZ</strong>
+                      <span className="badge" style={{ background: '#eff6ff', color: '#1e40af', fontSize: '10.5px' }}>RICMS/PR</span>
+                    </div>
+
+                    <div style={{ marginBottom: 8 }}>
+                      <label htmlFor="select-convenio-icms" style={{ fontSize: '11.5px', fontWeight: 600, display: 'block', marginBottom: 3 }}>
+                        Regime / Convênio de ICMS:
+                      </label>
+                      <select
+                        id="select-convenio-icms"
+                        value={convenioIcmsSelecionado}
+                        onChange={(e) => setConvenioIcmsSelecionado(e.target.value)}
+                        style={{ width: '100%', fontSize: '12px', padding: '4px 6px' }}
+                      >
+                        <option value="auto">⚡ Automático pelo NCM</option>
+                        <option value="nenhum">Nenhum / Tributação Integral</option>
+                        <option value="diferimento_parcial_pr_12">Diferimento Parcial B2B 12% (Art. 28 Anexo VIII)</option>
+                        <option value="conv_52_91_agricola">Convênio ICMS 52/1991 - Máq. Agrícolas (5,6% PR)</option>
+                        <option value="conv_52_91_industrial">Convênio ICMS 52/1991 - Máq. Industriais (8,8% PR)</option>
+                        <option value="conv_100_97_60">Convênio ICMS 100/1997 - Insumos Agro (Red. 60%)</option>
+                        <option value="conv_100_97_30">Convênio ICMS 100/1997 - Insumos Agro (Red. 30%)</option>
+                        <option value="cesta_basica_pr">Cesta Básica PR - Carga 7% (Anexo II)</option>
+                        <option value="diferimento_total_pr">Diferimento Total 100% CST 51 (Art. 31 Anexo VIII)</option>
+                      </select>
+                    </div>
+
+                    <div style={{ fontSize: '12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <div>
+                        <span style={{ color: '#64748b' }}>Alíq. Nominal vs Efetiva:</span>{' '}
+                        <span>{beneficiosFiscais.icms.aliqNominalPct}%</span> ➔{' '}
+                        <strong style={{ color: '#15803d' }}>{beneficiosFiscais.icms.aliqEfetivaPct}%</strong>
+                        {beneficiosFiscais.icms.diferimentoPct > 0 && (
+                          <span className="badge blue" style={{ marginLeft: 6, fontSize: '10px' }}>
+                            Dif: {beneficiosFiscais.icms.diferimentoPct.toFixed(1)}%
+                          </span>
+                        )}
+                        {beneficiosFiscais.icms.pRedBC > 0 && (
+                          <span className="badge yellow" style={{ marginLeft: 6, fontSize: '10px' }}>
+                            Red BC: {beneficiosFiscais.icms.pRedBC.toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748b' }}>CST ICMS Sugerido:</span>{' '}
+                        <strong className="mono">CST {beneficiosFiscais.icms.cstIcmsSugerido}</strong>{' '}
+                        | FCP Destino: <strong>+{beneficiosFiscais.icms.fcpDestinoPct}%</strong>
+                      </div>
+                      <div style={{ marginTop: 2 }}>
+                        {beneficiosFiscais.icms.dispensaEstornoEntrada ? (
+                          <span
+                            className="badge green"
+                            style={{ fontSize: '10.5px', padding: '2px 6px' }}
+                            title="Cláusula Quarta Convênio ICMS 52/1991: Não se exigirá a anulação do crédito relativo às entradas."
+                          >
+                            ✅ Dispensa Legal de Estorno (Crédito Integral Mantido)
+                          </span>
+                        ) : (
+                          <span
+                            className="badge yellow"
+                            style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '10.5px', padding: '2px 6px' }}
+                            title="Item 6 Anexo II RICMS/PR: Redução com exigência de estorno proporcional de créditos."
+                          >
+                            ⚠️ Exige Estorno Proporcional (Anexo II RICMS/PR)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PAINEL DIFAL QUANDO APLICÁVEL */}
+                {beneficiosFiscais.difal && (
+                  <div style={{ marginTop: 12, padding: 10, background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 6, fontSize: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <strong style={{ color: '#7e22ce' }}>
+                        📦 Apuração do DIFAL Interestadual ({beneficiosFiscais.difal.metodologia === 'base_dupla' ? 'Base Dupla - Lucro Real/Presumido' : 'Base Única - Simples Nacional'})
+                      </strong>
+                      <span className="badge" style={{ background: '#f3e8ff', color: '#6b21a8', fontSize: '10.5px' }}>
+                        EC 87/2015 & LC 190/2022
+                      </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 6 }}>
+                      <div>
+                        <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>Base de Cálculo:</span>
+                        <strong>R$ {beneficiosFiscais.difal.baseCalculo.toFixed(2)}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>DIFAL Líquido:</span>
+                        <strong>R$ {beneficiosFiscais.difal.valorDifalLiquido.toFixed(2)}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>Parcela FCP Destino:</span>
+                        <strong>R$ {beneficiosFiscais.difal.valorFcpDestino.toFixed(2)}</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>Total Devido Destino:</span>
+                        <strong style={{ color: '#b91c1c' }}>R$ {beneficiosFiscais.difal.valorTotalDevidoDestino.toFixed(2)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* CARD 3: DEMONSTRAÇÃO DO CUSTO DE AQUISIÇÃO REAL */}
@@ -1689,6 +2155,149 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
               </table>
             </div>
           )}
+
+          {/* =============================================================== */}
+          {/* SEÇÃO 4.1: ANÁLISE DO SIMPLES HÍBRIDO & PONTO DE INFLEXÃO (LC 214/25) */}
+          {/* =============================================================== */}
+          <div className="card" style={{ marginTop: 24, background: '#f8fafc', border: '1px solid #cbd5e1' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#0b3d91' }}>
+                  ⚖️ Análise Estratégica: Simples Tradicional (DAS) vs. Simples Híbrido (IBS/CBS Por Fora — LC 214/25 & Res. CGSN 186/26)
+                </h3>
+                <p className="hint" style={{ margin: '3px 0 0' }}>
+                  Simulador do Ponto de Inflexão (Break-Even) e competitividade de créditos B2B na transição tributária.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <label htmlFor="hibrido-compras-cred" style={{ fontSize: '12px', fontWeight: 600 }}>% Compras c/ Crédito:</label>
+                  <input
+                    id="hibrido-compras-cred"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={hibridoComprasCreditoPct}
+                    onChange={(e) => setHibridoComprasCreditoPct(Number(e.target.value))}
+                    style={{ width: 68, padding: '3px 6px', fontSize: '12px' }}
+                  />
+                  <span style={{ fontSize: '12px' }}>%</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <label htmlFor="hibrido-mix-b2b" style={{ fontSize: '12px', fontWeight: 600 }}>% Mix Vendas B2B:</label>
+                  <input
+                    id="hibrido-mix-b2b"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={hibridoMixB2bPct}
+                    onChange={(e) => setHibridoMixB2bPct(Number(e.target.value))}
+                    style={{ width: 68, padding: '3px 6px', fontSize: '12px' }}
+                  />
+                  <span style={{ fontSize: '12px' }}>%</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: 16 }}>
+              {/* BLOCO 1: DECOMPOSIÇÃO DO DAS */}
+              <div style={{ background: '#fff', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+                  1. Decomposição do DAS ({ano})
+                </div>
+                <div style={{ fontSize: '12.5px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>DAS Tradicional Efetivo:</span>
+                    <strong>{analiseSimplesHibrido.aliquotaDasOriginalPct.toFixed(2)}% (R$ {analiseSimplesHibrido.valorDasSemExpurgo.toFixed(2)})</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#b91c1c' }}>
+                    <span>Expurgo PIS/COFINS e ICMS:</span>
+                    <strong>-{analiseSimplesHibrido.fatorExpurgoDasPct}%</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#15803d' }}>
+                    <span>DAS Híbrido Reduzido:</span>
+                    <strong>{analiseSimplesHibrido.aliquotaDasAjustadaPct.toFixed(2)}% (R$ {analiseSimplesHibrido.valorDasComExpurgo.toFixed(2)})</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', background: '#f0fdf4', padding: '4px 6px', borderRadius: 4 }}>
+                    <span style={{ fontWeight: 600 }}>Economia Bruta no DAS:</span>
+                    <strong style={{ color: '#15803d' }}>R$ {analiseSimplesHibrido.economiaDas.toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                    <span>Saldo IBS/CBS a Pagar (Déb - Créd):</span>
+                    <strong>R$ {analiseSimplesHibrido.saldoIbsCbsAPagar.toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: 4, fontWeight: 700 }}>
+                    <span>Carga Tributária Total Híbrido:</span>
+                    <span style={{ color: '#0b3d91' }}>R$ {analiseSimplesHibrido.cargaTributariaTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOCO 2: VANTAGEM COMERCIAL B2B */}
+              <div style={{ background: '#fff', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+                  2. Vantagem Comercial B2B (Créditos Transferidos)
+                </div>
+                <div style={{ fontSize: '12.5px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div>
+                    <span style={{ color: '#64748b' }}>Crédito no Simples Tradicional:</span>
+                    <div style={{ fontWeight: 700, color: '#b45309' }}>
+                      {analiseSimplesHibrido.creditoB2bTradicionalPct.toFixed(2)}% (Restrito - Art. 58 §4º Res. CGSN 186)
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b' }}>Crédito no Simples Híbrido:</span>
+                    <div style={{ fontWeight: 700, color: '#15803d' }}>
+                      {analiseSimplesHibrido.creditoB2bHibridoPct.toFixed(1)}% (Integral 26,5% Destacado na NF-e)
+                    </div>
+                  </div>
+                  <div style={{ background: '#eff6ff', padding: '6px 8px', borderRadius: 4, marginTop: 4 }}>
+                    <span style={{ color: '#1e40af', fontWeight: 600, display: 'block' }}>Ganho de Competitividade B2B:</span>
+                    <strong style={{ fontSize: '13.5px', color: '#1d4ed8' }}>
+                      +{analiseSimplesHibrido.ganhoCompetitividadeB2bPct.toFixed(2)}% de crédito para o cliente PJ
+                    </strong>
+                    <div style={{ fontSize: '11px', color: '#3b82f6', marginTop: 2 }}>
+                      Gera economia de R$ {analiseSimplesHibrido.ganhoCompetitividadeB2bValor.toFixed(2)}/mês para os compradores corporativos.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOCO 3: VEREDITO & PONTO DE INFLEXÃO (BREAK-EVEN) */}
+              <div style={{ background: '#fff', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+                  3. Ponto de Inflexão & Veredito Executivo
+                </div>
+                <div style={{ fontSize: '12.5px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div>
+                    <span style={{ color: '#64748b' }}>Compras c/ Crédito p/ Empate (Break-Even):</span>
+                    <div style={{ fontWeight: 800, fontSize: '14px', color: '#7c3aed' }}>
+                      {analiseSimplesHibrido.pontoInflexao.creditoMinimoEntradaParaEmpatePct.toFixed(1)}% da Receita Bruta
+                    </div>
+                  </div>
+                  <div>
+                    {analiseSimplesHibrido.pontoInflexao.regimeVencedor === 'simples_hibrido' ? (
+                      <span className="badge green" style={{ fontSize: '12px', padding: '4px 10px', fontWeight: 700 }}>
+                        🏆 Recomendado: Simples Híbrido
+                      </span>
+                    ) : (
+                      <span className="badge blue" style={{ fontSize: '12px', padding: '4px 10px', fontWeight: 700 }}>
+                        🛡️ Recomendado: Simples Tradicional
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: '#475569', lineHeight: 1.4, background: '#f8fafc', padding: '6px 8px', borderRadius: 4, border: '1px solid #f1f5f9' }}>
+                    {analiseSimplesHibrido.pontoInflexao.justificativa}
+                  </div>
+                  <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: 2 }}>
+                    ⚖️ <b>Aviso Normativo:</b> A opção pelo recolhimento de IBS/CBS fora do Simples é irretratável para todo o ano-calendário e deve ser manifestada entre setembro e novembro do ano anterior (LC 214/2025).
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* =============================================================== */}
           {/* SEÇÃO 5: GAVETA DO MARCO LEGAL & FONTES OFICIAIS EXPANSÍVEL */}

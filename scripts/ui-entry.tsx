@@ -193,6 +193,10 @@ for (const [C, nome, re] of [
 ] as [any, string, RegExp][]) {
   const c = await montar(C);
   ok(re.test(c.txt()) && c.txt().length > 120, `${nome}: renderiza com dados`, c.txt().slice(0, 140));
+  if (nome === 'Precificar') {
+    ok(/Benefícios Fiscais|Reforma Tributária/i.test(c.txt()), 'Precificar: painel de benefícios fiscais (Reforma & ICMS/PR) presente');
+    ok(/Simples Híbrido|Ponto de Inflexão/i.test(c.txt()), 'Precificar: simulador de Ponto de Inflexão do Simples Híbrido presente');
+  }
   c.root.unmount(); c.host.remove();
 }
 

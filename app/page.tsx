@@ -9,7 +9,7 @@ import Parametrizar from '@/components/Parametrizar';
 import ReformaTab from '@/components/Reforma';
 import AuditoriaEntrada from '@/components/AuditoriaEntrada';
 import Precificar from '@/components/Precificar';
-import type { PrecificacaoItemInput } from '@/lib/extrator-nfe-types';
+import type { PrecificacaoItemInput, ParametrizacaoItemInput } from '@/lib/extrator-nfe-types';
 
 const TABS = [
   { id: 'classificar', nome: '1 · Classificar produto', hint: 'descrição → candidatos de NCM com RGI, tributos e parametrização' },
@@ -25,6 +25,7 @@ const TABS = [
 export default function Home() {
   const [tab, setTab] = useState<(typeof TABS)[number]['id']>('classificar');
   const [itensPrecificacao, setItensPrecificacao] = useState<PrecificacaoItemInput[]>([]);
+  const [itensParametrizacao, setItensParametrizacao] = useState<ParametrizacaoItemInput[]>([]);
 
   useEffect(() => {
     try {
@@ -41,7 +42,12 @@ export default function Home() {
         if (detail.itens && Array.isArray(detail.itens)) {
           setItensPrecificacao(detail.itens);
         }
-        setTab(detail.tab);
+        if (detail.itensErp && Array.isArray(detail.itensErp)) {
+          setItensParametrizacao(detail.itensErp);
+        }
+        if (!detail.manterNaAbaAtual) {
+          setTab(detail.tab);
+        }
       }
     };
     window.addEventListener('navegar-aba', onNavegar);
@@ -129,7 +135,7 @@ export default function Home() {
         {tab === 'classificar' && <Classificar />}
         {tab === 'lote' && <Lote />}
         {tab === 'consultar' && <Consultar />}
-        {tab === 'parametrizar' && <Parametrizar />}
+        {tab === 'parametrizar' && <Parametrizar itensImportados={itensParametrizacao} />}
         {tab === 'auditoria-entrada' && <AuditoriaEntrada />}
         {tab === 'precificar' && <Precificar itensIniciais={itensPrecificacao} />}
         {tab === 'reforma' && <ReformaTab />}
