@@ -2,7 +2,13 @@
  * Tipos e Utilitários Compartilhados de Extração de NF-e (Client e Server-Safe)
  * Sem dependências de módulos do Node (como node:fs ou bibliotecas nativas).
  */
-import { mapearCfopEntrada, type DestinacaoMercadoria } from './marco-legal';
+import {
+  mapearCfopEntrada,
+  detectarReducoesFiscaisPorNcm,
+  obterFcpPorUf,
+  type DestinacaoMercadoria,
+  type RegimeTributario,
+} from './marco-legal';
 
 export class FiscalExtractionError extends Error {
   codigo: string;
@@ -511,5 +517,78 @@ export interface ParametrizacaoItemInput {
   fcpPct: number;
   valorUnitario: number;
   quantidade: number;
+}
+
+/**
+ * Converte um item auditado da NF-e para a estrutura consumida pela aba Parametrizar ERP.
+ * Client e Server safe (sem módulos Node).
+ */
+export function converterItemExtracaoParaParametrizacao(
+  item: ExtractedItem,
+  opts?: {
+    ufOrigem?: string;
+    ufDestino?: string;
+    crtEmitente?: string;
+    regimeDestinatario?: any;
+    destinacao?: any;
+    marco?: any;
+  }
+): ParametrizacaoItemInput {
+  const ufOrigem = (opts?.ufOrigem || 'PR').toUpperCase();
+  const ufDestino = (opts?.ufDestino || 'PR').toUpperCase();
+  const destinacao = opts?.destinacao || 'comercializacao';
+  const t = item.tributos || {};
+
+  // Mapeamento CFOP entrada e saída sugeridos
+  const cfopInfo = mapearCfopEntrada(item.cfop, destinacao, ufOrigem, ufDestino);
+  const cfopEntradaSugerido = item.cfopEntradaMapeado || cfopInfo.cfopEntrada;
+
+  // Derivação simples de CFOP de saída correspondente
+  let cfopSaidaSugerido = '5102';
+  if (ufOrigem !== ufDestino) {
+    cfopSaidaSugerido = cfopInfo.temSt ? '6403' : '6102';
+  } else {
+    cfopSaidaSugerido = cfopInfo.temSt ? '5403' : '5102';
+  }
+
+  // Detecção O(1) de benefícios fiscais
+  const reducoes = detectarReducoesFiscaisPorNcm(item.ncm, ufDestino, opts?.marco);
+  const fcp = obterFcpPorUf(ufDestino, opts?.marco);
+
+  const cClassTribSugerido = t.cClassTrib || reducoes?.reforma?.cClassTrib;
+  const reducaoIbsCbsPct = reducoes?.reforma?.reducaoIbsCbsPct ?? 0;
+  const cstIbsCbsSugerido = t.cstIbsCbs || (reducaoIbsCbsPct === 100 ? '02' : reducaoIbsCbsPct > 0 ? '01' : '01');
+
+  let beneficioIcmsPr: string | undefined;
+  let pRedBC = item.pRedBC ?? t.pRedBC;
+  let percentualDiferimento: number | undefined;
+
+  if (reducoes?.icms) {
+    beneficioIcmsPr = reducoes.icms.convenioCorrelato;
+    if (reducoes.icms.diferimentoPct) {
+      percentualDiferimento = reducoes.icms.diferimentoPct;
+    }
+  }
+
+  return {
+    codigoProduto: item.cProd || `ITEM-${item.index}`,
+    descricao: item.xProd,
+    ncm: item.ncm,
+    cest: item.cest,
+    cfopOrigem: item.cfop,
+    cfopEntradaSugerido,
+    cfopSaidaSugerido,
+    cstIcmsOrigem: t.cstIcms,
+    csosnOrigem: t.csosn,
+    cClassTribSugerido,
+    cstIbsCbsSugerido,
+    reducaoIbsCbsPct,
+    beneficioIcmsPr,
+    pRedBC,
+    percentualDiferimento,
+    fcpPct: fcp,
+    valorUnitario: item.vUnCom,
+    quantidade: item.qCom > 0 ? item.qCom : 1,
+  };
 }
 

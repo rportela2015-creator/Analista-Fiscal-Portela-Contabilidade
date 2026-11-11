@@ -6,7 +6,7 @@
  */
 import { Dataset, Record8, Cfop } from './data';
 import type { ExtractedItem, ParametrizacaoItemInput } from './extrator-nfe-types';
-import { converterItemExtracaoParaParametrizacao } from './extrator-nfe';
+import { converterItemExtracaoParaParametrizacao } from './extrator-nfe-types';
 import { detectarReducoesFiscaisPorNcm, obterFcpPorUf, type RegimeTributario, type DestinacaoMercadoria } from './marco-legal';
 
 export type Operacao = 'interna' | 'interestadual' | 'importacao' | 'exportacao';

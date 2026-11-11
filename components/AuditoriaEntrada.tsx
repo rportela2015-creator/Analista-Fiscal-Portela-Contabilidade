@@ -9,8 +9,11 @@ import type {
   DocumentoContexto,
   AuditRequestPayload,
 } from '@/lib/extrator-nfe-types';
-import { montarAuditRequestPayload, converterItemExtracaoParaPrecificacao } from '@/lib/extrator-nfe-types';
-import { converterItemExtracaoParaParametrizacao } from '@/lib/extrator-nfe';
+import {
+  montarAuditRequestPayload,
+  converterItemExtracaoParaPrecificacao,
+  converterItemExtracaoParaParametrizacao,
+} from '@/lib/extrator-nfe-types';
 import TabelaItensExtracao from './TabelaItensExtracao';
 import ParametrizacaoERP from './ParametrizacaoERP';
 

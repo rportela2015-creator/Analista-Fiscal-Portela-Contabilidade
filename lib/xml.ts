@@ -496,7 +496,7 @@ function naturalOperacao(ctx: XmlCtx, temRec: boolean): string {
 
 export {
   converterItemExtracaoParaPrecificacao,
+  converterItemExtracaoParaParametrizacao,
   type PrecificacaoItemInput,
   type ParametrizacaoItemInput,
 } from './extrator-nfe-types';
-export { converterItemExtracaoParaParametrizacao } from './extrator-nfe';
