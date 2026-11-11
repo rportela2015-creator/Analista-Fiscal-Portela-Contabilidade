@@ -233,6 +233,8 @@ export async function POST(request: Request) {
 
     // Modo Legado de Auditoria Monolítica
     let parsedContent = '';
+    let isXml = false;
+    let originalItens: Record<string, any> = {};
 
     if (ext.endsWith('.xml')) {
       const xmlString = buffer.toString('utf-8');
