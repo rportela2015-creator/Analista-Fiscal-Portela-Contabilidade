@@ -14,7 +14,7 @@ import { build, transform } from 'esbuild';
 import { spawnSync } from 'node:child_process';
 import { readFile, writeFile, rm } from 'node:fs/promises';
 import { resolve, dirname, join } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 
 // Raiz absoluta do repositório
 const ROOT = resolve(process.cwd());
@@ -67,11 +67,17 @@ const inlineTs = {
         return undefined;
       }
 
-      // Garante extensão .ts ou .tsx
-      for (const ext of ['', '.ts', '.tsx']) {
+      // Garante extensão .ts ou .tsx (prioriza arquivos sobre diretórios para evitar EISDIR)
+      for (const ext of ['.ts', '.tsx', '/index.ts', '/index.tsx', '']) {
         const candidate = p.endsWith('.ts') || p.endsWith('.tsx') ? p : p + ext;
         if (existsSync(candidate)) {
-          return { path: candidate, namespace: 'ts' };
+          try {
+            if (statSync(candidate).isFile()) {
+              return { path: candidate, namespace: 'ts' };
+            }
+          } catch {
+            // Se falhar stat, continua procurando
+          }
         }
       }
 
@@ -170,6 +176,8 @@ const ALL_TESTS = [
   'tests/api-security.test.mjs',
   'tests/webhook-e-ponte-erp.test.mjs',
   'tests/deploy-launcher.test.mjs',
+  'tests/cfop-resolver.test.mjs',
+  'tests/engine-bitemporal.test.mjs',
 ];
 
 // Suporte a execução de suíte única via CLI: node scripts/test.mjs tests/foo.test.mjs

@@ -1,0 +1,36 @@
+{
+  "coletor": "ricms_pr",
+  "arquivo_canonico": "data\\raw\\ricms_pr_oficial.pdf",
+  "nome_canônico": "ricms_pr_oficial.pdf",
+  "hash_sha256": "98aa09660be140b00d16a49fcd28872d99b2957a2e5792273529355f4f373bd7",
+  "alterado": true,
+  "capturado_em": "2026-11-11T18:09:48Z",
+  "tamanho_bytes": 166,
+  "metadados": {
+    "jurisdicao": "PR",
+    "tributo": "ICMS",
+    "modo": "contingencia_local",
+    "anexos_alvo": [
+      {
+        "anexo": "V",
+        "descricao": "Alíquotas e Produtos com Alíquota Seletiva"
+      },
+      {
+        "anexo": "VI",
+        "descricao": "Isenções e Reduções de Base de Cálculo (Convênios CONFAZ)"
+      },
+      {
+        "anexo": "VIII",
+        "descricao": "Diferimento do ICMS (Parcial e Total)"
+      },
+      {
+        "anexo": "IX",
+        "descricao": "Substituição Tributária (ST) e MVAs"
+      },
+      {
+        "anexo": "X",
+        "descricao": "Créditos Presumidos e Incentivos Setoriais"
+      }
+    ]
+  }
+}
