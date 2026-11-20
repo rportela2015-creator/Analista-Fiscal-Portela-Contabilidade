@@ -12,6 +12,19 @@ import type {
   DetalheCalculo,
   ParametroCalculo,
 } from '../types/motor-tributario';
+import {
+  calcularDiferimentoParcialPR,
+  calcularReducaoBcEEstornoPR,
+  calcularIcmsStPR,
+  calcularSimplesNacionalPR,
+} from './icms-pr-regras';
+
+export {
+  calcularDiferimentoParcialPR,
+  calcularReducaoBcEEstornoPR,
+  calcularIcmsStPR,
+  calcularSimplesNacionalPR,
+};
 
 /**
  * Arredonda valores monetários para duas casas decimais com precisão bancária.
@@ -209,6 +222,77 @@ export function executarCalculoIcms(
     );
   }
 
+  // 6. Enriquecimento Pericial Paraná (RICMS/PR - Sub-etapa 18.4)
+  let diferimentoParcialPr;
+  let reducaoBcEstornoPr;
+  let calculoStPr;
+
+  const ehParana =
+    (valores.ufDestino && valores.ufDestino.toUpperCase() === 'PR') ||
+    (valores.ufOrigem && valores.ufOrigem.toUpperCase() === 'PR') ||
+    regraPrincipal.jurisdicao === 'PR';
+
+  if (ehParana) {
+    if (regraPrincipal.tipo_regra === 'diferimento' || diferimentoPercentual > 0) {
+      diferimentoParcialPr = calcularDiferimentoParcialPR({
+        valorOperacao: valores.valor_operacao,
+        aliqInternaPct: aliquotaInterna,
+        ufOrigem: valores.ufOrigem || 'PR',
+        ufDestino: valores.ufDestino || 'PR',
+        crtEmitente: valores.crtEmitente,
+        crtDestinatario: valores.crtDestinatario,
+        destinatarioConsumidorFinal: valores.destinatarioConsumidorFinal,
+        ehCombustivel: valores.ehCombustivel,
+        destinatarioConstrucaoCivil: valores.destinatarioConstrucaoCivil,
+      });
+      if (diferimentoParcialPr.aplicavel) {
+        memoria.push(...diferimentoParcialPr.memoriaCalculo);
+      }
+    } else if (regraPrincipal.tipo_regra === 'reducao_bc' || reducaoPercentual > 0) {
+      const perfil: any = valores.perfilReducaoPr || 'GENERICO_ANEXO_VI';
+      reducaoBcEstornoPr = calcularReducaoBcEEstornoPR({
+        perfil,
+        valorOperacao: valores.valor_operacao,
+        aliqInternaPct: aliquotaInterna,
+        destinatarioConsumidorFinal: valores.destinatarioConsumidorFinal,
+        ehParteOuPeca: valores.ehParteOuPeca,
+        cargaEfetivaGenericaPct: params.carga_efetiva,
+        manutencaoCredito: valores.manutencaoCredito,
+        creditoIcmsEntrada: valores.creditoIcmsEntrada,
+        ufOrigem: valores.ufOrigem,
+        ufDestino: valores.ufDestino,
+      });
+      memoria.push(...reducaoBcEstornoPr.memoriaCalculo);
+    } else if (regraPrincipal.tipo_regra === 'ST') {
+      calculoStPr = calcularIcmsStPR({
+        ncm: valores.ncm || (regraPrincipal.condicoes?.[0]?.ncm_prefixo?.[0] || ''),
+        cest: valores.cest,
+        dataFatoGerador: valores.dataFatoGerador || '',
+        vProd: valores.valor_operacao,
+        vFrete: valores.frete,
+        vSeg: valores.seguro,
+        vOutro: valores.outras_despesas,
+        vDesc: valores.desconto_incondicional,
+        vIpi: valores.ipi,
+        quantidade: valores.quantidade,
+        aliqInternaPrPct: aliquotaInterna,
+        aliqFecopPrPct: params.fcp || valores.aliqFecopPct,
+        aliqInterestadualPct: aliquotaInter,
+        mvaOriginalPct: params.mva_original || valores.mvaOriginalPct,
+        precoMaximoOrgaoPublico: valores.precoMaximoOrgaoPublico,
+        pmpf: params.pmpf || valores.pmpf,
+        precoSugeridoFabricante: valores.precoSugeridoFabricante,
+        ehAtacadistaRegimeEspecial: valores.ehAtacadistaRegimeEspecial,
+        aplicarRedutorArt16SN: valores.aplicarRedutorArt16SN,
+        crtEmitente: valores.crtEmitente,
+        crtDestinatario: valores.crtDestinatario,
+        ufOrigem: valores.ufOrigem,
+        ufDestino: valores.ufDestino,
+      });
+      memoria.push(...calculoStPr.memoriaCalculo);
+    }
+  }
+
   return {
     base_calculo_propria: round2(baseCalculoPropria),
     aliquota_propria: aliquotaAplicada,
@@ -227,5 +311,8 @@ export function executarCalculoIcms(
     carga_efetiva: cargaEfetiva,
     Carga_Efetiva: cargaEfetiva,
     memoria_calculo: memoria,
+    diferimentoParcialPr,
+    reducaoBcEstornoPr,
+    calculoStPr,
   };
 }

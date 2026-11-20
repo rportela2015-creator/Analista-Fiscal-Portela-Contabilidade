@@ -20,7 +20,7 @@ import { existsSync, statSync } from 'node:fs';
 const ROOT = resolve(process.cwd());
 
 // Módulos lib/* carregados via ncm:libs (shim virtual)
-const LIBS = ['data', 'engine', 'parametrizacao', 'reforma', 'xml', 'marco-legal', 'precificacao', 'relatorio-erp'];
+const LIBS = ['data', 'engine', 'parametrizacao', 'reforma', 'xml', 'marco-legal', 'precificacao', 'relatorio-erp', 'lote-erp'];
 
 /** extrai parseCsv de components/Lote.tsx para '.parse-csv.ts' */
 async function ensureParse() {
@@ -112,7 +112,7 @@ const shim = {
       // então inline-ts resolve cada import como lib/<m>.ts a partir de ROOT.
       contents:
         LIBS.map((m, i) => `import * as ns${i} from "./${m}.ts";`).join('\n')
-        + `\nexport const mods = { data: ns0, engine: ns1, param: ns2, reforma: ns3, xml: ns4, marco: ns5, preco: ns6, relatorioErp: ns7 };`,
+        + `\nexport const mods = { data: ns0, engine: ns1, param: ns2, reforma: ns3, xml: ns4, marco: ns5, preco: ns6, relatorioErp: ns7, loteErp: ns8, 'lote-erp': ns8 };`,
       loader: 'js',
       resolveDir: join(ROOT, 'lib'),
     }));
@@ -178,6 +178,12 @@ const ALL_TESTS = [
   'tests/deploy-launcher.test.mjs',
   'tests/cfop-resolver.test.mjs',
   'tests/engine-bitemporal.test.mjs',
+  'tests/custos-cpc16.test.mjs',
+  'tests/matriz-icms-pr.test.mjs',
+  'tests/difal-pr.test.mjs',
+  'tests/auditoria-difal-entrada.test.mjs',
+  'tests/icms-pr-regras.test.mjs',
+  'tests/precificacao-dual-stack-2027.test.mjs',
 ];
 
 // Suporte a execução de suíte única via CLI: node scripts/test.mjs tests/foo.test.mjs

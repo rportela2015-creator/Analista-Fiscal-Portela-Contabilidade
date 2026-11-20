@@ -27,7 +27,7 @@ const r2 = mods.preco.r2;
 const {
   simular, precificar, trajetoria, creditoEstoqueAbertura, cronogramaEstoqueAgregado,
   paramsDoClassificador, sugerirAliquotasPrecificacao, calcularCustoAquisicaoReal, compararQuatroRegimes,
-  ratearDespesasAcessoriaEFrete
+  ratearDespesasAcessoriaEFrete, determinarCfopVendaDestinatario
 } = mods.preco;
 const {
   aliquotasDoAno, reducaoDoClassTrib, icmsInterestadual, icmsInternoUf, irpjCsllPresumidoPct,
@@ -862,4 +862,94 @@ t('Etapa 9: calcularDetalhamentoSimplesHibrido e Ponto de Inflexão (Break-even)
   near(h2.cargaTributariaTotal, 9525, 0.5, 'Carga híbrida R$ 9.525');
   assert.ok(h2.pontoInflexao.creditoMinimoEntradaParaEmpatePct > 0, 'Ponto de empate calculado');
 });
+
+t('Etapa 17.3: Fornecedor no Simples Híbrido (IBS/CBS por fora) garante apropriação integral de créditos de IBS e CBS na entrada', () => {
+  const itemEntradaBase = {
+    codigo: 'ITEM-TESTE-17',
+    descricao: 'Componente Eletrônico',
+    quantidade: 1,
+    valorBrutoEntrada: 100,
+    credCbsEntrada: 8.8,
+    credIbsEntrada: 0.1,
+    credIcmsEntrada: 0,
+    credPisCofinsEntrada: 0,
+    destinacao: 'comercializacao',
+    tipoEstabelecimento: 'comercio',
+    ufOrigem: 'PR',
+    ufDestino: 'PR',
+  };
+
+  // 1. Fornecedor Simples Tradicional (CRT 1): CBS e IBS zerados e incorporados como custo não aproveitado
+  const custoTradicional = calcularCustoAquisicaoReal(
+    { ...itemEntradaBase, crtEmitente: '1' },
+    'real',
+    { marco }
+  );
+  assert.equal(custoTradicional.impostosARecuperar.creditoCbs, 0, 'No Simples tradicional CBS não gera crédito');
+  assert.equal(custoTradicional.impostosARecuperar.creditoIbs, 0, 'No Simples tradicional IBS não gera crédito');
+  assert.equal(custoTradicional.impostosARecuperar.totalImpostosRecuperaveis, 0, 'Sem créditos recuperados');
+  near(custoTradicional.tributosNaoRecuperaveis.tributosEntradaNaoAproveitados, 8.9, 0.01, 'CBS/IBS viram tributos não aproveitados');
+  near(custoTradicional.custoAquisicaoReal, 108.9, 0.01, 'Custo tradicional incorpora os tributos não creditados');
+
+  // 2. Fornecedor Simples Híbrido (crtEmitente: 'simples_hibrido'): CBS e IBS aproveitados a 100%
+  const custoHibrido = calcularCustoAquisicaoReal(
+    { ...itemEntradaBase, crtEmitente: 'simples_hibrido' },
+    'real',
+    { marco }
+  );
+  assert.equal(custoHibrido.impostosARecuperar.creditoCbs, 8.8, 'Simples Híbrido permite crédito de CBS destacado');
+  assert.equal(custoHibrido.impostosARecuperar.creditoIbs, 0.1, 'Simples Híbrido permite crédito de IBS destacado');
+  near(custoHibrido.impostosARecuperar.totalImpostosRecuperaveis, 8.9, 0.01, 'Total recuperável de IBS/CBS = 8.90');
+  near(custoHibrido.custoAquisicaoReal, 91.1, 0.01, 'Custo de aquisição real reduz para R$ 91,10 com créditos de IBS/CBS');
+  assert.ok(custoHibrido.custoAquisicaoReal < custoTradicional.custoAquisicaoReal, 'Custo com Simples Híbrido é substancialmente menor');
+
+  // 3. Simples Híbrido com adquirente no Lucro Presumido também apropria integralmente CBS/IBS
+  const custoHibridoPresumido = calcularCustoAquisicaoReal(
+    { ...itemEntradaBase, crtEmitente: 'simples_hibrido' },
+    'presumido',
+    { marco }
+  );
+  assert.equal(custoHibridoPresumido.impostosARecuperar.creditoCbs, 8.8, 'Presumido aproveita CBS de Simples Híbrido');
+  assert.equal(custoHibridoPresumido.impostosARecuperar.creditoIbs, 0.1, 'Presumido aproveita IBS de Simples Híbrido');
+  near(custoHibridoPresumido.custoAquisicaoReal, 91.1, 0.01, 'Custo no Presumido também deduz créditos');
+});
+
+t('Etapa 17.3: Determinação do CFOP de venda pelo destinatário na cadeia (5102 sem ST vs 5405 com ST)', () => {
+  // Operação interna de revenda sem ST
+  const cfopSemSt = determinarCfopVendaDestinatario({
+    cstIcms: '00',
+    temSt: false,
+    ufOrigem: 'PR',
+    ufDestino: 'PR',
+  });
+  assert.equal(cfopSemSt, '5102', 'Revenda interna tributada integralmente deve gerar CFOP 5102');
+
+  // Operação interna de revenda com ICMS-ST (cst 60)
+  const cfopComSt = determinarCfopVendaDestinatario({
+    cstIcms: '60',
+    temSt: true,
+    ufOrigem: 'PR',
+    ufDestino: 'PR',
+  });
+  assert.equal(cfopComSt, '5405', 'Revenda interna com ST retido anteriormente deve gerar CFOP 5405');
+
+  // Operação interestadual de revenda sem ST
+  const cfopInterSemSt = determinarCfopVendaDestinatario({
+    cstIcms: '00',
+    temSt: false,
+    ufOrigem: 'PR',
+    ufDestino: 'SP',
+  });
+  assert.equal(cfopInterSemSt, '6102', 'Revenda interestadual sem ST deve gerar CFOP 6102');
+
+  // Operação interestadual de revenda com ST retido anteriormente
+  const cfopInterComSt = determinarCfopVendaDestinatario({
+    cstIcms: '60',
+    temSt: true,
+    ufOrigem: 'PR',
+    ufDestino: 'SP',
+  });
+  assert.equal(cfopInterComSt, '6405', 'Revenda interestadual com ST deve gerar CFOP 6405');
+});
+
 

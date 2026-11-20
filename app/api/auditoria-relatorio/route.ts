@@ -2,6 +2,46 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { esc } from '@/lib/html';
 
+const diagnosticoDifalSchema = z.object({
+  sujeitoDifal: z.boolean().optional().nullable(),
+  modalidade: z.string().optional().nullable(),
+  modalidadeBase: z.string().optional().nullable(),
+  baseCalculoOperacao: z.number().optional().nullable(),
+  baseCalculoDifal: z.number().optional().nullable(),
+  aliquotaOrigem: z.number().optional().nullable(),
+  aliquotaDestino: z.number().optional().nullable(),
+  aliquotaFecop: z.number().optional().nullable(),
+  aliquotaInternaEfetiva: z.number().optional().nullable(),
+  valorDebitoDifal: z.number().optional().nullable(),
+  valorDebitoFecop: z.number().optional().nullable(),
+  valorTotalDebito: z.number().optional().nullable(),
+  efeitoCaixaLiquido: z.number().optional().nullable(),
+  guiaRecolhimento: z.string().optional().nullable(),
+  vencimento: z.string().optional().nullable(),
+  codigoAjusteEfd: z.string().optional().nullable(),
+  obrigacaoAcessoria: z.string().optional().nullable(),
+  fundamentacaoLegal: z.string().optional().nullable(),
+  alertasAuditoria: z.array(z.string()).optional().nullable(),
+}).passthrough().optional().nullable();
+
+const resumoDifalEntradaSchema = z.object({
+  totalItensAnalisados: z.number().optional().nullable(),
+  totalItensComDifal: z.number().optional().nullable(),
+  totalDifalGeral: z.number().optional().nullable(),
+  totalFecopGeral: z.number().optional().nullable(),
+  totalGeralRecolher: z.number().optional().nullable(),
+  exigeRecolhimentoNaNota: z.boolean().optional().nullable(),
+  totalBaseDifal: z.number().optional().nullable(),
+  totalDebitoDifal: z.number().optional().nullable(),
+  totalDebitoFecop: z.number().optional().nullable(),
+  totalAntecipacaoArt16: z.number().optional().nullable(),
+  totalEfeitoCaixaLiquido: z.number().optional().nullable(),
+  guiasNecessarias: z.array(z.string()).optional().nullable(),
+  prazoPrincipal: z.string().optional().nullable(),
+  obrigacoesAcessorias: z.array(z.string()).optional().nullable(),
+  alertasConsolidados: z.array(z.string()).optional().nullable(),
+}).passthrough().optional().nullable();
+
 const relatorioItemSchema = z.object({
   cProd: z.string().optional().nullable(),
   xProd: z.string().optional().nullable(),
@@ -19,6 +59,8 @@ const relatorioItemSchema = z.object({
   aliqCbsTransitorio: z.string().optional().nullable(),
   regimeEspecial: z.string().optional().nullable(),
   instrucaoCadastro: z.string().optional().nullable(),
+  destinacao: z.string().optional().nullable(),
+  diagnosticoDifal: diagnosticoDifalSchema,
 });
 
 const relatorioPayloadSchema = z.object({
@@ -26,7 +68,11 @@ const relatorioPayloadSchema = z.object({
   parecerTecnicoXml: z.string().optional().nullable(),
   parecerConformidade: z.string().optional().nullable(),
   itens: z.array(relatorioItemSchema).optional().nullable(),
+  resumoDifalEntrada: resumoDifalEntradaSchema,
+  relatorioDifal: resumoDifalEntradaSchema,
 });
+
+import { PORTELA_HEADER_CSS, renderHeaderPortela } from '@/lib/relatorio-header';
 
 export async function POST(req: Request) {
   try {
@@ -107,6 +153,101 @@ export async function POST(req: Request) {
         `).join('')
         : '<p>Nenhum item processado nesta auditoria.</p>';
 
+      const headerPortelaHtml = renderHeaderPortela({
+        titulo: 'Laudo Técnico de Auditoria Fiscal e Tributária',
+        subtitulo: 'Auditoria de Entrada de Documento Fiscal Eletrônico (DF-e)',
+        dataHora: dataHoraFormatada,
+        documentoRef: data.itens && data.itens.length ? `${data.itens.length} itens auditados` : undefined,
+      });
+
+      const resumoDifal = data.resumoDifalEntrada || data.relatorioDifal;
+      let difalHtml = '';
+      if (resumoDifal) {
+        const totalDifalStr = (resumoDifal.totalDebitoDifal ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const totalFecopStr = (resumoDifal.totalDebitoFecop ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const totalGeralStr = (resumoDifal.totalGeralRecolher ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const totalAntec16Str = (resumoDifal.totalAntecipacaoArt16 ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const guiasStr = esc(resumoDifal.guiasNecessarias?.join(', ') || 'Sem guias exigidas');
+        const prazoStr = esc(resumoDifal.prazoPrincipal || 'Sem prazo definido');
+        const obriStr = esc(resumoDifal.obrigacoesAcessorias?.join('; ') || 'Nenhuma');
+
+        const alertasHtml = resumoDifal.alertasConsolidados && resumoDifal.alertasConsolidados.length > 0
+          ? `<div class="alerta-box-difal"><strong>Alertas de Auditoria:</strong><ul>${resumoDifal.alertasConsolidados.map(a => `<li>${esc(a)}</li>`).join('')}</ul></div>`
+          : '';
+
+        const itensDifalRows = (data.itens || [])
+          .filter(it => it.diagnosticoDifal)
+          .map((it, idx) => {
+            const d = it.diagnosticoDifal!;
+            const baseOp = (d.baseCalculoOperacao ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const baseDif = (d.baseCalculoDifal ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const debDif = (d.valorDebitoDifal ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const debFec = (d.valorDebitoFecop ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const debTot = (d.valorTotalDebito ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            return `<tr>
+              <td>${idx + 1} - ${esc(it.xProd || it.cProd || 'Item')}</td>
+              <td>${esc(it.destinacao || 'Padrão')}</td>
+              <td>${esc(d.modalidade || 'N/A')}</td>
+              <td style="text-align:right">${baseOp}</td>
+              <td style="text-align:right">${baseDif}</td>
+              <td style="text-align:right">${debDif}</td>
+              <td style="text-align:right">${debFec}</td>
+              <td style="text-align:right; font-weight:bold">${debTot}</td>
+            </tr>`;
+          }).join('');
+
+        const tabelaItensDifalHtml = itensDifalRows
+          ? `<table class="tabela-difal">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Destinação</th>
+                  <th>Modalidade</th>
+                  <th style="text-align:right">Base Operação</th>
+                  <th style="text-align:right">Base Dupla DIFAL</th>
+                  <th style="text-align:right">Débito DIFAL</th>
+                  <th style="text-align:right">Débito FECOP</th>
+                  <th style="text-align:right">Total Débito</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itensDifalRows}
+              </tbody>
+            </table>`
+          : '';
+
+        difalHtml = `
+    <div class="section difal-section">
+      <h2>Apuração de DIFAL, FECOP e Antecipação Tributária na Entrada (RICMS/PR)</h2>
+      <div class="difal-metrics">
+        <div class="difal-metric-card">
+          <div class="metric-title">Débito DIFAL</div>
+          <div class="metric-val">${totalDifalStr}</div>
+        </div>
+        <div class="difal-metric-card">
+          <div class="metric-title">FECOP 2% (Art. 14-A da Lei nº 11.580/1996 e Anexo XII do RICMS/PR)</div>
+          <div class="metric-val">${totalFecopStr}</div>
+        </div>
+        <div class="difal-metric-card">
+          <div class="metric-title">Antecipação Art. 16</div>
+          <div class="metric-val">${totalAntec16Str}</div>
+        </div>
+        <div class="difal-metric-card highlight">
+          <div class="metric-title">Total a Recolher</div>
+          <div class="metric-val">${totalGeralStr}</div>
+        </div>
+      </div>
+      <div class="difal-details">
+        <p><strong>Guias Necessárias:</strong> ${guiasStr}</p>
+        <p><strong>Prazo Principal:</strong> ${prazoStr}</p>
+        <p><strong>Obrigações Acessórias:</strong> ${obriStr}</p>
+      </div>
+      ${alertasHtml}
+      ${tabelaItensDifalHtml}
+    </div>`;
+      }
+
       const htmlContent = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -114,10 +255,9 @@ export async function POST(req: Request) {
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
   <title>Portela Contabilidade - Laudo de Auditoria Fiscal</title>
   <style>
+    ${PORTELA_HEADER_CSS}
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 40px; color: #1e293b; line-height: 1.6; background-color: #f8fafc; }
     .container { max-width: 1000px; margin: 0 auto; background: #ffffff; padding: 32px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-    h1 { text-align: center; color: #0f172a; border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-top: 0; }
-    .header-info { text-align: center; margin-bottom: 28px; font-size: 0.9em; color: #64748b; }
     .section { margin-bottom: 24px; padding: 20px; border-radius: 6px; }
     .parecer-tecnico { background-color: #f0f9ff; border-left: 4px solid #0284c7; }
     .parecer-conformidade { background-color: #f0fdf4; border-left: 4px solid #16a34a; }
@@ -136,12 +276,22 @@ export async function POST(req: Request) {
     .tax-label { color: #64748b; }
     .tax-value { font-weight: 600; color: #0f172a; font-family: monospace; }
     .instruction { margin-top: 14px; padding: 12px; background-color: #eff6ff; border-radius: 6px; font-size: 0.875rem; border-left: 4px solid #3b82f6; }
+    .difal-section { background-color: #fff7ed; border: 1px solid #fed7aa; border-left: 4px solid #ea580c; border-radius: 6px; }
+    .difal-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+    .difal-metric-card { background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #fdba74; }
+    .difal-metric-card.highlight { background: #ffedd5; border: 2px solid #ea580c; }
+    .metric-title { font-size: 0.8rem; font-weight: 600; color: #9a3412; text-transform: uppercase; }
+    .metric-val { font-size: 1.2rem; font-weight: 700; color: #7c2d12; margin-top: 4px; font-family: monospace; }
+    .difal-details { margin: 14px 0; font-size: 0.875rem; color: #431407; }
+    .alerta-box-difal { background: #fee2e2; border-left: 4px solid #ef4444; padding: 10px 14px; margin: 12px 0; border-radius: 4px; color: #991b1b; font-size: 0.85rem; }
+    .tabela-difal { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 0.85rem; background: #ffffff; border-radius: 6px; overflow: hidden; }
+    .tabela-difal th, .tabela-difal td { padding: 8px 10px; border: 1px solid #fed7aa; }
+    .tabela-difal th { background-color: #ffedd5; color: #9a3412; text-align: left; font-weight: 600; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Portela Contabilidade - Laudo de Auditoria Fiscal</h1>
-    <div class="header-info">Data da geração: ${esc(dataHoraFormatada)}</div>
+    ${headerPortelaHtml}
 
     <div class="section parecer-tecnico">
       <h2>Parecer Técnico do Documento</h2>
@@ -152,6 +302,8 @@ export async function POST(req: Request) {
       <h2>Parecer Breve de Conformidade e Créditos</h2>
       <p>${parecerConformidadeSafe}</p>
     </div>
+
+    ${difalHtml}
 
     <h2>Parametrização de ERP - Detalhamento de Itens</h2>
     ${itensHtml}

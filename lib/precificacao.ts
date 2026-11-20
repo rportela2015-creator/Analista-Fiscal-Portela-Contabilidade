@@ -36,6 +36,7 @@ import {
   type RegimeTributario,
   type DetalhamentoSimplesHibrido,
 } from './marco-legal';
+import { determinarCfop, type ParametrosCfopResolver } from './cfop-resolver';
 
 export const r2 = (x: number): number => {
   const s = x < 0 ? -1 : 1;
@@ -46,6 +47,8 @@ const pc = (x: number) => x / 100;
 export type RegimePisCofins2026 = 'cumulativo' | 'monofasico_st' | 'nao_cumulativo';
 export type ModoCredito = 'integral' | 'vp' | 'nenhum';
 
+export type CrtEmitente = 1 | 2 | 3 | 4 | '1' | '2' | '3' | '4' | 'simples_hibrido';
+
 export type ItemPreco = {
   codigo: string;
   descricao: string;
@@ -55,7 +58,7 @@ export type ItemPreco = {
   cstIcms?: string;
   csosn?: string;
   origemMercadoria?: string;
-  crtEmitente?: '1' | '2' | '3' | '4';
+  crtEmitente?: CrtEmitente;
   modFrete?: '0' | '1' | '2' | '9';
   pesoBruto?: number;
   cfopEntradaMapeado?: string;
@@ -293,6 +296,7 @@ export type ResultadoDetalhado = {
   alertas: string[];
   composicaoCusto?: ComposicaoCusto;
   relatorioMargens?: RelatorioMargens;
+  cfopVendaDestinatario?: string;
 };
 
 export type ResultadoResumido = {
@@ -721,7 +725,14 @@ export function calcularCustoAquisicaoReal(
     difalDevido = difalCalc.valorTotalDevidoDestino;
   }
 
-  const isFornecedorSimples = it.crtEmitente === '1' || it.crtEmitente === '2' || (Boolean(it.csosn) && !it.cstIcms);
+  const isFornecedorSimplesHibrido = String(it.crtEmitente) === 'simples_hibrido';
+  const isFornecedorSimples =
+    !isFornecedorSimplesHibrido &&
+    (it.crtEmitente === 1 ||
+      it.crtEmitente === 2 ||
+      it.crtEmitente === '1' ||
+      it.crtEmitente === '2' ||
+      (Boolean(it.csosn) && !it.cstIcms));
 
   if (!glosado) {
     switch (regime) {
@@ -761,8 +772,34 @@ export function calcularCustoAquisicaoReal(
         tribNaoAprov += credPisCofins;
         credPisCofins = 0;
       }
+      // No Simples Tradicional, o fornecedor não recolhe IBS/CBS no regime regular por fora (LC 214/25 art. 58),
+      // logo o adquirente não se credita de IBS/CBS na entrada.
+      if (credCbs > 0) {
+        tribNaoAprov += credCbs;
+        credCbs = 0;
+      }
+      if (credIbs > 0) {
+        tribNaoAprov += credIbs;
+        credIbs = 0;
+      }
       // Crédito de ICMS: permitido se informado alíquota em <pCredSN> ou <infAdProd> (Art. 23 LC 123/2006).
       // Se houver aliquotaCreditoIcmsSimplesPct e estiver no Real ou Presumido:
+      const aliqSimples = it.aliquotaCreditoIcmsSimplesPct ?? 0;
+      if (aliqSimples > 0 && (regime === 'real' || regime === 'presumido') && credIcms === 0) {
+        credIcms = r2((vProd - vDesc) * (aliqSimples / 100));
+      } else if (['102', '103', '300', '400', '500'].includes(it.csosn || '') && aliqSimples === 0) {
+        tribNaoAprov += credIcms;
+        credIcms = 0;
+      }
+    } else if (isFornecedorSimplesHibrido) {
+      // Fornecedor Simples Híbrido:
+      // - IBS e CBS são apurados pelo regime regular "por fora", garantindo crédito pleno ao adquirente Real/Presumido/Híbrido.
+      // - PIS e COFINS continuam não gerando crédito (recolhidos via DAS pelo Simples).
+      if (credPisCofins > 0) {
+        tribNaoAprov += credPisCofins;
+        credPisCofins = 0;
+      }
+      // - ICMS segue regra de pCredSN do Simples Nacional (Art. 23 LC 123/2006)
       const aliqSimples = it.aliquotaCreditoIcmsSimplesPct ?? 0;
       if (aliqSimples > 0 && (regime === 'real' || regime === 'presumido') && credIcms === 0) {
         credIcms = r2((vProd - vDesc) * (aliqSimples / 100));
@@ -1115,6 +1152,16 @@ export function simular(it: ItemPreco, p: ParamsPreco, ctx: Ctx): ResultadoDetal
     },
   };
 
+  // CFOP da Operação de Venda pelo Destinatário
+  const isVendaInterestadual = (p.uf || it.ufDestino || 'PR').toUpperCase() !== (it.ufOrigem || 'PR').toUpperCase();
+  const cfopVenda = determinarCfop({
+    operacao: isVendaInterestadual ? 'interestadual' : 'interna',
+    natureza: 'saida',
+    finalidade: 'comercializacao',
+    cst: isStSubstituido ? '60' : (it.cstIcms || '00'),
+    temSt: isStSubstituido,
+  });
+
   return {
     item: { codigo: it.codigo, descricao: it.descricao, ncm: it.ncm, cst: it.cst, cClassTrib: it.cClassTrib },
     ano: p.ano,
@@ -1172,6 +1219,7 @@ export function simular(it: ItemPreco, p: ParamsPreco, ctx: Ctx): ResultadoDetal
     alertas: [...new Set(alertas)],
     composicaoCusto: compCusto,
     relatorioMargens: relMargens,
+    cfopVendaDestinatario: cfopVenda,
   };
 }
 
@@ -1271,12 +1319,29 @@ export function trajetoria(
   });
 }
 
-export function sensibilidadeMargem(it: ItemPreco, p: ParamsPreco, ctx: Ctx, margens: number[]) {
-  return margens.map((m) => {
-    const r = simular(it, { ...p, margemLiquidaPct: m }, ctx);
-    return { margemPct: m, precoFinal: r.preco.precoFinal, lucroLiquido: r.resultado.lucroLiquido };
+export function determinarCfopVendaDestinatario(
+  item: { cstIcms?: string; csosn?: string; temSt?: boolean; icmsStEntrada?: number; ufOrigem?: string; ufDestino?: string },
+  ufDestinoOperacao?: string
+): string {
+  const isSt =
+    item.cstIcms === '60' ||
+    item.csosn === '500' ||
+    (item.icmsStEntrada ?? 0) > 0 ||
+    Boolean(item.temSt);
+
+  const ufDest = (ufDestinoOperacao || item.ufDestino || 'PR').toUpperCase();
+  const ufOrig = (item.ufOrigem || 'PR').toUpperCase();
+  const isInterestadual = ufDest !== ufOrig;
+
+  return determinarCfop({
+    operacao: isInterestadual ? 'interestadual' : 'interna',
+    natureza: 'saida',
+    finalidade: 'comercializacao',
+    cst: isSt ? '60' : (item.cstIcms || '00'),
+    temSt: isSt,
   });
 }
+
 
 /** Cronograma AGREGADO do crédito de estoque da empresa (soma de itens x quantidades) — nível em que a apuração acontece. */
 export function cronogramaEstoqueAgregado(itens: { quantidade: number; resultado: ResultadoDetalhado }[]) {
@@ -1320,3 +1385,8 @@ export function paramsDoClassificador(
     );
   return { isSaidaPct: rec?.is === 1 ? rec.adv ?? 0 : 0, pRedCbs: red.cbs, pRedIbs: red.ibs, alertas };
 }
+
+// ------------------------------------------------------------------
+// Sub-etapa 18.5: Re-exportações do Núcleo Dual-Stack PR 2026–2027
+// ------------------------------------------------------------------
+export * from './engine/precificacao-pr-2027';

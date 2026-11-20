@@ -9,6 +9,7 @@ import {
   type DestinacaoMercadoria,
   type RegimeTributario,
 } from './marco-legal';
+import type { DiagnosticoDifalEntrada, ResumoDifalNfeEntrada } from './types/motor-tributario';
 
 export class FiscalExtractionError extends Error {
   codigo: string;
@@ -26,12 +27,16 @@ export interface ExtractedTributosResumo {
   cstIcms?: string;
   csosn?: string;
   orig?: number;
+  origemTabelaA?: number;
   vBC?: number;
   pICMS?: number;
   vICMS?: number;
   vBCST?: number;
   pICMSST?: number;
   vICMSST?: number;
+  vBCSTRet?: number;
+  pST?: number;
+  vICMSSTRet?: number;
   pMVAST?: number;
   pRedBC?: number;
   pRedBCST?: number;
@@ -40,26 +45,31 @@ export interface ExtractedTributosResumo {
   pCredSN?: number;
   vCredICMSSN?: number;
 
+  // IPI Fornecedor
   cstIpi?: string;
   cEnq?: string;
   vBCIpi?: number;
   pIPI?: number;
   vIPI?: number;
 
+  // II (Imposto de Importação)
   vII?: number;
   pII?: number;
   vBCII?: number;
 
+  // PIS Fornecedor
   cstPis?: string;
   vBCPis?: number;
   pPIS?: number;
   vPIS?: number;
 
+  // COFINS Fornecedor
   cstCofins?: string;
   vBCCofins?: number;
   pCOFINS?: number;
   vCOFINS?: number;
 
+  // RTC (Reforma Tributária do Consumo - IBS/CBS/IS - se presentes na nota)
   cClassTrib?: string;
   cstIbsCbs?: string;
   vBCIbsCbs?: number;
@@ -67,10 +77,18 @@ export interface ExtractedTributosResumo {
   pIBSMun?: number;
   pIBS?: number;
   vIBS?: number;
+  vIbs?: number;
   pCBS?: number;
   vCBS?: number;
+  vCbs?: number;
   pIS?: number;
   vIS?: number;
+  vIs?: number;
+
+  // NT 2026.008 v1.01
+  vProdLiq?: number;
+  nFCI?: string;
+  leiauteNt2026008?: boolean;
 }
 
 export interface ExtractedItem {
@@ -96,18 +114,29 @@ export interface ExtractedItem {
   modFrete?: '0' | '1' | '2' | '9';
   pesoBruto?: number;
   origemMercadoria?: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8';
+  origemTabelaA?: number;
   crtEmitente?: '1' | '2' | '3' | '4';
   pRedBC?: number;
   vICMSDeson?: number;
   motDesICMS?: string;
   pMVAST?: number;
   pRedBCST?: number;
+  vBCSTRet?: number;
+  pST?: number;
+  vICMSSTRet?: number;
+  pCredSN?: number;
+  vCredICMSSN?: number;
+  vProdLiq?: number;
+  vUnComLiq?: number;
+  nFCI?: string;
+  leiauteNt2026008?: boolean;
   cfopEntradaMapeado?: string;
   infAdProd?: string;
   aliquotaCreditoIcmsSimplesPct?: number;
   tributos: ExtractedTributosResumo;
   sensivelParaAuditoria: boolean;
   motivosSensibilidade?: string[];
+  diagnosticoDifal?: DiagnosticoDifalEntrada;
 }
 
 export interface ExtractedInvoiceData {
@@ -165,6 +194,7 @@ export interface ExtractedInvoiceData {
   totalItens: number;
   totalItensSensiveis?: number;
   itens: ExtractedItem[];
+  resumoDifalEntrada?: ResumoDifalNfeEntrada;
 }
 
 export interface ExtractionOptions {

@@ -64,6 +64,14 @@ export interface TabelaItensExtracaoProps {
   onParametrizarSelecionados?: (itens: ExtractedItem[]) => void;
   /** Total de itens sensíveis pré-computado (opcional) */
   totalItensSensiveis?: number;
+  /** Destinação por item para apuração de DIFAL/ST */
+  destinacaoPorItem?: Record<string | number, 'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado'>;
+  /** Callback para alterar a destinação de um item */
+  onAlterarDestinacaoItem?: (index: number, destinacao: 'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado') => void;
+  /** Destinação padrão da nota */
+  destinacaoPadrao?: 'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado';
+  /** Mapa de diagnósticos periciais de DIFAL por item */
+  diagnosticosDifal?: Record<string | number, any>;
 }
 
 
@@ -115,6 +123,10 @@ export default function TabelaItensExtracao({
   onParametrizarItem,
   onParametrizarSelecionados,
   totalItensSensiveis,
+  destinacaoPorItem,
+  onAlterarDestinacaoItem,
+  destinacaoPadrao = 'comercializacao',
+  diagnosticosDifal,
 }: TabelaItensExtracaoProps) {
   // ---- Hooks chamados estritamente no topo para cumprir scripts/hookcheck.mjs ----
   const [busca, setBusca] = useState('');
@@ -472,6 +484,7 @@ export default function TabelaItensExtracao({
               <th style={{ width: 95, textAlign: 'right' }}>V. Unit</th>
               <th style={{ width: 105, textAlign: 'right' }}>V. Total</th>
               <th style={{ minWidth: 230 }}>Tributos Destacados</th>
+              <th style={{ minWidth: 165, textAlign: 'center' }}>DIFAL / Entrada PR</th>
               <th style={{ width: 130, textAlign: 'center' }}>Sensibilidade</th>
               <th style={{ width: 50, textAlign: 'center' }}>Ação</th>
             </tr>
@@ -479,7 +492,7 @@ export default function TabelaItensExtracao({
           <tbody>
             {itensExibidos.length === 0 ? (
               <tr>
-                <td colSpan={13} style={{ textAlign: 'center', padding: '24px 8px', color: 'var(--ink-2)' }}>
+                <td colSpan={14} style={{ textAlign: 'center', padding: '24px 8px', color: 'var(--ink-2)' }}>
                   Nenhum item corresponde ao filtro ou busca aplicada.
                 </td>
               </tr>
@@ -718,6 +731,100 @@ export default function TabelaItensExtracao({
                         </div>
                       </td>
 
+                      {/* Coluna DIFAL / Entrada PR */}
+                      <td style={{ textAlign: 'center', fontSize: 11, minWidth: 160 }} onClick={(e) => e.stopPropagation()}>
+                        {(() => {
+                          const destinacaoItem =
+                            destinacaoPorItem?.[item.index] ||
+                            destinacaoPorItem?.[item.cProd] ||
+                            (item.cfop?.endsWith('556') || item.cfop?.endsWith('407')
+                              ? 'uso_consumo'
+                              : item.cfop?.endsWith('551') || item.cfop?.endsWith('406')
+                              ? 'ativo_imobilizado'
+                              : destinacaoPadrao || 'comercializacao');
+
+                          const diag =
+                            diagnosticosDifal?.[item.index] ||
+                            diagnosticosDifal?.[item.cProd] ||
+                            (item as any).diagnosticoDifal;
+
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
+                              <select
+                                value={destinacaoItem}
+                                onChange={(e) =>
+                                  onAlterarDestinacaoItem &&
+                                  onAlterarDestinacaoItem(item.index, e.target.value as any)
+                                }
+                                disabled={readOnly || disabled}
+                                style={{
+                                  fontSize: 10.5,
+                                  padding: '2px 4px',
+                                  borderRadius: 4,
+                                  border: '1px solid #cbd5e1',
+                                  background: '#ffffff',
+                                  color: '#334155',
+                                  width: '100%',
+                                  maxWidth: 135,
+                                  cursor: readOnly || disabled ? 'not-allowed' : 'pointer',
+                                }}
+                                title="Selecione a destinação da mercadoria pelo destinatário"
+                              >
+                                <option value="comercializacao">Revenda</option>
+                                <option value="industrializacao">Industrialização</option>
+                                <option value="uso_consumo">Uso / Consumo</option>
+                                <option value="ativo_imobilizado">Ativo Imobilizado</option>
+                              </select>
+
+                              {diag?.exigeRecolhimento ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      background: '#fff7ed',
+                                      color: '#c2410c',
+                                      border: '1px solid #fdba74',
+                                      fontSize: 10,
+                                      fontWeight: 650,
+                                      padding: '2px 6px',
+                                      borderRadius: 4,
+                                    }}
+                                    title={`Base Dupla DIFAL: R$ ${(diag.baseCalculoDifal || 0).toFixed(2)} | Alíq Origem: ${diag.aliquotaOrigem}% | Alíq Destino: ${diag.aliquotaDestino}%`}
+                                  >
+                                    {diag.modalidade === 'ANTECIPACAO_4_PCT_ART16'
+                                      ? `Antec. Art. 16: R$ ${(diag.valorDebitoDifal || 0).toFixed(2)}`
+                                      : diag.modalidade === 'ICMS_ST_ENTRADA_ART11'
+                                      ? 'ST Entrada Art. 11'
+                                      : diag.valorDebitoFecop > 0
+                                      ? `DIFAL R$ ${(diag.valorDebitoDifal || 0).toFixed(2)} + FECOP R$ ${(diag.valorDebitoFecop || 0).toFixed(2)}`
+                                      : `DIFAL: R$ ${(diag.valorDebitoDifal || 0).toFixed(2)}`}
+                                  </span>
+                                  {diag.baseCalculoDifal > 0 && (
+                                    <span style={{ fontSize: 9.5, color: '#9a3412', marginTop: 1 }}>
+                                      Base: R$ {diag.baseCalculoDifal.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span
+                                  className="badge"
+                                  style={{
+                                    background: '#f8fafc',
+                                    color: '#64748b',
+                                    border: '1px solid #e2e8f0',
+                                    fontSize: 9.5,
+                                    padding: '1px 5px',
+                                  }}
+                                  title={diag?.fundamentacaoLegal || 'Operação dispensada de recolhimento de DIFAL no PR'}
+                                >
+                                  Dispensado
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
+
                       {/* Selo de Sensibilidade Fiscal */}
                       <td style={{ textAlign: 'center' }}>
                         {item.sensivelParaAuditoria ? (
@@ -846,7 +953,7 @@ export default function TabelaItensExtracao({
                     {/* Linha Expansível com Detalhes Periciais Profundos */}
                     {isExpanded && (
                       <tr style={{ background: '#f8fafc' }}>
-                        <td colSpan={13} style={{ padding: '12px 16px', borderBottom: '2px solid var(--line)' }}>
+                        <td colSpan={14} style={{ padding: '12px 16px', borderBottom: '2px solid var(--line)' }}>
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
                             {/* Bloco 1: Cadastro & Classificação */}
                             <div style={{ background: '#fff', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>

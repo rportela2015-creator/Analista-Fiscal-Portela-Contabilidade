@@ -18,6 +18,7 @@ import { extrairDadosNfe, FiscalExtractionError } from '@/lib/extrator-nfe';
 import {
   executarAuditoriaParticionada,
   validarAuditPayload,
+  auditarDifalNotaEntrada,
 } from '@/lib/auditoria-particionada';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { getApiKey, getModels } from '@/lib/ai/config';
@@ -221,6 +222,36 @@ export async function POST(request: Request) {
       const t0 = performance.now();
       const dadosExtraidos = await extrairDadosNfe(buffer, filename, { regime, finalidade });
       dadosExtraidos.tempoExtracaoMs = Math.round(performance.now() - t0);
+
+      // Apuração pericial de DIFAL, FECOP e Antecipação PR
+      try {
+        const crtDestinatarioParam = formData.get('crtDestinatario');
+        const crtDestinatario = crtDestinatarioParam ? (Number(crtDestinatarioParam) as any) : 3;
+        const destinacaoPadrao = (finalidade && finalidade.toLowerCase().includes('uso'))
+          ? 'uso_consumo'
+          : (finalidade && finalidade.toLowerCase().includes('ativo'))
+          ? 'ativo_imobilizado'
+          : (finalidade && finalidade.toLowerCase().includes('ind'))
+          ? 'industrializacao'
+          : 'comercializacao';
+        const incluirIbsCbsBcIcms = formData.get('incluirIbsCbsBcIcms') !== 'false';
+        const aplicarCarga12Art16SN = formData.get('aplicarCarga12Art16SN') === 'true';
+
+        const { itensDiagnostico, resumoDifalNota } = auditarDifalNotaEntrada(dadosExtraidos, {
+          crtDestinatario,
+          destinacaoPadrao,
+          incluirIbsCbsBcIcms,
+          aplicarCarga12Art16SN,
+        });
+
+        dadosExtraidos.itens = dadosExtraidos.itens.map((it: any) => ({
+          ...it,
+          diagnosticoDifal: itensDiagnostico[String(it.index)] || itensDiagnostico[String(it.cProd)],
+        }));
+        (dadosExtraidos as any).resumoDifalEntrada = resumoDifalNota;
+      } catch (errDifal) {
+        console.warn('[DIFAL PR] Falha não impeditiva ao apurar DIFAL na extração:', errDifal);
+      }
 
       return NextResponse.json(dadosExtraidos, {
         status: 200,

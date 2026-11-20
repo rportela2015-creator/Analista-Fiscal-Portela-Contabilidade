@@ -16,6 +16,15 @@ import {
 } from '@/lib/extrator-nfe-types';
 import TabelaItensExtracao from './TabelaItensExtracao';
 import ParametrizacaoERP from './ParametrizacaoERP';
+import {
+  calcularCustoItemCPC16,
+  consolidarCustosEntradaCPC16,
+  gerarRelatorioCustosHtml,
+  RelatorioCustoEntradaConsolidado,
+} from '@/lib/custos';
+import { RegimeTributario, DestinacaoMercadoria } from '@/lib/marco-legal';
+import { auditarDifalNotaEntrada } from '@/lib/engine/difal-pr';
+import type { DiagnosticoDifalEntrada, ResumoDifalNfeEntrada } from '@/lib/types/motor-tributario';
 
 /* =========================================================================
  * CONTRATOS DE TIPOS PARA A ETAPA 2 (M2 ↔ M3)
@@ -115,6 +124,31 @@ export default function AuditoriaEntrada() {
   // 4. Estados de Exportação de Relatórios
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+
+  // 5. Estados do Modal de Custo Individualizado por Produto (CPC 16)
+  const [modalCusto, setModalCusto] = useState<{
+    aberto: boolean;
+    modo: 'resumido' | 'detalhado';
+  }>({ aberto: false, modo: 'resumido' });
+
+  // 6. Estados de Apuração Bitemporal de DIFAL, FECOP & Antecipação PR (Sub-Etapa 18.3)
+  const [crtDestinatario, setCrtDestinatario] = useState<'1' | '2' | '3' | '4'>('3');
+  const [destinacaoPadrao, setDestinacaoPadrao] = useState<'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado'>('comercializacao');
+  const [incluirIbsCbsBcIcms, setIncluirIbsCbsBcIcms] = useState<boolean>(true);
+  const [destinacaoPorItem, setDestinacaoPorItem] = useState<Record<string | number, 'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado'>>({});
+
+  React.useEffect(() => {
+    if (regime.toLowerCase().includes('simples')) setCrtDestinatario('1');
+    else if (regime.toLowerCase().includes('mei')) setCrtDestinatario('4');
+    else setCrtDestinatario('3');
+  }, [regime]);
+
+  React.useEffect(() => {
+    if (finalidade.toLowerCase().includes('ind')) setDestinacaoPadrao('industrializacao');
+    else if (finalidade.toLowerCase().includes('ativo')) setDestinacaoPadrao('ativo_imobilizado');
+    else if (finalidade.toLowerCase().includes('consumo') || finalidade.toLowerCase().includes('uso')) setDestinacaoPadrao('uso_consumo');
+    else setDestinacaoPadrao('comercializacao');
+  }, [finalidade]);
 
   // ─── Handlers da Etapa 1 (Extração Determinística) ──────────────────────────
   const handleFileUpload = async (e: React.FormEvent) => {
@@ -317,10 +351,32 @@ export default function AuditoriaEntrada() {
     setPdfLoading(true);
     setPdfError(null);
     try {
+      const itensEnriquecidos = (auditResult.itens || []).map((it: any) => {
+        const diag =
+          apuracaoDifalNota?.itensDiagnostico[String(it.index)] ||
+          apuracaoDifalNota?.itensDiagnostico[String(it.cProd)];
+        const dest =
+          destinacaoPorItem[it.index] ||
+          destinacaoPorItem[it.cProd] ||
+          destinacaoPadrao;
+        return {
+          ...it,
+          destinacao: dest,
+          diagnosticoDifal: diag,
+        };
+      });
+
+      const payloadRelatorio = {
+        ...auditResult,
+        itens: itensEnriquecidos,
+        resumoDifalEntrada: apuracaoDifalNota?.resumoDifalNota,
+        format,
+      };
+
       const res = await fetch('/api/auditoria-relatorio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...auditResult, format }),
+        body: JSON.stringify(payloadRelatorio),
       });
 
       if (!res.ok) throw new Error(`Erro HTTP ${res.status} ao gerar relatório.`);
@@ -343,36 +399,50 @@ export default function AuditoriaEntrada() {
     }
   };
 
-  // ─── Resumo Analítico dos Tributos de Entrada e Custo Real (NBC TG 16) ────
-  const resumoEntrada = React.useMemo(() => {
-    if (!extractedInvoice) return null;
-    const itens = extractedInvoice.itens || [];
-    let vProd = 0;
-    let vFreteSegOutros = 0;
-    let vDesc = 0;
-    let tribNaoRecup = 0;
-    let credRecup = 0;
+  // ─── Consolidação CPC 16 (R1) / NBC TG 16 de Custos por Item ────────────
+  const consolidadoCPC16 = React.useMemo(() => {
+    if (!extractedInvoice || !extractedInvoice.itens || extractedInvoice.itens.length === 0) return null;
+    const regimeDest: RegimeTributario = regime.toLowerCase().includes('simples')
+      ? 'simples'
+      : regime.toLowerCase().includes('real')
+      ? 'real'
+      : 'presumido';
+    const dest: DestinacaoMercadoria = finalidade.toLowerCase().includes('ind')
+      ? 'industrializacao'
+      : finalidade.toLowerCase().includes('ativo')
+      ? 'ativo_imobilizado'
+      : finalidade.toLowerCase().includes('consumo') || finalidade.toLowerCase().includes('uso')
+      ? 'uso_consumo'
+      : 'comercializacao';
 
-    for (const it of itens) {
-      vProd += it.vProd || 0;
-      vFreteSegOutros += (it.vFrete || 0) + (it.vSeg || 0) + (it.vOutro || 0);
-      vDesc += it.vDesc || 0;
-      const t = it.tributos || {};
-      tribNaoRecup += (t.vIPI || 0) + (t.vICMSST || 0) + (t.vII || 0) + (t.vIS || 0);
-      credRecup += (t.vICMS || 0) + (t.vPIS || 0) + (t.vCOFINS || 0) + (t.vCBS || 0) + (t.vIBS || 0);
-    }
+    return consolidarCustosEntradaCPC16(extractedInvoice.itens, {
+      regime: regimeDest,
+      destinacao: dest,
+      ufOrigem: extractedInvoice.emitente?.uf,
+      ufDestino: extractedInvoice.destinatario?.uf || 'PR',
+    });
+  }, [extractedInvoice, regime, finalidade]);
 
-    const custoRealEstimado = vProd - vDesc + vFreteSegOutros + tribNaoRecup - credRecup;
+  // ─── Apuração Bitemporal Instantânea de DIFAL, FECOP & Antecipação PR ───
+  const apuracaoDifalNota = React.useMemo(() => {
+    if (!extractedInvoice || !extractedInvoice.itens || extractedInvoice.itens.length === 0) return null;
+    return auditarDifalNotaEntrada(extractedInvoice, {
+      crtDestinatario: Number(crtDestinatario) as any,
+      destinacaoPadrao,
+      destinacaoPorItem,
+      incluirIbsCbsBcIcms,
+    });
+  }, [extractedInvoice, crtDestinatario, destinacaoPadrao, destinacaoPorItem, incluirIbsCbsBcIcms]);
 
-    return {
-      vProd,
-      vFreteSegOutros,
-      vDesc,
-      tribNaoRecup,
-      credRecup,
-      custoRealEstimado,
-    };
-  }, [extractedInvoice]);
+  const handleAlterarDestinacaoItem = (
+    index: number,
+    novaDestinacao: 'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado'
+  ) => {
+    setDestinacaoPorItem((prev) => ({
+      ...prev,
+      [index]: novaDestinacao,
+    }));
+  };
 
   // ─── Transferência Direta para a Aba de Precificação (Etapa 3) ────────────
   const handleEnviarParaPrecificacao = (itensParaEnviar: ExtractedItem[]) => {
@@ -539,8 +609,8 @@ export default function AuditoriaEntrada() {
             </div>
           </div>
 
-          {/* Resumo Analítico de Custo e Tributos da NF-e (Etapa 3) */}
-          {resumoEntrada && (
+          {/* Resumo Analítico de Custo e Tributos da NF-e (Etapa 3 / CPC 16 R1) */}
+          {consolidadoCPC16 && (
             <div
               className="card"
               style={{
@@ -555,13 +625,22 @@ export default function AuditoriaEntrada() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                 <div>
                   <h4 style={{ margin: 0, color: '#166534', fontSize: '14px' }}>
-                    📊 Resumo Analítico de Custo de Entrada & Tributos (NBC TG 16)
+                    📊 Resumo Analítico de Custo de Entrada & Tributos (NBC TG 16 / CPC 16 R1)
                   </h4>
                   <p className="hint" style={{ margin: '3px 0 0', color: '#15803d', fontSize: '12px' }}>
-                    Dados consolidados para formação de preço e aproveitamento de créditos fiscais.
+                    Custo de aquisição apurado segundo o Item 11 do CPC 16 (R1) e créditos admitidos no regime <b>{regime}</b>.
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn primary"
+                    style={{ background: '#2e7d32', borderColor: '#2e7d32', fontSize: '12.5px', padding: '6px 12px', fontWeight: 600 }}
+                    onClick={() => setModalCusto({ aberto: true, modo: 'resumido' })}
+                    title="Visualizar a tabela de composição de custo de aquisição individualizado por produto"
+                  >
+                    📊 Custo Individualizado por Produto
+                  </button>
                   <button
                     type="button"
                     className="btn primary"
@@ -623,38 +702,315 @@ export default function AuditoriaEntrada() {
                 <div style={{ background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px solid #dcfce7' }}>
                   <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>Produtos (vProd):</span>
                   <strong style={{ fontSize: '13px', color: '#1e293b' }}>
-                    {resumoEntrada.vProd.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {consolidadoCPC16.valorTotalBruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
                 </div>
 
                 <div style={{ background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px solid #dcfce7' }}>
                   <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>Frete/Seg/Outros:</span>
                   <strong style={{ fontSize: '13px', color: '#1e293b' }}>
-                    + {resumoEntrada.vFreteSegOutros.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    + {consolidadoCPC16.freteSeguroTotais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
                 </div>
 
                 <div style={{ background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px solid #fee2e2' }}>
                   <span style={{ color: '#991b1b', fontSize: '11px', display: 'block' }}>Tributos s/ Crédito (IPI/ST):</span>
                   <strong style={{ fontSize: '13px', color: '#b91c1c' }}>
-                    + {resumoEntrada.tribNaoRecup.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    + {consolidadoCPC16.tributosNaoRecuperaveisTotais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
                 </div>
 
                 <div style={{ background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px solid #dbeafe' }}>
                   <span style={{ color: '#1e40af', fontSize: '11px', display: 'block' }}>Impostos a Recuperar:</span>
                   <strong style={{ fontSize: '13px', color: '#2563eb' }}>
-                    - {resumoEntrada.credRecup.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    - {consolidadoCPC16.impostosRecuperaveisTotais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
                 </div>
 
                 <div style={{ background: '#dcfce7', padding: '8px 12px', borderRadius: 6, border: '1px solid #86efac' }}>
                   <span style={{ color: '#14532d', fontSize: '11px', display: 'block', fontWeight: 600 }}>Custo Real Líquido:</span>
                   <strong style={{ fontSize: '14px', color: '#166534' }}>
-                    {resumoEntrada.custoRealEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    {consolidadoCPC16.custoTotalRealConsolidado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Barra de Contexto da Entrada no Estado do Paraná (RICMS/PR) */}
+          <div
+            className="card"
+            style={{
+              marginTop: 14,
+              marginBottom: 14,
+              background: '#f8fafc',
+              border: '1.5px solid #cbd5e1',
+              padding: 14,
+              borderRadius: 8,
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '16px' }}>⚖️</span>
+                <strong style={{ fontSize: '13.5px', color: '#1e293b' }}>
+                  Parâmetros de Entrada no Paraná (RICMS/PR · Decreto nº 7.871/2017)
+                </strong>
+              </div>
+              <span className="badge blue mono" style={{ fontSize: '11px' }}>
+                UF Origem: {extractedInvoice.emitente?.uf || 'ND'} ➔ Destino: {extractedInvoice.destinatario?.uf || 'PR'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, alignItems: 'flex-end' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12px', color: '#334155' }}>
+                <strong>Regime do Destinatário (CRT):</strong>
+                <select
+                  value={crtDestinatario}
+                  onChange={(e) => setCrtDestinatario(e.target.value as any)}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: 6,
+                    border: '1px solid #cbd5e1',
+                    fontSize: '12.5px',
+                    background: '#ffffff',
+                  }}
+                >
+                  <option value="3">CRT 3 - Regime Normal (Lucro Real / Presumido)</option>
+                  <option value="1">CRT 1 - Simples Nacional (ME / EPP)</option>
+                  <option value="2">CRT 2 - Simples Nacional (Excesso Sublimite)</option>
+                  <option value="4">CRT 4 - MEI (Microempreendedor Individual)</option>
+                </select>
+              </label>
+
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12px', color: '#334155' }}>
+                <strong>Destinação Predominante:</strong>
+                <select
+                  value={destinacaoPadrao}
+                  onChange={(e) => setDestinacaoPadrao(e.target.value as any)}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: 6,
+                    border: '1px solid #cbd5e1',
+                    fontSize: '12.5px',
+                    background: '#ffffff',
+                  }}
+                >
+                  <option value="comercializacao">Revenda / Comercialização</option>
+                  <option value="industrializacao">Industrialização / Insumo</option>
+                  <option value="uso_consumo">Uso e Consumo (DIFAL Base Dupla)</option>
+                  <option value="ativo_imobilizado">Ativo Imobilizado (DIFAL Base Dupla / CIAP)</option>
+                </select>
+              </label>
+
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: '11.5px',
+                  color: '#475569',
+                  cursor: 'pointer',
+                  padding: '6px 8px',
+                  borderRadius: 6,
+                  background: '#f1f5f9',
+                  border: '1px solid #e2e8f0',
+                }}
+                title="Conforme Consulta Tributária SEFA/PR nº 48/2026, opta-se por incluir ou não os novos tributos (IBS/CBS/IS) na Base de Cálculo do ICMS durante a transição 2026."
+              >
+                <input
+                  type="checkbox"
+                  checked={incluirIbsCbsBcIcms}
+                  onChange={(e) => setIncluirIbsCbsBcIcms(e.target.checked)}
+                />
+                <span>
+                  <strong>Consulta SEFA/PR nº 48/2026:</strong> Incluir IBS/CBS/IS na BC do ICMS
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Card Executivo: Apuração de DIFAL, FECOP & Antecipação na Entrada (RICMS/PR) */}
+          {apuracaoDifalNota && (
+            <div
+              className="card"
+              style={{
+                marginBottom: 14,
+                padding: 14,
+                borderRadius: 8,
+                background: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#fff7ed' : '#f0fdf4',
+                border: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota
+                  ? '2px solid #ea580c'
+                  : '1px solid #86efac',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: '18px' }}>
+                    {apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '⚠️' : '✅'}
+                  </span>
+                  <div>
+                    <h4
+                      style={{
+                        margin: 0,
+                        fontSize: '14px',
+                        color: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#9a3412' : '#166534',
+                      }}
+                    >
+                      {apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota
+                        ? 'APURAÇÃO DE DIFAL, FECOP & ANTECIPAÇÃO TRIBUTÁRIA (RICMS/PR)'
+                        : 'DISPENSA DE DIFAL / ANTECIPAÇÃO NA ENTRADA (PR)'}
+                    </h4>
+                    <p
+                      className="hint"
+                      style={{
+                        margin: '2px 0 0',
+                        fontSize: '11.5px',
+                        color: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#c2410c' : '#15803d',
+                      }}
+                    >
+                      {apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota
+                        ? 'Foram identificadas obrigações estaduais e impacto no fluxo de caixa na entrada das mercadorias no Paraná.'
+                        : 'Nenhuma mercadoria desta nota exige recolhimento de DIFAL ou Antecipação tributária estadual na entrada.'}
+                    </p>
+                  </div>
+                </div>
+
+                {apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota && (
+                  <span
+                    className="badge mono"
+                    style={{ background: '#ea580c', color: '#ffffff', fontWeight: 700, fontSize: '12px' }}
+                  >
+                    Guia: {(apuracaoDifalNota.resumoDifalNota.guiasNecessarias || []).join(', ') || 'GR-PR'}
+                  </span>
+                )}
+              </div>
+
+              {/* Grid com 4 Métricas Executivas */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: 10,
+                  marginTop: 12,
+                }}
+              >
+                <div style={{ background: '#ffffff', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
+                  <span style={{ color: '#9a3412', fontSize: '11px', display: 'block', fontWeight: 600 }}>
+                    1. DIFAL Base Dupla (Consumo/Ativo):
+                  </span>
+                  <strong style={{ fontSize: '14px', color: '#c2410c' }}>
+                    {((apuracaoDifalNota.resumoDifalNota.totalDebitoDifal || 0)).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </strong>
+                </div>
+
+                <div style={{ background: '#ffffff', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
+                  <span style={{ color: '#9a3412', fontSize: '11px', display: 'block', fontWeight: 600 }}>
+                    2. FECOP 2% (Art. 14-A da Lei nº 11.580/1996 e Anexo XII do RICMS/PR):
+                  </span>
+                  <strong style={{ fontSize: '14px', color: '#c2410c' }}>
+                    {((apuracaoDifalNota.resumoDifalNota.totalDebitoFecop || 0)).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </strong>
+                </div>
+
+                <div style={{ background: '#ffffff', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
+                  <span style={{ color: '#9a3412', fontSize: '11px', display: 'block', fontWeight: 600 }}>
+                    3. Antecipação Tributária (Simples):
+                  </span>
+                  <strong style={{ fontSize: '14px', color: '#c2410c' }}>
+                    {((apuracaoDifalNota.resumoDifalNota.totalAntecipacaoArt16 || 0)).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </strong>
+                </div>
+
+                <div
+                  style={{
+                    background: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#ffedd5' : '#dcfce7',
+                    padding: '8px 12px',
+                    borderRadius: 6,
+                    border: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '1.5px solid #f97316' : '1px solid #86efac',
+                  }}
+                >
+                  <span
+                    style={{
+                      color: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#7c2d12' : '#14532d',
+                      fontSize: '11px',
+                      display: 'block',
+                      fontWeight: 700,
+                    }}
+                  >
+                    4. Total Débito Estadual / Caixa:
+                  </span>
+                  <strong
+                    style={{
+                      fontSize: '15px',
+                      color: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#c2410c' : '#166534',
+                    }}
+                  >
+                    {((apuracaoDifalNota.resumoDifalNota.totalGeralRecolher ?? apuracaoDifalNota.resumoDifalNota.totalDebitoDifal ?? 0)).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Obrigações Acessórias e Prazos */}
+              {apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: '8px 12px',
+                    borderRadius: 6,
+                    background: '#ffffff',
+                    border: '1px solid #fed7aa',
+                    fontSize: '11.5px',
+                    color: '#7c2d12',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 14,
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
+                    <strong>Vencimento Legal:</strong> {apuracaoDifalNota.resumoDifalNota.prazoPrincipal || 'Até o dia 12 do mês subsequente'}
+                  </div>
+                  <div>
+                    <strong>Obrigações / EFD:</strong> {(apuracaoDifalNota.resumoDifalNota.obrigacoesAcessorias || []).join(' · ') || 'Outros Débitos — Reg. E111'}
+                  </div>
+                  <div>
+                    <strong>Guia Oficial:</strong> {(apuracaoDifalNota.resumoDifalNota.guiasNecessarias || []).join(', ') || 'GR-PR'}
+                  </div>
+                </div>
+              )}
+
+              {/* Alertas Periciais Normativos */}
+              {apuracaoDifalNota.resumoDifalNota.alertasConsolidados && apuracaoDifalNota.resumoDifalNota.alertasConsolidados.length > 0 && (
+                <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {apuracaoDifalNota.resumoDifalNota.alertasConsolidados.map((alerta: string, idx: number) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: 6,
+                        fontSize: '11.5px',
+                        background: alerta.includes('revogação') || alerta.includes('indevido') ? '#fee2e2' : '#fffbeb',
+                        border: alerta.includes('revogação') || alerta.includes('indevido') ? '1px solid #fca5a5' : '1px solid #fde68a',
+                        color: alerta.includes('revogação') || alerta.includes('indevido') ? '#991b1b' : '#92400e',
+                      }}
+                    >
+                      {alerta}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -671,6 +1027,10 @@ export default function AuditoriaEntrada() {
             onPrecificarItem={(item) => handleEnviarParaPrecificacao([item])}
             onParametrizarItem={(item) => handleEnviarParaErp([item], false)}
             onParametrizarSelecionados={(itens) => handleEnviarParaErp(itens, false)}
+            destinacaoPorItem={destinacaoPorItem}
+            onAlterarDestinacaoItem={handleAlterarDestinacaoItem}
+            destinacaoPadrao={destinacaoPadrao}
+            diagnosticosDifal={apuracaoDifalNota?.itensDiagnostico}
           />
 
           {/* Painel Dual Engine Selector (Seletor de Motor Duplo) */}
@@ -922,6 +1282,168 @@ export default function AuditoriaEntrada() {
           </div>
 
           <ParametrizacaoERP data={auditResult} />
+        </div>
+      )}
+
+      {/* Modal de Custo Individualizado por Produto (CPC 16 / NBC TG 16) */}
+      {modalCusto.aberto && consolidadoCPC16 && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: 10,
+              width: '100%',
+              maxWidth: 1100,
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Topo do Modal */}
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1.5px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#f8fafc',
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, color: '#3A4A1E', fontSize: '1.15rem' }}>
+                  📊 Custo de Aquisição Individualizado por Produto — CPC 16 (R1)
+                </h3>
+                <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                  Regime tributário: <b>{regime}</b> · Finalidade: <b>{finalidade}</b>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalCusto({ aberto: false, modo: 'resumido' })}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.4rem',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  lineHeight: 1,
+                  padding: '4px 8px',
+                }}
+                title="Fechar modal"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Barra de Ações e Alternância de Modo */}
+            <div
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#ffffff',
+                borderBottom: '1px solid #f1f5f9',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 10,
+              }}
+            >
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  type="button"
+                  className="mini"
+                  onClick={() => setModalCusto((prev) => ({ ...prev, modo: 'resumido' }))}
+                  style={{
+                    backgroundColor: modalCusto.modo === 'resumido' ? '#3A4A1E' : '#f1f5f9',
+                    color: modalCusto.modo === 'resumido' ? '#ffffff' : '#334155',
+                    fontWeight: 600,
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    border: '1px solid #cbd5e1',
+                    cursor: 'pointer',
+                  }}
+                >
+                  📋 Visão Resumida (Somente Tabela de Custos)
+                </button>
+                <button
+                  type="button"
+                  className="mini"
+                  onClick={() => setModalCusto((prev) => ({ ...prev, modo: 'detalhado' }))}
+                  style={{
+                    backgroundColor: modalCusto.modo === 'detalhado' ? '#3A4A1E' : '#f1f5f9',
+                    color: modalCusto.modo === 'detalhado' ? '#ffffff' : '#334155',
+                    fontWeight: 600,
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    border: '1px solid #cbd5e1',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ⚖️ Visão Detalhada (com Citação Legal)
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="mini"
+                  onClick={() => {
+                    const html = gerarRelatorioCustosHtml(consolidadoCPC16, modalCusto.modo);
+                    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `relatorio_custo_cpc16_${modalCusto.modo}.html`;
+                    a.click();
+                    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+                  }}
+                  style={{ backgroundColor: '#2563eb', color: '#fff', fontWeight: 600, padding: '6px 12px' }}
+                >
+                  📥 Baixar HTML
+                </button>
+                <button
+                  type="button"
+                  className="mini"
+                  onClick={() => setModalCusto({ aberto: false, modo: 'resumido' })}
+                  style={{ padding: '6px 12px' }}
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+
+            {/* Conteúdo Renderizado com Scroll */}
+            <div
+              style={{
+                padding: '16px 20px',
+                overflowY: 'auto',
+                flex: 1,
+                backgroundColor: '#f8fafc',
+              }}
+              dangerouslySetInnerHTML={{
+                __html: gerarRelatorioCustosHtml(consolidadoCPC16, modalCusto.modo),
+              }}
+            />
+          </div>
         </div>
       )}
     </div>

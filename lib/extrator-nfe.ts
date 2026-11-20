@@ -46,12 +46,16 @@ export interface ExtractedTributosResumo {
   cstIcms?: string;
   csosn?: string;
   orig?: number;
+  origemTabelaA?: number;
   vBC?: number;
   pICMS?: number;
   vICMS?: number;
   vBCST?: number;
   pICMSST?: number;
   vICMSST?: number;
+  vBCSTRet?: number;
+  pST?: number;
+  vICMSSTRet?: number;
   pMVAST?: number;
   pRedBC?: number;
   pRedBCST?: number;
@@ -92,10 +96,18 @@ export interface ExtractedTributosResumo {
   pIBSMun?: number;
   pIBS?: number;
   vIBS?: number;
+  vIbs?: number;
   pCBS?: number;
   vCBS?: number;
+  vCbs?: number;
   pIS?: number;
   vIS?: number;
+  vIs?: number;
+
+  // NT 2026.008 v1.01
+  vProdLiq?: number;
+  nFCI?: string;
+  leiauteNt2026008?: boolean;
 }
 
 export interface ExtractedItem {
@@ -121,12 +133,22 @@ export interface ExtractedItem {
   modFrete?: '0' | '1' | '2' | '9';
   pesoBruto?: number;
   origemMercadoria?: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8';
+  origemTabelaA?: number;
   crtEmitente?: '1' | '2' | '3' | '4';
   pRedBC?: number;
   vICMSDeson?: number;
   motDesICMS?: string;
   pMVAST?: number;
   pRedBCST?: number;
+  vBCSTRet?: number;
+  pST?: number;
+  vICMSSTRet?: number;
+  pCredSN?: number;
+  vCredICMSSN?: number;
+  vProdLiq?: number;
+  vUnComLiq?: number;
+  nFCI?: string;
+  leiauteNt2026008?: boolean;
   cfopEntradaMapeado?: string;
   infAdProd?: string;
   aliquotaCreditoIcmsSimplesPct?: number;
@@ -382,13 +404,20 @@ function extrairTributosXml(imp: any): ExtractedTributosResumo {
     if (icmsGroup && typeof icmsGroup === 'object') {
       if (icmsGroup.CST !== undefined) tributos.cstIcms = String(icmsGroup.CST).padStart(2, '0');
       if (icmsGroup.CSOSN !== undefined) tributos.csosn = String(icmsGroup.CSOSN).padStart(3, '0');
-      if (icmsGroup.orig !== undefined) tributos.orig = parseNumber(icmsGroup.orig);
+      if (icmsGroup.orig !== undefined) {
+        const origNum = parseNumber(icmsGroup.orig);
+        tributos.orig = origNum;
+        tributos.origemTabelaA = origNum;
+      }
       tributos.vBC = parseOptionalNumber(icmsGroup.vBC);
       tributos.pICMS = parseOptionalNumber(icmsGroup.pICMS);
       tributos.vICMS = parseOptionalNumber(icmsGroup.vICMS);
       tributos.vBCST = parseOptionalNumber(icmsGroup.vBCST ?? icmsGroup.vBCSTRet);
       tributos.pICMSST = parseOptionalNumber(icmsGroup.pICMSST ?? icmsGroup.pST);
       tributos.vICMSST = parseOptionalNumber(icmsGroup.vICMSST ?? icmsGroup.vICMSSTRet);
+      tributos.vBCSTRet = parseOptionalNumber(icmsGroup.vBCSTRet);
+      tributos.pST = parseOptionalNumber(icmsGroup.pST);
+      tributos.vICMSSTRet = parseOptionalNumber(icmsGroup.vICMSSTRet);
       tributos.pMVAST = parseOptionalNumber(icmsGroup.pMVAST);
       tributos.pRedBC = parseOptionalNumber(icmsGroup.pRedBC);
       tributos.pRedBCST = parseOptionalNumber(icmsGroup.pRedBCST);
@@ -441,22 +470,29 @@ function extrairTributosXml(imp: any): ExtractedTributosResumo {
     tributos.vBCII = parseOptionalNumber(imp.II.vBC);
   }
 
-  // 6. RTC (IBS/CBS/IS - se presentes na nota)
-  const rtcGroup = imp.IBSCBS || imp.IBS;
+  // 6. RTC (IBS/CBS/IS - NT 2025.002 v1.52)
+  const rtcGroup = imp.gIBSCBS || imp.IBSCBS || imp.IBS;
   if (rtcGroup && typeof rtcGroup === 'object') {
     if (rtcGroup.cClassTrib) tributos.cClassTrib = String(rtcGroup.cClassTrib);
     if (rtcGroup.CST) tributos.cstIbsCbs = String(rtcGroup.CST);
-    tributos.vBCIbsCbs = parseOptionalNumber(rtcGroup.vBC);
+    tributos.vBCIbsCbs = parseOptionalNumber(rtcGroup.vBC ?? rtcGroup.vBCIbsCbs);
     tributos.pIBSUF = parseOptionalNumber(rtcGroup.pIBSUF);
     tributos.pIBSMun = parseOptionalNumber(rtcGroup.pIBSMun);
-    tributos.pIBS = parseOptionalNumber(rtcGroup.pIBS);
-    tributos.vIBS = parseOptionalNumber(rtcGroup.vIBS);
-    tributos.pCBS = parseOptionalNumber(rtcGroup.pCBS);
-    tributos.vCBS = parseOptionalNumber(rtcGroup.vCBS);
+    tributos.pIBS = parseOptionalNumber(rtcGroup.pIBS ?? rtcGroup.gIBS?.pIBS);
+    const vIbsVal = parseOptionalNumber(rtcGroup.vIBS ?? rtcGroup.gIBS?.vIBS);
+    tributos.vIBS = vIbsVal;
+    tributos.vIbs = vIbsVal;
+    tributos.pCBS = parseOptionalNumber(rtcGroup.pCBS ?? rtcGroup.gCBS?.pCBS);
+    const vCbsVal = parseOptionalNumber(rtcGroup.vCBS ?? rtcGroup.gCBS?.vCBS);
+    tributos.vCBS = vCbsVal;
+    tributos.vCbs = vCbsVal;
   }
-  if (imp.IS && typeof imp.IS === 'object') {
-    tributos.pIS = parseOptionalNumber(imp.IS.pIS);
-    tributos.vIS = parseOptionalNumber(imp.IS.vIS);
+  const isGroup = imp.gIS || imp.IS;
+  if (isGroup && typeof isGroup === 'object') {
+    tributos.pIS = parseOptionalNumber(isGroup.pIS);
+    const vIsVal = parseOptionalNumber(isGroup.vIS);
+    tributos.vIS = vIsVal;
+    tributos.vIs = vIsVal;
   }
 
   return tributos;
@@ -658,6 +694,16 @@ export function extrairDadosXmlNfe(
       destinatario.uf || 'PR'
     );
 
+    // Campos adicionados pela NT 2026.008 v1.01
+    const vProdLiq = parseOptionalNumber(prod.vProdLiq);
+    const vUnComLiq = parseOptionalNumber(prod.vUnComLiq);
+    const nFCI = prod.nFCI ? String(prod.nFCI).trim() : undefined;
+    const leiauteNt2026008 = Boolean(prod.vProdLiq !== undefined || prod.vUnComLiq !== undefined);
+
+    tributos.vProdLiq = vProdLiq;
+    tributos.nFCI = nFCI;
+    tributos.leiauteNt2026008 = leiauteNt2026008;
+
     const itemBase: Omit<ExtractedItem, 'sensivelParaAuditoria' | 'motivosSensibilidade'> = {
       index: d['@_nItem'] ? parseInt(String(d['@_nItem']), 10) : idx + 1,
       cProd: String(prod.cProd ?? ''),
@@ -681,12 +727,22 @@ export function extrairDadosXmlNfe(
       modFrete,
       pesoBruto: pesoItem,
       origemMercadoria: orig,
+      origemTabelaA: tributos.origemTabelaA ?? (orig !== undefined ? parseInt(orig, 10) : undefined),
       crtEmitente: emitente.crt as any,
       pRedBC: tributos.pRedBC,
       vICMSDeson: tributos.vICMSDeson,
       motDesICMS: tributos.motDesICMS,
       pMVAST: tributos.pMVAST,
       pRedBCST: tributos.pRedBCST,
+      vBCSTRet: tributos.vBCSTRet,
+      pST: tributos.pST,
+      vICMSSTRet: tributos.vICMSSTRet,
+      pCredSN: tributos.pCredSN,
+      vCredICMSSN: tributos.vCredICMSSN,
+      vProdLiq,
+      vUnComLiq,
+      nFCI,
+      leiauteNt2026008,
       cfopEntradaMapeado: cfopEntradaInfo.cfopEntrada,
       infAdProd,
       aliquotaCreditoIcmsSimplesPct: aliqCredSimples,

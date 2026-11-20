@@ -6,9 +6,12 @@
  * 2. 'lote_produtos': Recebe array de mercadorias -> Classificação O(1) Siscomex -> Parametrização ERP em lote.
  * 3. 'status_marco_legal': Retorna estatísticas e hash de conformidade do marco legal.
  *
- * Recursos de Segurança:
+ * Recursos de Segurança e Relatórios:
  * - Rate limiting (20 req/min por IP) via lib/rate-limit.ts.
  * - Autenticação por token seguro em tempo constante via crypto.timingSafeEqual.
+ * - Suporte a modos de relatório 'resumido' (gerencial) e 'detalhado' (pericial completo).
+ * - Cadeia completa de CFOP (Origem -> Entrada -> Venda Destinatário).
+ * - Indicadores executivos do Bloco C e custos individualizados CPC 16.
  * - Callback outbound assinado via HMAC-SHA256 (header X-MCM-Signature).
  * - Headers imutáveis de proteção contra cache (Cache-Control: no-store).
  */
@@ -22,7 +25,10 @@ import { parametrizarLoteNfe } from '@/lib/parametrizacao';
 import { loadDataset } from '@/lib/data';
 import { getServerDataset } from '@/lib/ai/ncm-server';
 import { classify } from '@/lib/engine';
-import type { DestinacaoMercadoria } from '@/lib/marco-legal';
+import type { DestinacaoMercadoria, RegimeTributario } from '@/lib/marco-legal';
+import { determinarCfopVendaDestinatario, r2 } from '@/lib/precificacao';
+import { calcularCustoItemCPC16, ratearFreteItensCPC16 } from '@/lib/custos';
+import type { ExtractedItem } from '@/lib/extrator-nfe-types';
 import fs from 'fs';
 import path from 'path';
 
@@ -61,6 +67,21 @@ const DestinacaoSchema = z.enum([
   'ativo',
 ]);
 
+const CrtSchema = z.union([
+  z.literal(1),
+  z.literal(2),
+  z.literal(3),
+  z.literal(4),
+  z.literal('1'),
+  z.literal('2'),
+  z.literal('3'),
+  z.literal('4'),
+  z.literal('simples_hibrido'),
+]);
+
+const FormatoSaidaEnum = z.enum(['resumido', 'detalhado']);
+const TipoRelatorioEnum = z.enum(['gerencial', 'pericial']);
+
 function normalizarDestinacao(d?: string): DestinacaoMercadoria | undefined {
   if (!d) return undefined;
   if (d === 'consumo') return 'uso_consumo';
@@ -74,8 +95,12 @@ const ModoXmlSchema = z.object({
   xmlConteudo: z.string().min(10, 'Conteúdo do XML da NF-e é obrigatório'),
   ufOrigem: z.string().length(2).optional(),
   ufDestino: z.string().length(2).optional(),
-  regimeDestinatario: z.enum(['simples', 'presumido', 'real']).optional(),
+  regimeDestinatario: z.enum(['simples', 'presumido', 'real', 'simples_hibrido']).optional(),
   destinacao: DestinacaoSchema.optional(),
+  crtEmitente: CrtSchema.optional(),
+  formatoRelatorio: FormatoSaidaEnum.optional(),
+  formato_saida: FormatoSaidaEnum.optional(),
+  tipo_relatorio: TipoRelatorioEnum.optional(),
   callbackUrl: z.string().url('callbackUrl deve ser uma URL válida').optional(),
 });
 
@@ -83,8 +108,20 @@ const ItemProdutoLoteSchema = z.object({
   codigo: z.string().optional(),
   descricao: z.string().min(2, 'Descrição do produto é obrigatória'),
   ncm: z.string().optional(),
+  cest: z.string().optional(),
+  cfop: z.string().optional(),
   valorUnitario: z.number().nonnegative().optional(),
   quantidade: z.number().positive().optional(),
+  vFrete: z.number().nonnegative().optional(),
+  vIPI: z.number().nonnegative().optional(),
+  vICMSST: z.number().nonnegative().optional(),
+  vICMS: z.number().nonnegative().optional(),
+  vPIS: z.number().nonnegative().optional(),
+  vCOFINS: z.number().nonnegative().optional(),
+  vCBS: z.number().nonnegative().optional(),
+  vIBS: z.number().nonnegative().optional(),
+  cstIcms: z.string().optional(),
+  csosn: z.string().optional(),
 });
 
 const ModoProdutosSchema = z.object({
@@ -92,8 +129,12 @@ const ModoProdutosSchema = z.object({
   produtos: z.array(ItemProdutoLoteSchema).min(1, 'Lista de produtos não pode ser vazia'),
   ufOrigem: z.string().length(2).optional(),
   ufDestino: z.string().length(2).optional(),
-  regimeDestinatario: z.enum(['simples', 'presumido', 'real']).optional(),
+  regimeDestinatario: z.enum(['simples', 'presumido', 'real', 'simples_hibrido']).optional(),
   destinacao: DestinacaoSchema.optional(),
+  crtEmitente: CrtSchema.optional(),
+  formatoRelatorio: FormatoSaidaEnum.optional(),
+  formato_saida: FormatoSaidaEnum.optional(),
+  tipo_relatorio: TipoRelatorioEnum.optional(),
   callbackUrl: z.string().url('callbackUrl deve ser uma URL válida').optional(),
 });
 
@@ -184,6 +225,7 @@ export async function GET(req: NextRequest) {
       versao: '3.0.0',
       marcoLegal: marcoInfo,
       modosSuportados: ['xml_nfe', 'lote_produtos', 'status_marco_legal'],
+      formatosRelatorio: ['resumido', 'detalhado'],
       autenticacao: 'Header X-MCM-Token, X-Webhook-Secret ou Authorization: Bearer <token>',
       timestamp: new Date().toISOString(),
     },
@@ -262,24 +304,130 @@ export async function POST(req: NextRequest) {
   // 4. Execução Conforme o Modo Solicitado (Zero LLM / Zero Tokens)
   try {
     if (payload.modo === 'xml_nfe') {
+      const formatoEfetivo: 'resumido' | 'detalhado' =
+        payload.formatoRelatorio === 'resumido' ||
+        payload.formato_saida === 'resumido' ||
+        payload.tipo_relatorio === 'gerencial'
+          ? 'resumido'
+          : 'detalhado';
+
       // Stage 1 Determinístico (< 20ms)
       const extracao = extrairDadosXmlNfe(payload.xmlConteudo);
 
       const ufOrigem = (payload.ufOrigem || extracao.emitente?.uf || 'PR').toUpperCase();
       const ufDestino = (payload.ufDestino || extracao.destinatario?.uf || 'PR').toUpperCase();
+      const regimeDest = (payload.regimeDestinatario || 'simples') as RegimeTributario;
+      const destinacaoNormalizada = normalizarDestinacao(payload.destinacao) || 'comercializacao';
+
+      // Determinar CRT Emitente efetivo
+      const crtEmitenteEfetivo =
+        payload.crtEmitente !== undefined
+          ? payload.crtEmitente
+          : (extracao.emitente?.crt as any) || '3';
+
+      // Rateio proporcional de frete global se houver vFreteTotal no resumo
+      let itensProcessados = extracao.itens;
+      const vFreteTotalNota = extracao.resumoFinanceiro?.vFreteTotal || 0;
+      const vFreteSomaItens = extracao.itens.reduce((acc, it) => acc + (it.vFrete || 0), 0);
+      if (vFreteTotalNota > 0 && vFreteSomaItens === 0) {
+        itensProcessados = ratearFreteItensCPC16(extracao.itens, vFreteTotalNota, 'valor');
+      }
 
       // Parametrização em lote de todos os itens da nota fiscal
-      const loteResult = parametrizarLoteNfe(extracao.itens, {
+      const loteResult = parametrizarLoteNfe(itensProcessados, {
         ufOrigem,
         ufDestino,
-        regimeDestinatario: payload.regimeDestinatario,
-        destinacao: normalizarDestinacao(payload.destinacao),
+        regimeDestinatario: regimeDest,
+        destinacao: destinacaoNormalizada,
+      });
+
+      // Enriquecimento com Bloco C, Cadeia CFOP e CPC 16 individualizado
+      const itensParametrizadosEnriquecidos = loteResult.itensParametrizados.map((itemParam, idx) => {
+        const itemOriginal = itensProcessados[idx] || ({} as ExtractedItem);
+
+        // Injeta crtEmitente no item se fornecido
+        const itemComCrt: ExtractedItem = {
+          ...itemOriginal,
+          crtEmitente: (typeof crtEmitenteEfetivo === 'number'
+            ? String(crtEmitenteEfetivo)
+            : crtEmitenteEfetivo) as any,
+        };
+
+        // 1. Cálculo CPC 16 Item 11
+        const custoCpc16 = calcularCustoItemCPC16(itemComCrt, {
+          regime: regimeDest,
+          destinacao: destinacaoNormalizada,
+          ufOrigem,
+          ufDestino,
+        });
+
+        // 2. Cadeia Completa de CFOP
+        const cfopOrigem = itemParam.cfopOrigem || itemOriginal.cfop || '5102';
+        const cfopEntrada = itemParam.cfopEntradaSugerido;
+        const cfopVendaDestinatario = determinarCfopVendaDestinatario(
+          {
+            cstIcms: itemOriginal.tributos?.cstIcms,
+            csosn: itemOriginal.tributos?.csosn,
+            temSt: Boolean(custoCpc16.tributosNaoRecuperaveis.icmsSt > 0 || (itemParam as any).temSt),
+            icmsStEntrada: custoCpc16.tributosNaoRecuperaveis.icmsSt,
+            ufOrigem,
+            ufDestino,
+          },
+          ufDestino
+        );
+
+        // 3. Bloco C - Resumo Executivo (Custo Efetivo, Margem e Preço de Venda Sugerido)
+        const custoEfetivoUnitario = custoCpc16.custoUnitarioReal;
+        // Margem padrão gerencial de 30% sobre o custo efetivo
+        const margemLiquidaPct = 30.0;
+        const precoVendaSugerido = r2(custoEfetivoUnitario * (1 + margemLiquidaPct / 100));
+
+        // Estrutura CPC 16 formatada
+        const custoIndividualizadoCpc16 = {
+          valorBruto: custoCpc16.valorBruto,
+          descontos: custoCpc16.descontoIncondicional,
+          freteRateado: custoCpc16.freteSeguroOutros,
+          ipiNaoRecuperavel: custoCpc16.tributosNaoRecuperaveis.ipi,
+          icmsStDifal: custoCpc16.tributosNaoRecuperaveis.icmsSt,
+          tributosRecuperaveis: custoCpc16.impostosRecuperaveis.total,
+          custoTotal: custoCpc16.custoTotalReal,
+          custoUnitario: custoCpc16.custoUnitarioReal,
+          ...(formatoEfetivo === 'detalhado'
+            ? {
+                fundamentacaoLegal: custoCpc16.fundamentacaoLegal,
+                glosado: custoCpc16.glosado,
+                motivoGlosa: custoCpc16.motivoGlosa,
+              }
+            : {}),
+        };
+
+        const itemBase: any = {
+          ...itemParam,
+          cadeiaCfop: {
+            cfopOrigem,
+            cfopEntrada,
+            cfopVendaDestinatario,
+          },
+          blocoC_ResumoExecutivo: {
+            custoEfetivoEntradaUnitario: custoEfetivoUnitario,
+            margemLiquidaPct,
+            precoVendaSugerido,
+          },
+          custoIndividualizadoCpc16,
+        };
+
+        if (formatoEfetivo === 'resumido') {
+          delete itemBase.beneficioIcmsPr;
+        }
+
+        return itemBase;
       });
 
       const t1 = performance.now();
       responseData = {
         modo: 'xml_nfe',
         sucesso: true,
+        formatoRelatorio: formatoEfetivo,
         identificacaoNfe: {
           numero: extracao.identificacao?.numero,
           serie: extracao.identificacao?.serie,
@@ -291,6 +439,7 @@ export async function POST(req: NextRequest) {
           cnpj: extracao.emitente?.cnpj,
           uf: extracao.emitente?.uf,
           regime: extracao.emitente?.regimeDescricao,
+          crt: crtEmitenteEfetivo,
         },
         destinatario: {
           nome: extracao.destinatario?.nome,
@@ -301,12 +450,31 @@ export async function POST(req: NextRequest) {
         totalItens: extracao.itens.length,
         totalBloqueantes: loteResult.totalBloqueantes,
         totalAlertas: loteResult.totalAlertas,
-        itensParametrizados: loteResult.itensParametrizados,
+        itensParametrizados: itensParametrizadosEnriquecidos,
         diagnosticos: loteResult.diagnosticos,
         tempoExecucaoMs: Math.round(t1 - t0),
         timestamp: new Date().toISOString(),
       };
+
+      if (formatoEfetivo === 'detalhado') {
+        responseData.auditoriaPericialIcmsPr = {
+          item11Cpc16R1: 'Custo de aquisição compreende preço de compra, impostos não recuperáveis, frete e seguro, deduzidos de descontos comerciais (CPC 16 R1 Item 11).',
+          artigo23Lc123_2006: 'Microempresas e EPPs no Simples Nacional tradicional não farão jus à apropriação nem transferirão créditos (Art. 23 LC 123/2006). No regime Simples Híbrido (LC 214/2025), apropriação plena de IBS/CBS.',
+          consultaTributaria48_2026: 'Consulta SEFA/PR nº 48/2026: inclusão compulsória de IBS, CBS e Imposto Seletivo na base de cálculo do ICMS a partir de 2027.',
+          codigosEfdAdrcSt: {
+            ressarcimentoSt: 'PR020211',
+            diferimentoParcial: 'PR000092',
+          },
+        };
+      }
     } else if (payload.modo === 'lote_produtos') {
+      const formatoEfetivo: 'resumido' | 'detalhado' =
+        payload.formatoRelatorio === 'resumido' ||
+        payload.formato_saida === 'resumido' ||
+        payload.tipo_relatorio === 'gerencial'
+          ? 'resumido'
+          : 'detalhado';
+
       // Ingestão e parametrização de produtos avulsos do ERP
       let dataset: any;
       try {
@@ -314,7 +482,12 @@ export async function POST(req: NextRequest) {
       } catch {
         dataset = await loadDataset();
       }
-      const itensMapeados: any[] = [];
+      const itensMapeados: ExtractedItem[] = [];
+      const ufOrigem = (payload.ufOrigem || 'PR').toUpperCase();
+      const ufDestino = (payload.ufDestino || 'PR').toUpperCase();
+      const regimeDest = (payload.regimeDestinatario || 'simples') as RegimeTributario;
+      const destinacaoNormalizada = normalizarDestinacao(payload.destinacao) || 'comercializacao';
+      const crtEmitenteEfetivo = payload.crtEmitente !== undefined ? payload.crtEmitente : '3';
 
       for (let i = 0; i < payload.produtos.length; i++) {
         const prod = payload.produtos[i];
@@ -330,38 +503,141 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        const qtd = prod.quantidade || 1;
+        const vUn = prod.valorUnitario || 0;
+        const vProd = qtd * vUn;
+
         itensMapeados.push({
           index: i + 1,
           cProd: prod.codigo || `PROD-${i + 1}`,
           xProd: prod.descricao,
           ncm: ncmEfetivo,
-          cfop: payload.ufOrigem === payload.ufDestino ? '5102' : '6102',
-          qCom: prod.quantidade || 1,
-          vUnCom: prod.valorUnitario || 0,
-          vProd: (prod.quantidade || 1) * (prod.valorUnitario || 0),
-          tributos: {},
+          ncmValidoSiscomex: ncmEfetivo !== '00000000',
+          cest: prod.cest,
+          cfop: prod.cfop || (ufOrigem === ufDestino ? '5102' : '6102'),
+          uCom: 'UN',
+          qCom: qtd,
+          vUnCom: vUn,
+          vProd,
+          vFrete: prod.vFrete || 0,
+          sensivelParaAuditoria: false,
+          crtEmitente: (typeof crtEmitenteEfetivo === 'number'
+            ? String(crtEmitenteEfetivo)
+            : crtEmitenteEfetivo) as any,
+          tributos: {
+            vIPI: prod.vIPI,
+            vICMSST: prod.vICMSST,
+            vICMS: prod.vICMS,
+            vPIS: prod.vPIS,
+            vCOFINS: prod.vCOFINS,
+            vCBS: prod.vCBS,
+            vIBS: prod.vIBS,
+            cstIcms: prod.cstIcms,
+            csosn: prod.csosn,
+          },
         });
       }
 
       const loteResult = parametrizarLoteNfe(itensMapeados, {
-        ufOrigem: payload.ufOrigem || 'PR',
-        ufDestino: payload.ufDestino || 'PR',
-        regimeDestinatario: payload.regimeDestinatario,
-        destinacao: normalizarDestinacao(payload.destinacao),
+        ufOrigem,
+        ufDestino,
+        regimeDestinatario: regimeDest,
+        destinacao: destinacaoNormalizada,
+      });
+
+      const itensParametrizadosEnriquecidos = loteResult.itensParametrizados.map((itemParam, idx) => {
+        const itemOriginal = itensMapeados[idx];
+
+        const custoCpc16 = calcularCustoItemCPC16(itemOriginal, {
+          regime: regimeDest,
+          destinacao: destinacaoNormalizada,
+          ufOrigem,
+          ufDestino,
+        });
+
+        const cfopOrigem = itemParam.cfopOrigem || itemOriginal.cfop || '5102';
+        const cfopEntrada = itemParam.cfopEntradaSugerido;
+        const cfopVendaDestinatario = determinarCfopVendaDestinatario(
+          {
+            cstIcms: itemOriginal.tributos?.cstIcms,
+            csosn: itemOriginal.tributos?.csosn,
+            temSt: Boolean(custoCpc16.tributosNaoRecuperaveis.icmsSt > 0 || (itemParam as any).temSt),
+            icmsStEntrada: custoCpc16.tributosNaoRecuperaveis.icmsSt,
+            ufOrigem,
+            ufDestino,
+          },
+          ufDestino
+        );
+
+        const custoEfetivoUnitario = custoCpc16.custoUnitarioReal;
+        const margemLiquidaPct = 30.0;
+        const precoVendaSugerido = r2(custoEfetivoUnitario * (1 + margemLiquidaPct / 100));
+
+        const custoIndividualizadoCpc16 = {
+          valorBruto: custoCpc16.valorBruto,
+          descontos: custoCpc16.descontoIncondicional,
+          freteRateado: custoCpc16.freteSeguroOutros,
+          ipiNaoRecuperavel: custoCpc16.tributosNaoRecuperaveis.ipi,
+          icmsStDifal: custoCpc16.tributosNaoRecuperaveis.icmsSt,
+          tributosRecuperaveis: custoCpc16.impostosRecuperaveis.total,
+          custoTotal: custoCpc16.custoTotalReal,
+          custoUnitario: custoCpc16.custoUnitarioReal,
+          ...(formatoEfetivo === 'detalhado'
+            ? {
+                fundamentacaoLegal: custoCpc16.fundamentacaoLegal,
+                glosado: custoCpc16.glosado,
+                motivoGlosa: custoCpc16.motivoGlosa,
+              }
+            : {}),
+        };
+
+        const itemBase: any = {
+          ...itemParam,
+          cadeiaCfop: {
+            cfopOrigem,
+            cfopEntrada,
+            cfopVendaDestinatario,
+          },
+          blocoC_ResumoExecutivo: {
+            custoEfetivoEntradaUnitario: custoEfetivoUnitario,
+            margemLiquidaPct,
+            precoVendaSugerido,
+          },
+          custoIndividualizadoCpc16,
+        };
+
+        if (formatoEfetivo === 'resumido') {
+          delete itemBase.beneficioIcmsPr;
+        }
+
+        return itemBase;
       });
 
       const t1 = performance.now();
       responseData = {
         modo: 'lote_produtos',
         sucesso: true,
+        formatoRelatorio: formatoEfetivo,
         totalProdutos: payload.produtos.length,
         totalBloqueantes: loteResult.totalBloqueantes,
         totalAlertas: loteResult.totalAlertas,
-        itensParametrizados: loteResult.itensParametrizados,
+        itensParametrizados: itensParametrizadosEnriquecidos,
         diagnosticos: loteResult.diagnosticos,
         tempoExecucaoMs: Math.round(t1 - t0),
         timestamp: new Date().toISOString(),
       };
+
+      if (formatoEfetivo === 'detalhado') {
+        responseData.auditoriaPericialIcmsPr = {
+          item11Cpc16R1: 'Custo de aquisição compreende preço de compra, impostos não recuperáveis, frete e seguro, deduzidos de descontos comerciais (CPC 16 R1 Item 11).',
+          artigo23Lc123_2006: 'Microempresas e EPPs no Simples Nacional tradicional não farão jus à apropriação nem transferirão créditos (Art. 23 LC 123/2006). No regime Simples Híbrido (LC 214/2025), apropriação plena de IBS/CBS.',
+          consultaTributaria48_2026: 'Consulta SEFA/PR nº 48/2026: inclusão compulsória de IBS, CBS e Imposto Seletivo na base de cálculo do ICMS a partir de 2027.',
+          codigosEfdAdrcSt: {
+            ressarcimentoSt: 'PR020211',
+            diferimentoParcial: 'PR000092',
+          },
+        };
+      }
     } else if (payload.modo === 'status_marco_legal') {
       const marcoInfo = obterMetadadosMarcoLegal();
       const t1 = performance.now();

@@ -29,6 +29,10 @@ import {
 } from './ollama-client';
 import { getMapaD8 } from './ai/ncm-server';
 import { validarNcmIA } from './ai/validar';
+export {
+  auditarDifalNotaEntrada,
+  type OpcoesAuditoriaDifalEntrada,
+} from './engine/difal-pr';
 import type {
   AuditRequestPayload,
   ExtractedItem,

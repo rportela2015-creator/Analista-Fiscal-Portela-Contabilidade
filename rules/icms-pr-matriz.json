@@ -1,0 +1,238 @@
+{
+  "versao_matriz": "2026.1",
+  "descricao": "Matriz Normativa Bitemporal do ICMS/PR - Lei 11.580/1996, Lei 21.850/2023, Decretos e Convênios",
+  "aliquota_modal_pr": [
+    {
+      "vigencia_inicio": "2000-01-01",
+      "vigencia_fim": "2023-03-11",
+      "aliquota_pct": 18.0,
+      "dispositivo_legal": "Art. 14, IV da Lei nº 11.580/1996 (redação original)"
+    },
+    {
+      "vigencia_inicio": "2023-03-12",
+      "vigencia_fim": "2024-03-17",
+      "aliquota_pct": 19.0,
+      "dispositivo_legal": "Lei nº 21.308/2022"
+    },
+    {
+      "vigencia_inicio": "2024-03-18",
+      "vigencia_fim": null,
+      "aliquota_pct": 19.5,
+      "dispositivo_legal": "Lei nº 21.850/2023 (altera art. 14, IV da Lei 11.580/1996 a partir de 18/03/2024)"
+    }
+  ],
+  "aliquotas_seletivas_pr": [
+    {
+      "id": "ALIQ_7",
+      "aliquota_pct": 7.0,
+      "dispositivo_legal": "Art. 14, I da Lei nº 11.580/1996",
+      "prefixos_ncm": [
+        "0201", "0202", "0203", "0204", "0207",
+        "0701", "0702", "0703", "0704", "0706", "0707", "0708", "0709",
+        "1001", "1005", "1006", "1101", "190120", "190590"
+      ],
+      "excluir_ncms": []
+    },
+    {
+      "id": "ALIQ_12_MAQUINAS_INDUSTRIAIS",
+      "aliquota_pct": 12.0,
+      "dispositivo_legal": "Art. 14, II da Lei nº 11.580/1996 c/c Item 22 Anexo VI RICMS/PR",
+      "prefixos_ncm": [
+        "8417", "8418", "8419", "8420", "8421", "8422", "8423", "8424",
+        "8425", "8426", "8428", "8429", "8430", "8432", "8433", "8434",
+        "8435", "8436", "8437", "8438", "8439", "8440", "8441", "8442",
+        "8443", "8451", "8453", "8454", "8455", "8456", "8457", "8458",
+        "8459", "8460", "8461", "8462", "8463", "8464", "8465", "8466",
+        "8474", "8477", "8479", "8514", "8515", "8701", "9031"
+      ],
+      "exclui_partes_e_pecas": true,
+      "excluir_ncms": []
+    },
+    {
+      "id": "ALIQ_18",
+      "aliquota_pct": 18.0,
+      "dispositivo_legal": "Art. 14, III da Lei nº 11.580/1996",
+      "prefixos_ncm": [
+        "2201", "2202", "27101259", "27101921", "27101922"
+      ],
+      "excluir_ncms": []
+    },
+    {
+      "id": "ALIQ_25",
+      "aliquota_pct": 25.0,
+      "dispositivo_legal": "Art. 14, V da Lei nº 11.580/1996",
+      "prefixos_ncm": [
+        "3303", "3304", "3305", "3307", "7113", "7114", "8703"
+      ],
+      "excluir_ncms": [
+        "33051000",
+        "330720",
+        "33072010",
+        "33072090"
+      ]
+    },
+    {
+      "id": "ALIQ_29",
+      "aliquota_pct": 29.0,
+      "dispositivo_legal": "Art. 14, VI da Lei nº 11.580/1996",
+      "prefixos_ncm": [
+        "2203", "2204", "2205", "2206", "2208",
+        "2401", "2402", "2403", "2404", "2499", "8903", "9302", "9303", "9304", "9305", "9306"
+      ],
+      "excluir_ncms": []
+    }
+  ],
+  "fecop_anexo_xii": {
+    "aliquota_adicional_pct": 2.0,
+    "dispositivo_legal": "Art. 14-A da Lei nº 11.580/1996 e Anexo XII do RICMS/PR",
+    "exclusoes_essenciais_desde_2023": [
+      {
+        "setor": "energia_eletrica",
+        "vigencia_inicio": "2023-01-01",
+        "fundamento": "Lei Complementar Federal 194/2022 c/c Lei PR 21.308/2022"
+      },
+      {
+        "setor": "gasolina",
+        "vigencia_inicio": "2023-01-01",
+        "fundamento": "Lei Complementar Federal 194/2022 c/c LC 192/2022"
+      },
+      {
+        "setor": "comunicacao",
+        "vigencia_inicio": "2023-01-01",
+        "fundamento": "Lei Complementar Federal 194/2022"
+      }
+    ],
+    "itens": [
+      {
+        "id": "FECOP_AGUAS_MINERAIS_E_JOIAS",
+        "base_icms_pct": 17.5,
+        "fecop_pct": 2.0,
+        "total_efetivo_pct": 19.5,
+        "prefixos_ncm": ["2201", "2204", "7113", "7114"],
+        "excluir_ncms": []
+      },
+      {
+        "id": "FECOP_BEBIDAS_HIDROETILICAS_E_REFRIGERANTES",
+        "base_icms_pct": 18.0,
+        "fecop_pct": 2.0,
+        "total_efetivo_pct": 20.0,
+        "prefixos_ncm": ["2202"],
+        "excluir_ncms": []
+      },
+      {
+        "id": "FECOP_COSMETICOS_E_PERFUMARIA",
+        "base_icms_pct": 23.0,
+        "fecop_pct": 2.0,
+        "total_efetivo_pct": 25.0,
+        "prefixos_ncm": ["3303", "3304", "3305", "3307"],
+        "excluir_ncms": [
+          "33051000",
+          "330720",
+          "33072010",
+          "33072090"
+        ]
+      },
+      {
+        "id": "FECOP_BEBIDAS_ALCOOLICAS_E_FUMO",
+        "base_icms_pct": 27.0,
+        "fecop_pct": 2.0,
+        "total_efetivo_pct": 29.0,
+        "prefixos_ncm": [
+          "2203", "2205", "2206", "2208",
+          "2401", "2402", "2403", "2404", "2499"
+        ],
+        "excluir_ncms": []
+      }
+    ]
+  },
+  "exclusoes_st_pr": [
+    {
+      "decreto": "DECRETO_6048_2024",
+      "norma": "Decreto Estadual nº 6.048/2024",
+      "vigencia_inicio": "2024-08-01",
+      "vigencia_fim": null,
+      "orientacao": "Revogada a Substituição Tributária interna das Seções VI, VII, XVIII e XXIV (posições 13-28) do Anexo IX do RICMS/PR. Operações tributadas normalmente na saída (CST 00/20 ou CSOSN 102).",
+      "secoes_revogadas": [
+        "Seção VI - Artefatos de uso doméstico",
+        "Seção VII - Artigos de papelaria",
+        "Seção XVIII - Materiais de limpeza",
+        "Seção XXIV - Produtos farmacêuticos (posições 13 a 28, não medicamentos)"
+      ],
+      "segmentos_cest": ["14", "19", "11"],
+      "prefixos_ncm": [
+        "3924", "4818", "4820", "3401", "3402", "9603"
+      ]
+    },
+    {
+      "decreto": "DECRETO_12828_2026",
+      "norma": "Decreto Estadual nº 12.828/2026",
+      "vigencia_inicio": "2026-03-01",
+      "vigencia_fim": null,
+      "orientacao": "Revogada a Substituição Tributária da Seção XXIII (Produtos Eletrônicos, Eletroeletrônicos e Eletrodomésticos) e da Seção IV (Aparelhos Celulares e Cartões Inteligentes) do Anexo IX do RICMS/PR.",
+      "secoes_revogadas": [
+        "Seção XXIII - Produtos Eletrônicos, Eletroeletrônicos e Eletrodomésticos",
+        "Seção IV - Aparelhos de Celular e Cartões Inteligentes"
+      ],
+      "segmentos_cest": ["21"],
+      "prefixos_ncm": [
+        "851712", "851713", "851714", "852352",
+        "8471", "8528", "8516", "8415", "8418", "8504"
+      ]
+    }
+  ],
+  "combustiveis_monofasicos_ad_rem": [
+    {
+      "vigencia_inicio": "2026-01-01",
+      "vigencia_fim": "2027-01-31",
+      "dispositivo_legal": "Lei Complementar Federal nº 192/2022 e Convênio ICMS nº 15/2023",
+      "aliquotas": {
+        "gasolina_eac": {
+          "valor_ad_rem": 1.57,
+          "unidade": "R$/litro",
+          "prefixos_ncm": ["27101259", "22071000", "22072010"]
+        },
+        "diesel_biodiesel": {
+          "valor_ad_rem": 1.17,
+          "unidade": "R$/litro",
+          "prefixos_ncm": ["27101921", "27101922", "38260000"]
+        },
+        "glp_glgn": {
+          "valor_ad_rem": 1.47,
+          "unidade": "R$/kg",
+          "prefixos_ncm": ["27111910", "27111100"]
+        }
+      }
+    },
+    {
+      "vigencia_inicio": "2027-02-01",
+      "vigencia_fim": null,
+      "dispositivo_legal": "Convênios ICMS nº 127/2026 e 128/2026",
+      "aliquotas": {
+        "gasolina_eac": {
+          "valor_ad_rem": 1.64,
+          "unidade": "R$/litro",
+          "prefixos_ncm": ["27101259", "22071000", "22072010"]
+        },
+        "diesel_biodiesel": {
+          "valor_ad_rem": 1.30,
+          "unidade": "R$/litro",
+          "prefixos_ncm": ["27101921", "27101922", "38260000"]
+        },
+        "glp_glgn": {
+          "valor_ad_rem": 1.54,
+          "unidade": "R$/kg",
+          "prefixos_ncm": ["27111910", "27111100"]
+        }
+      }
+    }
+  ],
+  "simples_nacional_pr": {
+    "faixa_isenta_rbt12_ate": 360000.0,
+    "sublimite_estadual_rbt12": 3600000.0,
+    "limite_excesso_20_pct": 4320000.0,
+    "teto_federal_rbt12": 4800000.0,
+    "tabela_comercio": "Decreto Estadual nº 8.660/2018 (Tabela I)",
+    "tabela_industria": "Decreto Estadual nº 8.660/2018 (Tabela II)",
+    "trava_reducao_2017": "Art. 9º-A da Lei Estadual nº 15.562/2007 (redução de 20% mantida)"
+  }
+}

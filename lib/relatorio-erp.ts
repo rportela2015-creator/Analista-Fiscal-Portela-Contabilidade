@@ -5,6 +5,7 @@
  */
 
 import { esc } from './relatorio';
+import { PORTELA_HEADER_CSS, renderHeaderPortela } from './relatorio-header';
 
 export interface ParametrosErpItem {
   cProd?: string;
@@ -240,16 +241,21 @@ export function gerarRelatorioErpResumidoTxt(payload: ParametrosErpPayload, agor
 
 export function gerarRelatorioErpResumidoHtml(payload: ParametrosErpPayload, agora: Date = new Date()): string {
   const { contexto, itens } = payload;
+  const headerHtml = renderHeaderPortela({
+    titulo: 'Parametrização de ERP - Modo Resumido',
+    subtitulo: 'Parâmetros e Códigos para Sistema Emissor de DF-e',
+    dataHora: agora.toLocaleString('pt-BR'),
+    documentoRef: `Ano Base ${contexto.operacao?.anoReforma || 2026}`,
+  });
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <title>Parametrização de ERP - Modo Resumido</title>
   <style>
+    ${PORTELA_HEADER_CSS}
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 30px; color: #2c3e50; line-height: 1.5; }
-    .header { border-bottom: 2px solid #2980b9; padding-bottom: 12px; margin-bottom: 20px; }
-    .header h1 { margin: 0; font-size: 1.5rem; color: #1a365d; }
-    .header p { margin: 4px 0 0; color: #718096; font-size: 0.85rem; }
     .info-box { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 24px; font-size: 0.9rem; }
     .card { background: #ffffff; border: 1px solid #cbd5e0; border-radius: 8px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
     .card-header { background: #edf2f7; padding: 10px 16px; font-weight: 600; font-size: 1rem; border-bottom: 1px solid #cbd5e0; }
@@ -262,10 +268,7 @@ export function gerarRelatorioErpResumidoHtml(payload: ParametrosErpPayload, ago
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Contabilidade Portela — Parametrização Fiscal de ERP (Modo Resumido)</h1>
-    <p>Data de emissão: ${esc(agora.toLocaleString('pt-BR'))} · Parametrização para sistema emissor de DF-e</p>
-  </div>
+  ${headerHtml}
 
   <div class="info-box">
     <strong>Emitente:</strong> ${esc(contexto.emitente?.cnpj || '—')} (Regime: ${esc(contexto.emitente?.regime || '—')}, UF: ${esc(contexto.emitente?.uf || '—')}) ·
@@ -361,18 +364,22 @@ export function gerarRelatorioErpDetalhadoTxt(payload: ParametrosErpPayload, ago
 
 export function gerarRelatorioErpDetalhadoHtml(payload: ParametrosErpPayload, agora: Date = new Date()): string {
   const { contexto, itens } = payload;
+  const headerHtml = renderHeaderPortela({
+    titulo: 'Laudo Pericial de Parametrização Fiscal de ERP (Modo Detalhado)',
+    subtitulo: 'Contabilidade Portela (Desde 1970) · Consultoria Fiscal Pericial',
+    dataHora: agora.toLocaleString('pt-BR'),
+    documentoRef: `Ano Base ${contexto.operacao?.anoReforma || 2026}`,
+  });
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <title>Laudo Pericial de Parametrização Fiscal de ERP (Modo Detalhado)</title>
   <style>
+    ${PORTELA_HEADER_CSS}
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 40px; color: #1a202c; line-height: 1.6; background: #f7fafc; }
     .container { max-width: 960px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    .header { text-align: center; border-bottom: 3px solid #2b6cb0; padding-bottom: 20px; margin-bottom: 25px; }
-    .header h1 { margin: 0; font-size: 1.6rem; color: #1a365d; text-transform: uppercase; letter-spacing: 0.5px; }
-    .header h2 { margin: 6px 0; font-size: 1.1rem; color: #4a5568; font-weight: 500; }
-    .meta { font-size: 0.85rem; color: #718096; margin-top: 8px; }
     .section-title { font-size: 1.15rem; font-weight: 700; color: #2c5282; margin: 24px 0 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
     .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; background: #edf2f7; padding: 16px; border-radius: 6px; font-size: 0.9rem; }
     .info-item strong { color: #2d3748; }
@@ -393,11 +400,7 @@ export function gerarRelatorioErpDetalhadoHtml(payload: ParametrosErpPayload, ag
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <h1>Laudo Técnico de Parametrização Fiscal de ERP</h1>
-      <h2>Contabilidade Portela (Desde 1970) · Consultoria Fiscal Pericial</h2>
-      <div class="meta">Documento emitido em: ${esc(agora.toLocaleString('pt-BR'))} · Regime Legal Vigente & Reforma Tributária</div>
-    </div>
+    ${headerHtml}
 
     <div class="section-title">I. Identificação do Contribuinte e Contexto Operacional</div>
     <div class="info-grid">

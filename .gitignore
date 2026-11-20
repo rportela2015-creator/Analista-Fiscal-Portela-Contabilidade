@@ -11,3 +11,6 @@ tsconfig.tsbuildinfo
 .parse-csv.ts
 .bundle-*.mjs
 data/raw/reforma/*.part.json
+
+.env.local
+.env*.local

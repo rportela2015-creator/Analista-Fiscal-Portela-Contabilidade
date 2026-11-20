@@ -71,7 +71,7 @@ export default function Classificar() {
   const [finalidade, setFinalidade] = useState<Finalidade>('comercializacao');
   const [ufO, setUfO] = useState('PR');
   const [ufD, setUfD] = useState('SP');
-  const [aberto, setAberto] = useState(0);
+  const [aberto, setAberto] = useState(-1);
   const [mostrarTudo, setMostrarTudo] = useState(false);
 
   // Estados da IA
@@ -670,8 +670,23 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
       </div>
 
       <div className="row" style={{ margin: '0 16px 12px', gap: 8 }}>
-        <button className="mini" type="button" onClick={onOpen}>
-          {aberto ? 'ocultar fundamentação' : 'ver fundamentação, parametrização e atributos'}
+        <button
+          className="mini"
+          type="button"
+          onClick={onOpen}
+          style={{
+            background: '#FEF9C3',
+            color: '#713F12',
+            border: '1px solid #FDE047',
+            fontWeight: 700,
+            cursor: 'pointer',
+            padding: '4px 10px',
+            borderRadius: 6,
+            transition: 'background 0.15s ease, border-color 0.15s ease',
+          }}
+          title={aberto ? 'Ocultar fundamentação e atributos' : 'Ver fundamentação, parametrização e atributos'}
+        >
+          {aberto ? '▲ ocultar fundamentação' : '▼ ver fundamentação, parametrização e atributos'}
         </button>
         <a
           className="mini"

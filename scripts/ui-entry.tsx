@@ -97,11 +97,11 @@ const clicar = async (el: any) => {
     await act(async () => { digitar(ta, 'cadeira giratória de escritório estofada em polipropileno'); });
     await espera(500);
     ok(/9401/.test(c.txt()), 'Classificar: classifica ao digitar (9401.31.00 na tela)');
-    ok(/Reforma tribut[áa]ria do consumo/i.test(c.txt()), 'Classificar: bloco da reforma no resultado');
     ok(/parametrizar no ERP/i.test(c.txt()), 'Classificar: atalho para a parametrização de ERP');
-    const detalhe = [...c.host.querySelectorAll('button')].find((b: any) => /fundamentação/.test(b.textContent || ''));
+    const detalhe = [...c.host.querySelectorAll('button')].find((b: any) => /fundamentação/i.test(b.textContent || ''));
     if (detalhe) {
       await clicar(detalhe);
+      ok(/Reforma tribut[áa]ria do consumo/i.test(c.txt()), 'Classificar: bloco da reforma no resultado');
       ok(/parametriza[çc][ãa]o|Catálogo/i.test(c.txt()), 'Classificar: abrir detalhes mostra parametrização/catálogo');
     } else ok(false, 'Classificar: botão de detalhes ausente');
   }

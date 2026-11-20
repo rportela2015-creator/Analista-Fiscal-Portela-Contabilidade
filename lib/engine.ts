@@ -583,3 +583,7 @@ export function taxes(rec: Record8, ds: Dataset) {
     ato: rec.ato, ini: rec.ini, fim: rec.fim,
   };
 }
+
+// ------------------------------------------------------------------ regras avançadas ICMS/PR
+export * from './engine/icms-pr-regras';
+export * from './engine/precificacao-pr-2027';

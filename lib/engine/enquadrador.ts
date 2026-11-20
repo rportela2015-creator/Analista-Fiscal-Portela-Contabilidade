@@ -19,6 +19,7 @@ import type {
   RegimeDestinatarioFiscal,
 } from '../types/motor-tributario';
 import { determinarCfopDaOperacao } from '../cfop-resolver';
+export * from './icms-pr-regras';
 
 export interface ParametrosOperacaoEnquadrador {
   operacao?: Operacao;

@@ -27,14 +27,21 @@ import {
   calcularCustoAquisicaoReal,
   compararQuatroRegimes,
   ratearDespesasAcessoriaEFrete,
+  determinarCfopVendaDestinatario,
   type ItemPreco,
   type ParamsPreco,
   type AliquotasSugeridas,
   type ResultadoDetalhado,
   type ComparativoRegimesResultado,
+  type CrtEmitente,
+  simularPrecificacaoDualStack2027PR,
+  compararFornecedoresCustoAterrissadoPR,
+  simularImpactoCombustivelAdRem2027,
+  type CotacaoFornecedorPR,
 } from '@/lib/precificacao';
 import type { PrecificacaoItemInput } from '@/lib/extrator-nfe-types';
 import { esc } from '@/lib/html';
+import { PORTELA_HEADER_CSS, renderHeaderPortela } from '@/lib/relatorio-header';
 
 export interface PrecificarProps {
   itensIniciais?: PrecificacaoItemInput[];
@@ -91,7 +98,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
 
   // Parâmetros Fiscais Avançados (Etapas 5 e 6)
   const [destinacao, setDestinacao] = useState<DestinacaoMercadoria>('comercializacao');
-  const [crtEmitente, setCrtEmitente] = useState<'1' | '2' | '3' | '4'>('3');
+  const [crtEmitente, setCrtEmitente] = useState<CrtEmitente>('3');
   const [origemMercadoria, setOrigemMercadoria] = useState<string>('0');
   const [pisCofinsMonofasico, setPisCofinsMonofasico] = useState<boolean>(false);
   const [baseReduzidaSaidaPct, setBaseReduzidaSaidaPct] = useState<number>(100);
@@ -117,6 +124,41 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   const [convenioIcmsSelecionado, setConvenioIcmsSelecionado] = useState<string>('auto');
   const [hibridoComprasCreditoPct, setHibridoComprasCreditoPct] = useState<number>(50);
   const [hibridoMixB2bPct, setHibridoMixB2bPct] = useState<number>(40);
+
+  // Sub-etapa 18.5: Dual-Stack 2027 & Mesa de Compras PR
+  const [incluirIbsCbsBcIcms, setIncluirIbsCbsBcIcms] = useState<boolean>(true);
+  const [expandirMesaCompras, setExpandirMesaCompras] = useState<boolean>(false);
+  const [taxaCapGiroMesa, setTaxaCapGiroMesa] = useState<number>(1.5);
+  const [prazoEstoqueMesa, setPrazoEstoqueMesa] = useState<number>(45);
+  const [cotacoesMesa, setCotacoesMesa] = useState<CotacaoFornecedorPR[]>([
+    {
+      id: 'pr-normal',
+      nome: 'Fornecedor PR (Regime Normal)',
+      ufEmitente: 'PR',
+      crtEmitente: 3,
+      precoUnitario: 1000,
+      freteUnitario: 30,
+      vIpiUnitario: 0,
+    },
+    {
+      id: 'sc-normal',
+      nome: 'Fornecedor SC (Regime Normal - Sem Protocolo)',
+      ufEmitente: 'SC',
+      crtEmitente: 3,
+      precoUnitario: 1000,
+      freteUnitario: 50,
+      vIpiUnitario: 100,
+    },
+    {
+      id: 'sc-simples',
+      nome: 'Fornecedor SC (Simples Nacional - Conv. 35/11)',
+      ufEmitente: 'SC',
+      crtEmitente: 1,
+      precoUnitario: 1000,
+      freteUnitario: 50,
+      vIpiUnitario: 100,
+    },
+  ]);
 
   // ---------------------------------------------------------------------------
   // 2. EFEITOS DE CARGA E SINCRONIZAÇÃO
@@ -586,6 +628,46 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
     };
   }, [ano, rbt12, hibridoComprasCreditoPct, hibridoMixB2bPct, sugestao, marco]);
 
+  // ---------------------------------------------------------------------------
+  // 3.3 SUB-ETAPA 18.5: SIMULADOR DUAL-STACK 2027, MESA DE COMPRAS & COMBUSTÍVEIS
+  // ---------------------------------------------------------------------------
+  const simulacaoDualStack = useMemo(() => {
+    const pLiq = compCusto.custoUnitarioReal > 0 ? compCusto.custoUnitarioReal : 100;
+    const aliqIcms = sugestao?.aliquotasAplicadas.icmsVendaPct ?? (ufDestino === 'PR' ? 19.5 : 12.0);
+    return simularPrecificacaoDualStack2027PR({
+      precoLiquidoSemTributos: pLiq,
+      aliquotaIcmsPrPct: aliqIcms,
+      aliquotaFecopPrPct: 0,
+      aliquotaCbsPct: 8.8,
+      aliquotaIbsPct: 0.1,
+      aliquotaIsPct: 0,
+      incluirIbsCbsBcIcms,
+    });
+  }, [compCusto.custoUnitarioReal, sugestao, ufDestino, incluirIbsCbsBcIcms]);
+
+  const resultadoMesaCompras = useMemo(() => {
+    return compararFornecedoresCustoAterrissadoPR({
+      regimeComprador: regime === 'simples' ? 'SIMPLES_NACIONAL' : (regime === 'real' ? 'LUCRO_REAL' : 'LUCRO_PRESUMIDO'),
+      ncm: itemAtual.ncm || '87082999',
+      dataFatoGerador: `${ano}-06-15`,
+      sujeitoStPr: Boolean(deParaCfop?.temSt || itemAtual.temSt),
+      mvaOriginalPct: 40,
+      taxaCapitalGiroMensalPct: taxaCapGiroMesa,
+      prazoMedioEstoqueDias: prazoEstoqueMesa,
+      cotacoes: cotacoesMesa,
+    });
+  }, [regime, itemAtual.ncm, itemAtual.temSt, ano, deParaCfop, taxaCapGiroMesa, prazoEstoqueMesa, cotacoesMesa]);
+
+  const impactoDiesel2027 = useMemo(() => {
+    return simularImpactoCombustivelAdRem2027('DIESEL_BIODIESEL', 10000);
+  }, []);
+
+  const atualizarCotacaoMesa = useCallback((id: string, campo: keyof CotacaoFornecedorPR, valor: any) => {
+    setCotacoesMesa((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, [campo]: valor } : c))
+    );
+  }, []);
+
   // Callbacks de manipulação
   const aplicarCampoOverride = useCallback((campo: keyof AliquotasSugeridas, valor: number) => {
     setOverrides((prev) => ({ ...prev, [campo]: valor }));
@@ -598,12 +680,11 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   // ---------------------------------------------------------------------------
   // 4. EXPORTAÇÃO SEGURA: LAUDO HTML IMPRIMÍVEL (Sanitização via esc())
   // ---------------------------------------------------------------------------
-  const exportarLaudoHtml = useCallback(() => {
+  const exportarLaudoHtml = useCallback((modo: 'resumido' | 'detalhado' = 'detalhado') => {
     if (!resultado || !comparativo) return;
 
-    const cfopExibicao = deParaCfop
-      ? `${itemAtual.cfop || '5102'} ➔ ${deParaCfop.cfopEntrada}`
-      : itemAtual.cfop || '5102';
+    const cfopVendaDest = resultado.cfopVendaDestinatario || determinarCfopVendaDestinatario(itemAtual, ufDestino);
+    const cfopExibicao = `Origem: ${itemAtual.cfop || '5102'} ➔ Entrada: ${deParaCfop?.cfopEntrada || '1102'} ➔ Venda (Dest.): ${cfopVendaDest}`;
 
     const relMarg = resultado.relatorioMargens;
     const vrl = relMarg?.analiseVrlEArbitramento?.valorRealizavelLiquido ?? 0;
@@ -618,16 +699,29 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Laudo Pericial de Precificação & Custo Real - ${esc(itemAtual.codigo)}</title>
+  <title>Laudo Pericial de Precificação & Custo Real - ${esc(itemAtual.codigo)} (${modo.toUpperCase()})</title>
   <style>
+    ${PORTELA_HEADER_CSS}
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #1e293b; margin: 0; padding: 24px; background: #fff; line-height: 1.45; }
-    .header { border-bottom: 2px solid #0b3d91; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
-    .header h1 { margin: 0; color: #0b3d91; font-size: 19px; text-transform: uppercase; }
-    .header .sub { font-size: 11px; color: #64748b; font-weight: 600; margin-top: 4px; }
     .meta-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 12.5px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
     .card { border: 1px solid #cbd5e1; border-radius: 6px; padding: 14px; background: #fff; margin-bottom: 16px; }
-    .card h2 { margin: 0 0 10px; font-size: 14px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+    .card-bloco-a { background: #fff5f5; border: 1.5px solid #fecdd3; border-radius: 6px; padding: 14px; margin-bottom: 16px; }
+    .card-bloco-a h2 { margin: 0 0 10px; font-size: 14px; color: #991b1b; border-bottom: 1px solid #fecdd3; padding-bottom: 6px; }
+    .card-bloco-b { background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 6px; padding: 14px; margin-bottom: 16px; }
+    .card-bloco-b h2 { margin: 0 0 10px; font-size: 14px; color: #166534; border-bottom: 1px solid #bbf7d0; padding-bottom: 6px; }
+    .card-bloco-c { background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+    .card-bloco-c h2 { margin: 0 0 12px; font-size: 15px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+    .quadro-bloco-a-total { background: #fee2e2; border: 2px solid #e11d48; border-radius: 6px; padding: 10px 12px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; color: #9f1239; font-weight: 800; font-size: 13px; }
+    .quadro-bloco-a-unit { background: #ffe4e6; border: 2px solid #f43f5e; border-radius: 6px; padding: 10px 12px; margin-top: 8px; display: flex; justify-content: space-between; align-items: center; color: #881337; font-weight: 800; font-size: 13px; }
+    .quadro-bloco-b-vnf { background: #dcfce7; border: 2px solid #16a34a; border-radius: 6px; padding: 10px 12px; margin: 8px 0; display: flex; justify-content: space-between; align-items: center; color: #14532d; font-weight: 800; font-size: 13.5px; }
+    .exec-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 10px; }
+    .exec-card-red { background: #fff1f2; border: 2px solid #f43f5e; border-radius: 8px; padding: 14px; text-align: center; }
+    .exec-card-green { background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 14px; text-align: center; }
+    .exec-card-blue { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 14px; text-align: center; }
+    .exec-val { font-size: 24px; font-weight: 900; line-height: 1.2; margin: 4px 0; }
+    .exec-lbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+    .exec-sub { font-size: 10.5px; font-weight: 600; }
     table { width: 100%; border-collapse: collapse; font-size: 12px; }
     th, td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; }
     th { text-align: left; background: #f8fafc; color: #475569; font-size: 11px; text-transform: uppercase; }
@@ -644,7 +738,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
     @media print {
       body { padding: 0; }
       .no-print { display: none; }
-      .card { page-break-inside: avoid; }
+      .card, .card-bloco-a, .card-bloco-b, .card-bloco-c { page-break-inside: avoid; }
     }
   </style>
 </head>
@@ -653,31 +747,28 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
     <button onclick="window.print()" style="background: #0b3d91; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 600; cursor: pointer;">🖨️ Imprimir / Salvar PDF</button>
   </div>
 
-  <div class="header">
-    <div>
-      <h1>Laudo Pericial de Precificação & Custo de Aquisição Real</h1>
-      <div class="sub">CONTABILIDADE PORTELA · AUDITORIA FISCAL & TRIBUTÁRIA · NBC TG 16 / OT CFC 01/2026</div>
-    </div>
-    <div style="text-align: right; font-size: 11px; color: #64748b;">
-      <div>Emissão: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}</div>
-      <div>Vigência: Calendário Fiscal ${esc(ano)}</div>
-    </div>
-  </div>
+  ${renderHeaderPortela({
+    titulo: 'Laudo Pericial de Precificação & Custo de Aquisição Real',
+    subtitulo: modo === 'resumido'
+      ? 'Resumo Executivo Gerencial · NBC TG 16 / OT CFC 01/2026'
+      : 'Auditoria Fiscal & Contábil Detalhada · NBC TG 16 / OT CFC 01/2026',
+    documentoRef: `ITEM ${itemAtual.codigo} | CALENDÁRIO FISCAL ${ano}`,
+  })}
 
   <div class="meta-box">
     <strong>Item:</strong> ${esc(itemAtual.codigo)} — ${esc(itemAtual.descricao)} | 
     <strong>NCM:</strong> ${esc(itemAtual.ncm)} | 
-    <strong>De-Para CFOP:</strong> ${esc(cfopExibicao)} | 
+    <strong>Rastreabilidade CFOP:</strong> ${esc(cfopExibicao)} | 
     <strong>Destinação:</strong> ${esc(destinacao.toUpperCase())} | 
-    <strong>CRT Fornecedor:</strong> ${esc(crtEmitente)} | 
+    <strong>CRT Fornecedor:</strong> ${esc(String(crtEmitente) === 'simples_hibrido' ? 'Simples Híbrido (IBS/CBS Por Fora)' : crtEmitente)} | 
     <strong>Regime Adquirente:</strong> ${esc(regime.toUpperCase())} | 
     <strong>Fluxo:</strong> ${esc(ufOrigem)} ➔ ${esc(ufDestino)}
   </div>
 
   <div class="grid">
     <!-- BLOCO A: CUSTO DE AQUISIÇÃO REAL -->
-    <div class="card">
-      <h2>Bloco A — Custo de Aquisição Real (NBC TG 16)</h2>
+    <div class="card-bloco-a">
+      <h2>Bloco A — Custo de Aquisição Real (NBC TG 16 / CPC 16)</h2>
       <table>
         <tbody>
           <tr><td>Valor Bruto dos Produtos (vProd)</td><td class="num">R$ ${compCusto.valorProdutoBruto.toFixed(2)}</td></tr>
@@ -685,21 +776,39 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           <tr><td>(+) Frete, Seguro e Despesas Acessórias</td><td class="num">+ R$ ${compCusto.freteSeguroOutros.toFixed(2)}</td></tr>
           <tr><td>(+) Tributos Não Recuperáveis (IPI, ST, II, IS, trib. não creditados)</td><td class="num highlight-red">+ R$ ${compCusto.tributosNaoRecuperaveis.total.toFixed(2)}</td></tr>
           <tr><td>(-) Impostos a Recuperar (ICMS, PIS/COFINS, CBS, IBS)</td><td class="num highlight-green">- R$ ${compCusto.impostosARecuperar.totalImpostosRecuperaveis.toFixed(2)}</td></tr>
-          <tr class="total-row"><td>Custo de Aquisição Real Total</td><td class="num" style="color: #0b3d91;">R$ ${compCusto.custoAquisicaoReal.toFixed(2)}</td></tr>
-          <tr><td>Custo Unitário Efetivo</td><td class="num" style="font-weight: 700;">R$ ${compCusto.custoUnitarioReal.toFixed(2)} / un</td></tr>
         </tbody>
       </table>
+
+      <!-- QUADROS DE DESTAQUE CONTORNADOS DE PONTA A PONTA -->
+      <div class="quadro-bloco-a-total">
+        <span>Custo de Aquisição Real Total:</span>
+        <span style="font-size: 15px;">R$ ${compCusto.custoAquisicaoReal.toFixed(2)}</span>
+      </div>
+      <div class="quadro-bloco-a-unit">
+        <span>Custo Unitário Efetivo:</span>
+        <span style="font-size: 15px;">R$ ${compCusto.custoUnitarioReal.toFixed(2)} / un</span>
+      </div>
     </div>
 
     <!-- BLOCO B: FORMAÇÃO DE PREÇO E DEMONSTRAÇÃO -->
-    <div class="card">
+    <div class="card-bloco-b">
       <h2>Bloco B — Formação de Preço e Demonstração de Resultados</h2>
       <table>
         <tbody>
           <tr><td>Preço de Venda Líquido (vProdLiq)</td><td class="num" style="font-weight: 700;">R$ ${resultado.preco.vProdLiq.toFixed(2)}</td></tr>
           <tr><td>(+) Tributos por Dentro (ICMS / DAS)</td><td class="num">+ R$ ${(relMarg?.tributosVendaPorDentro ?? resultado.preco.vICMS).toFixed(2)}</td></tr>
           <tr><td>(+) IVA Dual por Fora (CBS: R$ ${resultado.preco.vCBS.toFixed(2)} + IBS: R$ ${resultado.preco.vIBS.toFixed(2)})</td><td class="num">+ R$ ${(resultado.preco.vCBS + resultado.preco.vIBS).toFixed(2)}</td></tr>
-          <tr class="total-row"><td>Preço de Venda Final na Nota (vNF)</td><td class="num" style="color: #1e40af; font-size: 13.5px;">R$ ${resultado.preco.precoFinal.toFixed(2)}</td></tr>
+        </tbody>
+      </table>
+
+      <!-- QUADRO VERDE CONTORNADO: PREÇO FINAL DA NOTA -->
+      <div class="quadro-bloco-b-vnf">
+        <span>Preço de Venda Final na Nota (vNF):</span>
+        <span style="font-size: 16px;">R$ ${resultado.preco.precoFinal.toFixed(2)}</span>
+      </div>
+
+      <table>
+        <tbody>
           <tr><td>Split Payment Retido na Liquidação Bancária</td><td class="num highlight-red">R$ ${resultado.apuracaoCaixa.retencaoSplitIva.toFixed(2)}</td></tr>
           <tr><td>Crédito Fiscal Transferido para Cliente B2B</td><td class="num highlight-green">R$ ${(relMarg?.creditoTransferidoClienteB2B ?? 0).toFixed(2)}</td></tr>
           <tr><td>Margem de Contribuição Unitária</td><td class="num">R$ ${mcUnit.toFixed(2)} (${resultado.resultado.indiceMcPct.toFixed(1)}%)</td></tr>
@@ -710,31 +819,24 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
     </div>
   </div>
 
-  <!-- GOVERNANÇA CONTÁBIL (NBC TG 16 / CPC 16 / RIR 2018) -->
-  <div class="card">
-    <h2>Governança Contábil, Ponto de Equilíbrio & Limites Fiscais (CPC 16 / RIR 2018)</h2>
-    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; font-size: 12px;">
-      <div style="background: #f8fafc; padding: 10px; border-radius: 4px; border: 1px solid #e2e8f0;">
-        <strong>Teste VRL & Impairment:</strong><br/>
-        Custo Real: R$ ${compCusto.custoUnitarioReal.toFixed(2)}/un<br/>
-        VRL: R$ ${vrl.toFixed(2)}/un<br/>
-        ${
-          reqImpairment
-            ? `<span style="color: #b91c1c; font-weight: 700;">⚠️ Impairment Exigido: R$ ${provImpairment.toFixed(2)}/un</span>`
-            : '<span style="color: #15803d; font-weight: 700;">✅ Em Conformidade (Sem Provisão)</span>'
-        }
+  <!-- BLOCO C: RESUMO EXECUTIVO (3 CARDS COM FONTE 24PX E PESO 900) -->
+  <div class="card-bloco-c">
+    <h2>Bloco C — Resumo Executivo Gerencial</h2>
+    <div class="exec-grid">
+      <div class="exec-card-red">
+        <div class="exec-lbl" style="color: #be123c;">Custo Efetivo de Entrada Unitário</div>
+        <div class="exec-val" style="color: #9f1239;">R$ ${compCusto.custoUnitarioReal.toFixed(2)}</div>
+        <div class="exec-sub" style="color: #e11d48;">Líquido de Impostos (CPC 16)</div>
       </div>
-      <div style="background: #f8fafc; padding: 10px; border-radius: 4px; border: 1px solid #e2e8f0;">
-        <strong>Ponto de Equilíbrio (PEC):</strong><br/>
-        Custos Fixos Totais: R$ ${custosFixosTotais.toFixed(2)}<br/>
-        PEC em Volume: ${pecVol.toFixed(0)} unidades<br/>
-        PEC em Faturamento: R$ ${pecVal.toFixed(2)}
+      <div class="exec-card-green">
+        <div class="exec-lbl" style="color: #15803d;">Margem Líquida Realizada (%)</div>
+        <div class="exec-val" style="color: #14532d;">${resultado.resultado.margemRealizadaPct.toFixed(1)}%</div>
+        <div class="exec-sub" style="color: #16a34a;">R$ ${resultado.resultado.lucroLiquido.toFixed(2)} / un</div>
       </div>
-      <div style="background: #f8fafc; padding: 10px; border-radius: 4px; border: 1px solid #e2e8f0;">
-        <strong>Arbitramento Fiscal (RIR/2018):</strong><br/>
-        Atividade: ${esc(tipoEstabelecimento.toUpperCase())}<br/>
-        Custo Arbitrado: R$ ${custoArbitrado.toFixed(2)} (${tipoEstabelecimento === 'industria' ? '80%' : '70%'} do PV)<br/>
-        Base Legal: Art. 309 Decreto 9.580/2018
+      <div class="exec-card-blue">
+        <div class="exec-lbl" style="color: #1d4ed8;">Preço de Venda Sugerido (vNF)</div>
+        <div class="exec-val" style="color: #1e40af;">R$ ${resultado.preco.precoFinal.toFixed(2)}</div>
+        <div class="exec-sub" style="color: #2563eb;">vProd Líquido + Tributos</div>
       </div>
     </div>
   </div>
@@ -786,6 +888,38 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           .join('')}
       </tbody>
     </table>
+  </div>
+
+  ${
+    modo === 'detalhado'
+      ? `
+  <!-- GOVERNANÇA CONTÁBIL (NBC TG 16 / CPC 16 / RIR 2018) -->
+  <div class="card">
+    <h2>Governança Contábil, Ponto de Equilíbrio & Limites Fiscais (CPC 16 / RIR 2018)</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; font-size: 12px;">
+      <div style="background: #f8fafc; padding: 10px; border-radius: 4px; border: 1px solid #e2e8f0;">
+        <strong>Teste VRL & Impairment:</strong><br/>
+        Custo Real: R$ ${compCusto.custoUnitarioReal.toFixed(2)}/un<br/>
+        VRL: R$ ${vrl.toFixed(2)}/un<br/>
+        ${
+          reqImpairment
+            ? `<span style="color: #b91c1c; font-weight: 700;">⚠️ Impairment Exigido: R$ ${provImpairment.toFixed(2)}/un</span>`
+            : '<span style="color: #15803d; font-weight: 700;">✅ Em Conformidade (Sem Provisão)</span>'
+        }
+      </div>
+      <div style="background: #f8fafc; padding: 10px; border-radius: 4px; border: 1px solid #e2e8f0;">
+        <strong>Ponto de Equilíbrio (PEC):</strong><br/>
+        Custos Fixos Totais: R$ ${custosFixosTotais.toFixed(2)}<br/>
+        PEC em Volume: ${pecVol.toFixed(0)} unidades<br/>
+        PEC em Faturamento: R$ ${pecVal.toFixed(2)}
+      </div>
+      <div style="background: #f8fafc; padding: 10px; border-radius: 4px; border: 1px solid #e2e8f0;">
+        <strong>Arbitramento Fiscal (RIR/2018):</strong><br/>
+        Atividade: ${esc(tipoEstabelecimento.toUpperCase())}<br/>
+        Custo Arbitrado: R$ ${custoArbitrado.toFixed(2)} (${tipoEstabelecimento === 'industria' ? '80%' : '70%'} do PV)<br/>
+        Base Legal: Art. 309 Decreto 9.580/2018
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -872,10 +1006,13 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
       ${resultado.alertas.map((a) => `<div style="margin-top: 4px; color: #b45309;">⚠️ ${esc(a)}</div>`).join('')}
     </div>
   </div>
+  `
+      : ''
+  }
 
   <div class="footer">
-    <div>Classificador NCM & Reforma Tributária · Motor de Precificação v2.0</div>
-    <div>Soberania de Dados Local-First · Documento Válido para Instrução Gerencial</div>
+    <div>Contabilidade Portela · Laudo Pericial de Precificação v2.0</div>
+    <div>Soberania de Dados Local-First · Documento Válido para Instrução Fiscal e Gerencial</div>
   </div>
 </body>
 </html>`;
@@ -886,7 +1023,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
     if (!win) {
       const a = document.createElement('a');
       a.href = url;
-      a.download = `laudo_precificacao_${itemAtual.codigo || 'item'}.html`;
+      a.download = `laudo_precificacao_${itemAtual.codigo || 'item'}_${modo}.html`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1126,13 +1263,23 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
+              className="btn-secundario"
+              style={{ fontSize: '13px', padding: '6px 12px' }}
+              onClick={() => exportarLaudoHtml('resumido')}
+              disabled={!resultado}
+              title="Gerar laudo executivo resumido de alta legibilidade para diretoria"
+            >
+              📄 Exportar Resumido
+            </button>
+            <button
+              type="button"
               className="btn primary"
               style={{ background: '#0b3d91', borderColor: '#0b3d91', fontSize: '13px', padding: '6px 14px' }}
-              onClick={exportarLaudoHtml}
+              onClick={() => exportarLaudoHtml('detalhado')}
               disabled={!resultado}
-              title="Gerar laudo pericial formatado para impressão ou salvamento em PDF"
+              title="Gerar laudo pericial fiscal completo com todas as seções e fundamentações"
             >
-              📄 Exportar Laudo / Imprimir
+              📑 Exportar Detalhado
             </button>
             <button
               type="button"
@@ -1304,10 +1451,10 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                     <div>
                       <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>
-                        Mapeamento Automático de Entrada (De-Para)
+                        Rastreabilidade e Mapeamento de CFOP (Origem ➔ Entrada ➔ Venda)
                       </span>
-                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#0b3d91', marginTop: 2 }}>
-                        CFOP {itemAtual.cfop || '5102'} ➔ {deParaCfop?.cfopEntrada || '1102'}
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#0b3d91', marginTop: 2 }}>
+                        CFOP Origem: {itemAtual.cfop || '5102'} ➔ Entrada: {deParaCfop?.cfopEntrada || '1102'} ➔ Venda (Destinatário): {resultado?.cfopVendaDestinatario || determinarCfopVendaDestinatario(itemAtual, ufDestino)}
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1356,12 +1503,18 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                     <label style={{ fontSize: '12px', fontWeight: 600, display: 'block', marginBottom: 4 }}>
                       CRT do Fornecedor / Emitente:
                     </label>
-                    <select value={crtEmitente} onChange={(e) => setCrtEmitente(e.target.value as any)}>
+                    <select value={String(crtEmitente)} onChange={(e) => setCrtEmitente(e.target.value as CrtEmitente)}>
                       <option value="3">3 - Regime Normal (Lucro Real / Presumido)</option>
+                      <option value="simples_hibrido">Simples Híbrido (IBS/CBS Regular por Fora)</option>
                       <option value="1">1 - Simples Nacional (Microempresa / EPP)</option>
                       <option value="2">2 - Simples Nacional (Sublimite Excedido)</option>
                       <option value="4">4 - MEI (Microempreendedor Individual)</option>
                     </select>
+                    {String(crtEmitente) === 'simples_hibrido' && (
+                      <div style={{ fontSize: '11px', color: '#15803d', fontWeight: 600, marginTop: 4 }}>
+                        🏢 <b>Simples Híbrido:</b> Gera 100% dos créditos de IBS e CBS destacados ao adquirente.
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1663,9 +1816,9 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
               </div>
 
               {/* CARD 3: DEMONSTRAÇÃO DO CUSTO DE AQUISIÇÃO REAL */}
-              <div className="card">
-                <h3 style={{ margin: '0 0 4px' }}>Bloco A — Custo de Aquisição Real (NBC TG 16 / CPC 16)</h3>
-                <p className="hint" style={{ margin: '0 0 10px' }}>
+              <div className="card" style={{ background: '#fff5f5', border: '1.5px solid #fecdd3', marginBottom: 20 }}>
+                <h3 style={{ margin: '0 0 4px', color: '#991b1b' }}>Bloco A — Custo de Aquisição Real (NBC TG 16 / CPC 16)</h3>
+                <p className="hint" style={{ margin: '0 0 10px', color: '#7f1d1d' }}>
                   Critério contábil estrito: impostos recuperáveis são deduzidos e tributos sem crédito integram o custo.
                 </p>
 
@@ -1683,7 +1836,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                       <td>(+) Frete, Seguro e Despesas Acessórias:</td>
                       <td style={{ textAlign: 'right' }}>+ R$ {compCusto.freteSeguroOutros.toFixed(2)}</td>
                     </tr>
-                    <tr style={{ background: 'var(--bg-subtle)' }}>
+                    <tr style={{ background: '#fef2f2' }}>
                       <td>
                         (+) Tributos Não Recuperáveis:
                         <div style={{ fontSize: '11px', color: '#64748b' }}>
@@ -1705,16 +1858,21 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                         - R$ {compCusto.impostosARecuperar.totalImpostosRecuperaveis.toFixed(2)}
                       </td>
                     </tr>
-                    <tr style={{ borderTop: '2px solid var(--line)', fontWeight: 700, fontSize: '1.05rem', background: '#f8fafc' }}>
-                      <td>Custo de Aquisição Real Total:</td>
-                      <td style={{ textAlign: 'right', color: 'var(--brand)' }}>R$ {compCusto.custoAquisicaoReal.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                      <td>Custo Unitário Real:</td>
-                      <td style={{ textAlign: 'right', fontWeight: 700 }}>R$ {compCusto.custoUnitarioReal.toFixed(2)} / un</td>
-                    </tr>
                   </tbody>
                 </table>
+
+                {/* DUAS LINHAS FINAIS CONTORNADAS DE PONTA A PONTA */}
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ background: '#fee2e2', border: '2px solid #e11d48', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#9f1239' }}>Custo de Aquisição Real Total:</span>
+                    <span style={{ fontWeight: 900, fontSize: '1.25rem', color: '#9f1239' }}>R$ {compCusto.custoAquisicaoReal.toFixed(2)}</span>
+                  </div>
+
+                  <div style={{ background: '#ffe4e6', border: '2px solid #f43f5e', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#881337' }}>Custo Unitário Efetivo:</span>
+                    <span style={{ fontWeight: 900, fontSize: '1.3rem', color: '#881337' }}>R$ {compCusto.custoUnitarioReal.toFixed(2)} <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>/ un</span></span>
+                  </div>
+                </div>
 
                 {compCusto.glosado && (
                   <div className="note critico" style={{ marginTop: 12 }}>
@@ -1831,8 +1989,8 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   <b>Falha no Cálculo:</b> {erroCalculo}
                 </div>
               ) : resultado ? (
-                <div className="card" style={{ background: '#f8fafc', border: '1px solid #cbd5e1', marginBottom: 20 }}>
-                  <h3 style={{ margin: '0 0 12px', color: '#0f172a' }}>
+                <div className="card" style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', marginBottom: 20 }}>
+                  <h3 style={{ margin: '0 0 12px', color: '#166534' }}>
                     Bloco B — Formação de Preço e Demonstração de Resultados
                   </h3>
 
@@ -1844,9 +2002,9 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                       </div>
                     </div>
 
-                    <div style={{ background: '#eff6ff', padding: 12, borderRadius: 6, border: '1px solid #bfdbfe' }}>
-                      <div style={{ fontSize: '0.8rem', color: '#1d4ed8' }}>Preço Final na Nota (vNF):</div>
-                      <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e40af' }}>
+                    <div style={{ background: '#dcfce7', border: '2px solid #16a34a', padding: 12, borderRadius: 6 }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#14532d' }}>Preço de Venda Final na Nota (vNF):</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#14532d' }}>
                         R$ {resultado.preco.precoFinal.toFixed(2)}
                       </div>
                     </div>
@@ -2008,6 +2166,63 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
               ) : null}
             </div>
           </div>
+
+          {/* =============================================================== */}
+          {/* BLOCO C: RESUMO EXECUTIVO (3 CARDS COM FONTE 24PX E PESO 900) */}
+          {/* =============================================================== */}
+          {resultado && (
+            <div className="card" style={{ marginTop: 20, marginBottom: 24, padding: 16, background: '#f8fafc', border: '1.5px solid #cbd5e1' }}>
+              <div style={{ marginBottom: 12 }}>
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem' }}>
+                  📌 Bloco C — Resumo Executivo Gerencial
+                </h3>
+                <p className="hint" style={{ margin: '3px 0 0' }}>
+                  Tríade decisória contábil-comercial: Custo Efetivo de Entrada, Retorno Líquido Real e Preço Final ao Consumidor / Destinatário.
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+                {/* CARD 1: VERMELHO - CUSTO EFETIVO DE ENTRADA UNITÁRIO */}
+                <div style={{ background: '#fff1f2', border: '2px solid #f43f5e', borderRadius: 8, padding: '16px 18px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#be123c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                    Custo Efetivo de Entrada Unitário
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#9f1239', lineHeight: 1.2 }}>
+                    R$ {compCusto.custoUnitarioReal.toFixed(2)}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#e11d48', marginTop: 4, fontWeight: 600 }}>
+                    Líquido de Tributos Recuperáveis (CPC 16)
+                  </div>
+                </div>
+
+                {/* CARD 2: VERDE - MARGEM LÍQUIDA (%) */}
+                <div style={{ background: '#f0fdf4', border: '2px solid #22c55e', borderRadius: 8, padding: '16px 18px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                    Margem Líquida Realizada (%)
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#14532d', lineHeight: 1.2 }}>
+                    {resultado.resultado.margemRealizadaPct.toFixed(1)}%
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#16a34a', marginTop: 4, fontWeight: 600 }}>
+                    R$ {resultado.resultado.lucroLiquido.toFixed(2)} por unidade vendida
+                  </div>
+                </div>
+
+                {/* CARD 3: AZUL - PREÇO DE VENDA SUGERIDO */}
+                <div style={{ background: '#eff6ff', border: '2px solid #3b82f6', borderRadius: 8, padding: '16px 18px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                    Preço de Venda Sugerido (vNF)
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#1e40af', lineHeight: 1.2 }}>
+                    R$ {resultado.preco.precoFinal.toFixed(2)}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#2563eb', marginTop: 4, fontWeight: 600 }}>
+                    vProd Líquido: R$ {resultado.preco.vProdLiq.toFixed(2)} + Tributos
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* =============================================================== */}
           {/* SEÇÃO 3: GOVERNANÇA CONTÁBIL & PONTO DE EQUILÍBRIO (NBC TG 16 / RIR 2018) */}
@@ -2295,6 +2510,313 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                     ⚖️ <b>Aviso Normativo:</b> A opção pelo recolhimento de IBS/CBS fora do Simples é irretratável para todo o ano-calendário e deve ser manifestada entre setembro e novembro do ano anterior (LC 214/2025).
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* =============================================================== */}
+          {/* SEÇÃO 4.2: SIMULADOR DUAL-STACK 2027 (CONSULTA SEFA/PR 48/2026 VS TESE JUDICIAL) */}
+          {/* =============================================================== */}
+          <div className="card" style={{ marginTop: 24, background: '#fff', border: '1.5px solid #0284c7' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h3 style={{ margin: 0, color: '#0369a1' }}>
+                    ⚡ Simulador Dual-Stack 2027: Consulta SEFA/PR nº 48/2026 vs. Tese Judicial
+                  </h3>
+                  <span className="badge blue" style={{ fontSize: '11px' }}>Transição 2026–2027</span>
+                </div>
+                <p className="hint" style={{ margin: '3px 0 0' }}>
+                  Projeção de impacto no preço final da inclusão do IBS/CBS na Base de Cálculo do ICMS (Grossing-up por dentro).
+                </p>
+              </div>
+
+              {/* Toggle Jurídico */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0f9ff', padding: '6px 12px', borderRadius: 6, border: '1px solid #bae6fd' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#0369a1' }}>Posicionamento Jurídico:</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={incluirIbsCbsBcIcms}
+                    onChange={(e) => setIncluirIbsCbsBcIcms(e.target.checked)}
+                  />
+                  {incluirIbsCbsBcIcms ? '📜 Aplicar Consulta SEFA/PR nº 48/2026' : '⚖️ Tese Judicial (Excluir da BC)'}
+                </label>
+              </div>
+            </div>
+
+            {/* Alerta Executivo do Simples Nacional Híbrido 2027 */}
+            {regime === 'simples' && (
+              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '8px 12px', marginBottom: 14, fontSize: '12px', color: '#92400e', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>⚠️</span>
+                <div>
+                  <strong>Janela Normativa do Simples Nacional Híbrido 2027 (Resoluções CGSN nº 186/2026 e 194/2026):</strong>{' '}
+                  A opção pelo regime híbrido (IBS/CBS no regime regular e DAS sem esses tributos) tem prazo irretratável de manifestação até 20/12/2026 no portal do Simples Nacional.
+                </div>
+              </div>
+            )}
+
+            {/* Comparativo Lado a Lado */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: 14 }}>
+              {/* Card Modo 1: SEFA/PR 48/2026 */}
+              <div style={{
+                background: incluirIbsCbsBcIcms ? '#f0fdf4' : '#f8fafc',
+                border: incluirIbsCbsBcIcms ? '2px solid #22c55e' : '1px solid #cbd5e1',
+                borderRadius: 8,
+                padding: 14
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#166534' }}>
+                    Modo 1: Administrativo SEFA/PR
+                  </span>
+                  {incluirIbsCbsBcIcms && <span className="badge green">Ativo</span>}
+                </div>
+                <div style={{ fontSize: '12px', color: '#475569', marginBottom: 8 }}>
+                  Consulta SEFA/PR nº 48/2026 (IBS e CBS compõem a BC do ICMS)
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12.5px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Base de Cálculo ICMS:</span>
+                    <strong>R$ {simulacaoDualStack.baseIcmsModo1.toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>ICMS Efetivo:</span>
+                    <strong style={{ color: '#b91c1c' }}>R$ {simulacaoDualStack.valorIcmsModo1.toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>IBS + CBS (por fora):</span>
+                    <strong>R$ {(simulacaoDualStack.modoSefa.valorIbs + simulacaoDualStack.modoSefa.valorCbs).toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1.5px solid #bbf7d0', paddingTop: 6, marginTop: 4, fontWeight: 800 }}>
+                    <span>Preço Final Consumidor:</span>
+                    <strong style={{ fontSize: '15px', color: '#14532d' }}>R$ {simulacaoDualStack.precoFinalModo1.toFixed(2)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Modo 2: Tese Judicial */}
+              <div style={{
+                background: !incluirIbsCbsBcIcms ? '#f0fdf4' : '#f8fafc',
+                border: !incluirIbsCbsBcIcms ? '2px solid #22c55e' : '1px solid #cbd5e1',
+                borderRadius: 8,
+                padding: 14
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#1e40af' }}>
+                    Modo 2: Tese Judicial (Tema 69 STF)
+                  </span>
+                  {!incluirIbsCbsBcIcms && <span className="badge green">Ativo</span>}
+                </div>
+                <div style={{ fontSize: '12px', color: '#475569', marginBottom: 8 }}>
+                  Exclusão do IBS e CBS da Base de Cálculo do ICMS
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12.5px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Base de Cálculo ICMS:</span>
+                    <strong>R$ {simulacaoDualStack.baseIcmsModo2.toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>ICMS Efetivo:</span>
+                    <strong style={{ color: '#2563eb' }}>R$ {simulacaoDualStack.valorIcmsModo2.toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>IBS + CBS (por fora):</span>
+                    <strong>R$ {(simulacaoDualStack.modoTese.valorIbs + simulacaoDualStack.modoTese.valorCbs).toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1.5px solid #bfdbfe', paddingTop: 6, marginTop: 4, fontWeight: 800 }}>
+                    <span>Preço Final Consumidor:</span>
+                    <strong style={{ fontSize: '15px', color: '#1e3a8a' }}>R$ {simulacaoDualStack.precoFinalModo2.toFixed(2)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card Efeito Cascata & Choque de Margem */}
+              <div style={{ background: '#fff1f2', border: '1.5px solid #fecdd3', borderRadius: 8, padding: 14 }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#9f1239' }}>
+                  📊 Choque Comercial & Efeito Cascata
+                </span>
+                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6, fontSize: '12.5px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Efeito Cascata (ICMS s/ IBS-CBS):</span>
+                    <strong style={{ color: '#b91c1c' }}>+ R$ {simulacaoDualStack.efeitoCascataReais.toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Aumento Efetivo no ICMS:</span>
+                    <strong style={{ color: '#dc2626' }}>+{simulacaoDualStack.aumentoPercentualIcms.toFixed(2)}%</strong>
+                  </div>
+                  <div style={{ background: '#ffe4e6', padding: '6px 8px', borderRadius: 4, marginTop: 4 }}>
+                    <span style={{ color: '#881337', fontWeight: 700, display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>
+                      Risco de Erosão de Margem
+                    </span>
+                    <div style={{ color: '#9f1239', fontWeight: 800, fontSize: '14px' }}>
+                      -{simulacaoDualStack.erosaoMargemPpSePrecoTravado.toFixed(2)} p.p. de margem
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: '#be123c', marginTop: 2 }}>
+                      Caso o preço de venda seja mantido inalterado frente ao mercado em 2027.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* =============================================================== */}
+          {/* SEÇÃO 4.3: MESA DE COMPRAS PR (COMPARADOR DE CUSTO ATERRISSADO) */}
+          {/* =============================================================== */}
+          <div className="card" style={{ marginTop: 24, background: '#f8fafc', border: '1.5px solid #cbd5e1' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#0f172a' }}>
+                  🛒 Mesa de Compras PR: Comparador de Custo Efetivo Aterrissado
+                </h3>
+                <p className="hint" style={{ margin: '3px 0 0' }}>
+                  Simulação de sourcing interestadual vs. interno com ICMS-ST, Antecipação Art. 16 e custo financeiro de estoque.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn-secundario"
+                style={{ fontSize: '0.85rem', padding: '6px 14px', fontWeight: 600 }}
+                onClick={() => setExpandirMesaCompras(!expandirMesaCompras)}
+              >
+                {expandirMesaCompras ? '▲ Ocultar Mesa de Compras' : '▼ Expandir Mesa de Compras (3 Cotações)'}
+              </button>
+            </div>
+
+            {expandirMesaCompras && (
+              <div style={{ marginTop: 16 }}>
+                {/* Parâmetros Financeiros de Capital de Giro */}
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', background: '#fff', padding: '10px 14px', borderRadius: 6, border: '1px solid #e2e8f0', marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <label htmlFor="taxa-cap-giro" style={{ fontSize: '12px', fontWeight: 600 }}>Taxa Capital Giro Mensal:</label>
+                    <input
+                      id="taxa-cap-giro"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={taxaCapGiroMesa}
+                      onChange={(e) => setTaxaCapGiroMesa(Number(e.target.value))}
+                      style={{ width: 64, padding: '3px 6px', fontSize: '12px' }}
+                    />
+                    <span style={{ fontSize: '12px' }}>% a.m.</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <label htmlFor="prazo-estoque" style={{ fontSize: '12px', fontWeight: 600 }}>Prazo Médio de Estoque:</label>
+                    <input
+                      id="prazo-estoque"
+                      type="number"
+                      step="5"
+                      min="1"
+                      value={prazoEstoqueMesa}
+                      onChange={(e) => setPrazoEstoqueMesa(Number(e.target.value))}
+                      style={{ width: 64, padding: '3px 6px', fontSize: '12px' }}
+                    />
+                    <span style={{ fontSize: '12px' }}>dias</span>
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+                    💡 Considera o custo de oportunidade financeiro sobre o desembolso antecipado de ICMS-ST / Art. 16.
+                  </div>
+                </div>
+
+                {/* Tabela de Cotações da Mesa de Compras */}
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 6 }}>
+                    <thead>
+                      <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', color: '#334155' }}>
+                        <th style={{ padding: '8px' }}>Fornecedor</th>
+                        <th style={{ padding: '8px' }}>UF</th>
+                        <th style={{ padding: '8px' }}>Regime</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Preço Unit.</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Frete</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>IPI</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>ICMS-ST / Ant.</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Custo Fin.</th>
+                        <th style={{ padding: '8px', textAlign: 'right', fontWeight: 800 }}>Custo Aterrissado</th>
+                        <th style={{ padding: '8px' }}>Resultado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resultadoMesaCompras.cotacoesRanqueadas.map((cot, idx) => {
+                        const ehVencedor = idx === 0;
+                        return (
+                          <tr key={cot.id} style={{
+                            borderBottom: '1px solid #e2e8f0',
+                            background: ehVencedor ? '#f0fdf4' : '#fff'
+                          }}>
+                            <td style={{ padding: '8px', fontWeight: 600 }}>
+                              {cot.nome}
+                              <div style={{ fontSize: '10.5px', color: '#64748b', fontWeight: 400 }}>{cot.justificativaTributaria}</div>
+                            </td>
+                            <td style={{ padding: '8px' }}><span className="badge blue">{cot.ufEmitente}</span></td>
+                            <td style={{ padding: '8px' }}>{cot.crtEmitente === '1' ? 'Simples' : 'Normal'}</td>
+                            <td style={{ padding: '8px', textAlign: 'right' }}>R$ {cot.precoUnitario.toFixed(2)}</td>
+                            <td style={{ padding: '8px', textAlign: 'right' }}>R$ {cot.freteUnitario.toFixed(2)}</td>
+                            <td style={{ padding: '8px', textAlign: 'right' }}>R$ {cot.vIpiUnitario.toFixed(2)}</td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: '#b91c1c' }}>
+                              R$ {(cot.icmsStEntrada + cot.antecipacaoArt16).toFixed(2)}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: '#64748b' }}>
+                              R$ {cot.custoCapitalGiro.toFixed(2)}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', fontWeight: 800, fontSize: '13px', color: ehVencedor ? '#15803d' : '#0f172a' }}>
+                              R$ {cot.custoEfetivoAterrissado.toFixed(2)}
+                            </td>
+                            <td style={{ padding: '8px' }}>
+                              {ehVencedor ? (
+                                <span className="badge green" style={{ fontWeight: 700 }}>🏆 Menor Custo</span>
+                              ) : (
+                                <span style={{ fontSize: '11px', color: '#b91c1c' }}>
+                                  +R$ {(cot.custoEfetivoAterrissado - resultadoMesaCompras.melhorOpcao.custoEfetivoAterrissado).toFixed(2)}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Banner de Conclusão da Mesa de Compras */}
+                <div style={{ marginTop: 12, background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong style={{ color: '#166534', fontSize: '13px' }}>
+                      🏆 Vencedor da Mesa de Compras: {resultadoMesaCompras.melhorOpcao.nome}
+                    </strong>
+                    <div style={{ fontSize: '11.5px', color: '#15803d', marginTop: 2 }}>
+                      Economia real de <strong>R$ {resultadoMesaCompras.economiaVsPiorReais.toFixed(2)} ({resultadoMesaCompras.economiaVsPiorPct}%)</strong> por unidade vs. a pior opção analisada.
+                    </div>
+                  </div>
+                  <span className="badge green" style={{ fontSize: '12px', padding: '6px 12px' }}>
+                    Economia: R$ {resultadoMesaCompras.economiaVsPiorReais.toFixed(2)}/un
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* =============================================================== */}
+          {/* SEÇÃO 4.4: RADAR DE COMBUSTÍVEIS MONOFÁSICOS AD REM (01/02/2027) */}
+          {/* =============================================================== */}
+          <div className="card" style={{ marginTop: 24, background: '#f8fafc', border: '1px solid #cbd5e1' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h4 style={{ margin: 0, color: '#334155' }}>
+                  ⛽ Radar Logístico: Virada de Combustíveis Monofásicos Ad Rem em 01/02/2027
+                </h4>
+                <span className="badge amber" style={{ fontSize: '10.5px' }}>Convênios ICMS 127/2026 e 128/2026</span>
+              </div>
+              <span style={{ fontSize: '11px', color: '#64748b' }}>CST 61 / EFD PR012000</span>
+            </div>
+            <div style={{ marginTop: 8, fontSize: '12px', color: '#475569', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+              <div>
+                <strong>Diesel / Biodiesel (NCM 2710.19.21):</strong> R$ 1,17 ➔ <strong>R$ 1,30/L</strong> (+11,11%) — Acréscimo de R$ 1.300,00/mês para 10.000 L.
+              </div>
+              <div>
+                <strong>Gasolina / EAC (NCM 2710.12.59):</strong> R$ 1,57 ➔ <strong>R$ 1,64/L</strong> (+4,46%).
+              </div>
+              <div>
+                <strong>GLP / GLGN (NCM 2711.19.10):</strong> R$ 1,47 ➔ <strong>R$ 1,54/kg</strong> (+4,76%).
               </div>
             </div>
           </div>

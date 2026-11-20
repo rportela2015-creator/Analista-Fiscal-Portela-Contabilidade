@@ -370,4 +370,94 @@ test('Barramento Fiscal de Webhook e Ponte de Parametrização ERP', async (t) =
     assert.equal(resultado.diagnosticos[0].conferido, true);
     assert.equal(resultado.totalBloqueantes, 0);
   });
+
+  await t.test('POST /api/webhook/fiscal - Modo Resumido (Gerencial, Cadeia CFOP, Bloco C e CPC 16)', async () => {
+    const req = new Request('http://localhost:3000/api/webhook/fiscal', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-MCM-Token': DEFAULT_SECRET,
+      },
+      body: JSON.stringify({
+        modo: 'xml_nfe',
+        xmlConteudo: XML_SYNTHETIC_NFE,
+        formatoRelatorio: 'resumido',
+        regimeDestinatario: 'simples',
+      }),
+    });
+    const res = await POST(req);
+    assert.equal(res.status, 200);
+
+    const data = await res.json();
+    assert.equal(data.sucesso, true);
+    assert.equal(data.formatoRelatorio, 'resumido');
+    assert.equal(data.auditoriaPericialIcmsPr, undefined, 'Modo resumido não deve ter auditoriaPericialIcmsPr na raiz');
+
+    assert.equal(data.itensParametrizados.length, 2);
+    const item1 = data.itensParametrizados[0];
+
+    // Cadeia CFOP
+    assert.ok(item1.cadeiaCfop, 'Deve conter cadeiaCfop');
+    assert.equal(item1.cadeiaCfop.cfopOrigem, '5102');
+    assert.equal(item1.cadeiaCfop.cfopEntrada, '1102');
+    assert.equal(item1.cadeiaCfop.cfopVendaDestinatario, '5102');
+
+    // Bloco C
+    assert.ok(item1.blocoC_ResumoExecutivo, 'Deve conter blocoC_ResumoExecutivo');
+    assert.equal(typeof item1.blocoC_ResumoExecutivo.custoEfetivoEntradaUnitario, 'number');
+    assert.equal(typeof item1.blocoC_ResumoExecutivo.margemLiquidaPct, 'number');
+    assert.equal(typeof item1.blocoC_ResumoExecutivo.precoVendaSugerido, 'number');
+
+    // CPC 16 individualizado
+    assert.ok(item1.custoIndividualizadoCpc16, 'Deve conter custoIndividualizadoCpc16');
+    assert.equal(item1.custoIndividualizadoCpc16.fundamentacaoLegal, undefined, 'Modo resumido deve omitir fundamentação legal individual');
+    assert.equal(item1.beneficioIcmsPr, undefined, 'Modo resumido deve omitir beneficioIcmsPr');
+  });
+
+  await t.test('POST /api/webhook/fiscal - Modo Detalhado (Pericial, crtEmitente simples_hibrido e Auditoria PR)', async () => {
+    const req = new Request('http://localhost:3000/api/webhook/fiscal', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-MCM-Token': DEFAULT_SECRET,
+      },
+      body: JSON.stringify({
+        modo: 'lote_produtos',
+        formato_saida: 'detalhado',
+        crtEmitente: 'simples_hibrido',
+        regimeDestinatario: 'simples_hibrido',
+        produtos: [
+          {
+            codigo: 'PROD-SH-1',
+            descricao: 'Produto com IBS/CBS Híbrido',
+            ncm: '73181500',
+            valorUnitario: 100.0,
+            quantidade: 2,
+            vCBS: 1.8,
+            vIBS: 0.2,
+          },
+        ],
+      }),
+    });
+    const res = await POST(req);
+    assert.equal(res.status, 200);
+
+    const data = await res.json();
+    assert.equal(data.sucesso, true);
+    assert.equal(data.formatoRelatorio, 'detalhado');
+
+    // Auditoria Pericial na raiz
+    assert.ok(data.auditoriaPericialIcmsPr, 'Deve conter auditoriaPericialIcmsPr na raiz');
+    assert.ok(data.auditoriaPericialIcmsPr.item11Cpc16R1.includes('CPC 16'));
+    assert.ok(data.auditoriaPericialIcmsPr.artigo23Lc123_2006.includes('LC 123/2006'));
+    assert.ok(data.auditoriaPericialIcmsPr.consultaTributaria48_2026.includes('Consulta SEFA/PR nº 48/2026'));
+    assert.equal(data.auditoriaPericialIcmsPr.codigosEfdAdrcSt.ressarcimentoSt, 'PR020211');
+    assert.equal(data.auditoriaPericialIcmsPr.codigosEfdAdrcSt.diferimentoParcial, 'PR000092');
+
+    const item = data.itensParametrizados[0];
+    assert.ok(item.custoIndividualizadoCpc16.fundamentacaoLegal, 'Deve conter fundamentacaoLegal no item detalhado');
+    assert.equal(item.custoIndividualizadoCpc16.tributosRecuperaveis, 2.0, 'No Simples Híbrido, IBS/CBS (0.2 + 1.8 = 2.0) são recuperáveis');
+    assert.equal(item.custoIndividualizadoCpc16.custoTotal, 198.0, 'Custo total: 200 - 2.0 = 198.0');
+    assert.equal(item.custoIndividualizadoCpc16.custoUnitario, 99.0, 'Custo unitário: 198 / 2 = 99.0');
+  });
 });

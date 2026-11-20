@@ -7,6 +7,13 @@
  * e condições operacionais parametrizadas para apuração tributária determinística.
  */
 
+import type {
+  DiagnosticoDiferimentoParcialPR,
+  DiagnosticoReducaoBcEEstornoPR,
+  DiagnosticoIcmsStPR,
+  DiagnosticoSimplesNacionalPR,
+} from '../engine/icms-pr-regras';
+
 export type Operacao = 'interna' | 'interestadual' | 'importacao' | 'exportacao';
 
 export type TipoFonteOficial =
@@ -120,6 +127,30 @@ export interface ValoresFinanceiros {
   outras_despesas?: number;        // Outras despesas acessórias
   desconto_incondicional?: number; // Descontos incondicionais
   ipi?: number;                    // IPI destacado
+
+  // Campos complementares opcionais para regimes específicos (ICMS/PR)
+  quantidade?: number;
+  ncm?: string;
+  cest?: string;
+  dataFatoGerador?: string;
+  ufOrigem?: string;
+  ufDestino?: string;
+  crtEmitente?: '1' | '2' | '3' | '4' | number;
+  crtDestinatario?: '1' | '2' | '3' | '4' | number;
+  destinatarioConsumidorFinal?: boolean;
+  ehCombustivel?: boolean;
+  destinatarioConstrucaoCivil?: boolean;
+  ehAtacadistaRegimeEspecial?: boolean;
+  aplicarRedutorArt16SN?: boolean;
+  precoMaximoOrgaoPublico?: number;
+  pmpf?: number;
+  precoSugeridoFabricante?: number;
+  mvaOriginalPct?: number;
+  aliqFecopPct?: number;
+  creditoIcmsEntrada?: number;
+  manutencaoCredito?: boolean;
+  ehParteOuPeca?: boolean;
+  perfilReducaoPr?: string;
 }
 
 /**
@@ -143,4 +174,98 @@ export interface DetalheCalculo {
   carga_efetiva: number;
   Carga_Efetiva: number;
   memoria_calculo: string[];
+
+  // Diagnósticos periciais complementares do ICMS/PR (Sub-etapa 18.4)
+  diferimentoParcialPr?: DiagnosticoDiferimentoParcialPR;
+  reducaoBcEstornoPr?: DiagnosticoReducaoBcEEstornoPR;
+  calculoStPr?: DiagnosticoIcmsStPR;
+  simplesNacionalPr?: DiagnosticoSimplesNacionalPR;
 }
+
+/**
+ * Chave de Decisão Fiscal em 9 Dimensões
+ * Modelo canônico para enquadramento fiscal e auditoria determinística de entradas
+ */
+export interface ChaveDecisaoFiscal9D {
+  ncm: string; // 8 dígitos
+  cest?: string;
+  origemMercadoria: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | number; // Tabela A CST
+  finalidadeEntrada: 'uso_consumo' | 'revenda' | 'comercializacao' | 'industrializacao' | 'ativo_imobilizado';
+  regimeEmitente: 'simples_nacional' | 'regime_normal';
+  regimeDestinatario: 'simples_nacional' | 'lucro_presumido' | 'lucro_real';
+  ufOrigem: string; // 2 caracteres
+  ufDestino: string; // 2 caracteres
+  dataFatoGerador: string; // YYYY-MM-DD
+}
+
+/**
+ * Diagnóstico pericial de DIFAL de entrada (Uso/Consumo ou Ativo Imobilizado)
+ */
+export interface DiagnosticoDifalEntrada {
+  sujeitoDifal: boolean;
+  tipoDifal: 'uso_consumo' | 'ativo_imobilizado' | 'nao_aplicavel';
+  modalidadeBase: 'base_dupla' | 'base_simples' | 'isento';
+  aliquotaOrigem: number;
+  aliquotaDestino: number;
+  aliquotaFecop: number;
+  baseCalculoOrigem: number;
+  baseCalculoDestino: number;
+  valorDifal: number;
+  valorFecop: number;
+  valorTotalRecolher: number;
+  memoriaCalculo: string[];
+  fundamentacaoLegal: string;
+
+  // Campos complementares da Sub-etapa 18.2 (DIFAL e Antecipação PR)
+  exigeRecolhimento?: boolean;
+  modalidade?: 'DIFAL_USO_CONSUMO' | 'DIFAL_ATIVO_IMOBILIZADO' | 'ICMS_ST_ENTRADA_ART11' | 'ANTECIPACAO_4_PCT_ART16' | 'DISPENSADO';
+  baseCalculoOperacao?: number;
+  baseCalculoDifal?: number;
+  aliquotaInternaEfetiva?: number;
+  valorDebitoDifal?: number;
+  valorDebitoFecop?: number;
+  valorTotalDebito?: number;
+  efeitoCaixaLiquido?: number;
+  guiaRecolhimento?: 'GR-PR' | 'CONTA_GRAFICA_EFD' | 'DISPENSADO' | string;
+  vencimento?: string;
+  codigoAjusteEfd?: string;
+  obrigacaoAcessoria?: string;
+  ciapBlocoG?: boolean;
+  alertasAuditoria?: string[];
+  decretoExclusaoSt?: string;
+}
+
+/**
+ * Resumo consolidado de DIFAL para os itens de uma NF-e de entrada
+ */
+export interface ResumoDifalNfeEntrada {
+  totalItensAnalisados: number;
+  totalItensComDifal: number;
+  totalDifalGeral: number;
+  totalFecopGeral: number;
+  totalGeralRecolher: number;
+  itens: Array<{
+    nItem: number;
+    xProd: string;
+    ncm: string;
+    diagnostico: DiagnosticoDifalEntrada;
+  }>;
+
+  // Indicadores consolidados executivos
+  exigeRecolhimentoNaNota?: boolean;
+  qtdItensComDebito?: number;
+  qtdItensUsoConsumo?: number;
+  qtdItensAtivoImobilizado?: number;
+  qtdItensAntecipacaoArt16?: number;
+  qtdItensStEntradaArt11?: number;
+  totalBaseDifal?: number;
+  totalDebitoDifal?: number;
+  totalDebitoFecop?: number;
+  totalAntecipacaoArt16?: number;
+  totalEfeitoCaixaLiquido?: number;
+  guiasNecessarias?: string[];
+  prazoPrincipal?: string;
+  obrigacoesAcessorias?: string[];
+  alertasConsolidados?: string[];
+}
+
