@@ -10,6 +10,12 @@ import {
   type RegimeTributario,
 } from './marco-legal';
 import type { DiagnosticoDifalEntrada, ResumoDifalNfeEntrada } from './types/motor-tributario';
+import {
+  classificarCreditosItemEntrada,
+  type ClassificacaoTripartidaCreditos,
+  type RegimeAdquirente,
+  type StatusExtincaoDebitoFornecedor,
+} from './fiscal/credito-tributario';
 
 export class FiscalExtractionError extends Error {
   codigo: string;
@@ -398,6 +404,7 @@ export interface PrecificacaoItemInput {
   credPisCofinsEntrada: number;
   credCbsEntrada: number;
   credIbsEntrada: number;
+  auditoriaCreditos?: ClassificacaoTripartidaCreditos;
   detalhesTributos?: {
     pICMS?: number;
     vICMS?: number;
@@ -436,6 +443,12 @@ export function converterItemExtracaoParaPrecificacao(
     modFrete?: '0' | '1' | '2' | '9';
     crtEmitente?: '1' | '2' | '3' | '4';
     tipoEstabelecimento?: 'comercio' | 'industria';
+    regimeAdquirente?: RegimeAdquirente;
+    ehIndustria?: boolean;
+    statusExtincaoRtc?: StatusExtincaoDebitoFornecedor;
+    emitenteSnIsentoPr?: boolean;
+    percentualEstornoAnexoVI?: number;
+    usoPessoal?: boolean;
   }
 ): PrecificacaoItemInput {
   const t = item.tributos || {};
@@ -449,17 +462,50 @@ export function converterItemExtracaoParaPrecificacao(
   const icmsSt = t.vICMSST ?? 0;
   const ii = t.vII ?? 0;
   const isVal = t.vIS ?? 0;
-  const credIcms = t.vICMS ?? t.vCredICMSSN ?? opts?.credIcmsEstimado ?? 0;
-  const credPis = t.vPIS ?? 0;
-  const credCofins = t.vCOFINS ?? 0;
-  const credPisCofins = Number((credPis + credCofins).toFixed(2));
-  const credCbs = t.vCBS ?? 0;
-  const credIbs = t.vIBS ?? 0;
 
   const destinacao = opts?.destinacao || 'comercializacao';
   const ufOrigem = opts?.ufOrigem || 'PR';
   const ufDestino = opts?.ufDestino || 'PR';
   const cfopEntradaInfo = mapearCfopEntrada(item.cfop, destinacao, ufOrigem, ufDestino);
+
+  const temSt =
+    cfopEntradaInfo.temSt ||
+    icmsSt > 0 ||
+    ['10', '30', '60', '70'].includes(t.cstIcms || '') ||
+    ['201', '202', '203', '500'].includes(t.csosn || '');
+
+  // Classificação Tripartida de Créditos (ADR003 / CPC 16 / LC 214/2025)
+  const regimeAdquirente: RegimeAdquirente = opts?.regimeAdquirente || 'LUCRO_REAL';
+  const auditoriaCreditos = classificarCreditosItemEntrada({
+    vProd: item.vProd || 0,
+    vFrete,
+    vSeg,
+    vOutro,
+    vDesc,
+    vIPI: ipi,
+    vICMS: t.vICMS ?? opts?.credIcmsEstimado ?? 0,
+    vICMSST: icmsSt,
+    vPIS: t.vPIS ?? 0,
+    vCOFINS: t.vCOFINS ?? 0,
+    vIBS: t.vIBS ?? 0,
+    vCBS: t.vCBS ?? 0,
+    vCredICMSSN: t.vCredICMSSN ?? 0,
+    pCredSN: t.pCredSN,
+    crtEmitente: item.crtEmitente ?? opts?.crtEmitente,
+    emitenteSnIsentoPr: opts?.emitenteSnIsentoPr,
+    temSt,
+    percentualEstornoAnexoVI: opts?.percentualEstornoAnexoVI,
+    regimeAdquirente,
+    destinacao: destinacao as any,
+    ehIndustria: opts?.ehIndustria ?? (opts?.tipoEstabelecimento === 'industria'),
+    usoPessoal: opts?.usoPessoal,
+    statusExtincaoFornecedor: opts?.statusExtincaoRtc,
+  });
+
+  const credIcms = auditoriaCreditos.creditoEfetivadoCusto.icmsProprio;
+  const credPisCofins = Number((auditoriaCreditos.creditoEfetivadoCusto.pis + auditoriaCreditos.creditoEfetivadoCusto.cofins).toFixed(2));
+  const credCbs = auditoriaCreditos.creditoEfetivadoCusto.cbs;
+  const credIbs = auditoriaCreditos.creditoEfetivadoCusto.ibs;
 
   return {
     index: item.index,
@@ -486,11 +532,7 @@ export function converterItemExtracaoParaPrecificacao(
     pMVAST: item.pMVAST ?? t.pMVAST,
     infAdProd: item.infAdProd,
     aliquotaCreditoIcmsSimplesPct: item.aliquotaCreditoIcmsSimplesPct,
-    temSt:
-      cfopEntradaInfo.temSt ||
-      icmsSt > 0 ||
-      ['10', '30', '60', '70'].includes(t.cstIcms || '') ||
-      ['201', '202', '203', '500'].includes(t.csosn || ''),
+    temSt,
     quantidade: item.qCom > 0 ? item.qCom : 1,
     valorBrutoEntrada: item.vProd,
     freteSeguroOutrasEntrada: freteOutros,
@@ -503,6 +545,7 @@ export function converterItemExtracaoParaPrecificacao(
     credPisCofinsEntrada: credPisCofins,
     credCbsEntrada: credCbs,
     credIbsEntrada: credIbs,
+    auditoriaCreditos,
     detalhesTributos: {
       pICMS: t.pICMS,
       vICMS: t.vICMS,

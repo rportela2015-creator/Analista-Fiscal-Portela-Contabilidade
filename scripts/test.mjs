@@ -184,6 +184,13 @@ const ALL_TESTS = [
   'tests/auditoria-difal-entrada.test.mjs',
   'tests/icms-pr-regras.test.mjs',
   'tests/precificacao-dual-stack-2027.test.mjs',
+  'tests/credito-tripartido-decimal.test.mjs',
+  'tests/rfb-infra-config.test.mjs',
+  'tests/integracao-rfb-rtc.test.mjs',
+  'tests/persistencia-perfil-bitemporal.test.mjs',
+  'tests/orquestrador-fiscal-dag.test.mjs',
+  'tests/auditoria-nfse-danfse.test.mjs',
+  'tests/paridade-rfb-relatorio.test.mjs',
 ];
 
 // Suporte a execução de suíte única via CLI: node scripts/test.mjs tests/foo.test.mjs
@@ -197,6 +204,8 @@ const EXTERNALS = [
   '@google/genai',
   'next', 'next/server',
   'jsdom',
+  'decimal.js',
+  'pg',
   'node:*',
 ];
 

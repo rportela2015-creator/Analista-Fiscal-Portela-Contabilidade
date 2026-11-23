@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "versaoManifesto": "1.0.0",
+  "descricao": "Manifesto de governança e rastreabilidade dos componentes oficiais da Calculadora RTC da Receita Federal do Brasil (RFB)",
+  "dataRevisao": "2026-11-20",
+  "repositorios": {
+    "calculadora-rtc-regime-regular": {
+      "nome": "calculadora-rtc-regime-regular",
+      "url": "https://github.com/ReceitaFederal/calculadora-rtc-regime-regular.git",
+      "commitPinado": "f1eebd7ce3157423b1a6aaca7dc1d6c3395452c4",
+      "commitCurto": "f1eebd7",
+      "tag": null,
+      "stack": "Java 25 / Spring Boot 4",
+      "portaInterna": 8080,
+      "portaManagement": 9101,
+      "contextPath": "/api",
+      "healthEndpoint": "/api/calculadora/dados-abertos/versao",
+      "healthManagementEndpoint": "/health",
+      "databaseFilename": "calculadora-pro.db",
+      "contratoSqlite": {
+        "caminhoCriacao": "flyway/sql/criacao",
+        "caminhoManutencao": "flyway/sql/manutencao",
+        "baselineScript": "flyway/sql/criacao/B0001__sistema_tributario_completo.sql",
+        "beforeCallback": "flyway/sql/criacao/beforeMigrate.sql",
+        "afterCallback": "flyway/sql/criacao/afterMigrate.sql",
+        "configFile": "flyway/flyway-pro.conf"
+      }
+    },
+    "calculadora-rtc-simples-nacional": {
+      "nome": "calculadora-rtc-simples-nacional",
+      "url": "https://github.com/ReceitaFederal/calculadora-rtc-simples-nacional.git",
+      "commitPinado": "a926d5a76095ac0295a6612a9a54db7ffead2396",
+      "commitCurto": "a926d5a",
+      "tag": null,
+      "stack": "Java 25 / Spring Boot 4",
+      "portaInterna": 8082,
+      "portaManagement": 9103,
+      "contextPath": "/api",
+      "healthEndpoint": "/api/versao",
+      "healthManagementEndpoint": "/health",
+      "databaseFilename": "calculadora-pro.db",
+      "observacoes": "Consome a mesma base SQLite gerada pelas migrações do regime-regular (ADR001 e ADR009)"
+    },
+    "calculadora-rtc-gerador-danfse": {
+      "nome": "calculadora-rtc-gerador-danfse",
+      "url": "https://github.com/ReceitaFederal/calculadora-rtc-gerador-danfse.git",
+      "commitPinado": "8d79e6b2f7fad6375340afcb51c85ed370c64a14",
+      "commitCurto": "8d79e6b",
+      "tag": "1.0.0",
+      "stack": "Go 1.x / Echo v5",
+      "portaInterna": 8084,
+      "healthEndpoint": "/health/live",
+      "healthReadyEndpoint": "/health/ready",
+      "swaggerEndpoint": "/api/swagger-ui/index.html",
+      "observacoes": "Microsserviço de geração e renderização do DANFSe em PDF a partir do XML da NFSe RTC"
+    }
+  },
+  "database": {
+    "motor": "sqlite",
+    "nomeArquivoOficial": "rtc-oficial.db",
+    "aliasPro": "calculadora-pro.db",
+    "modoAcesso": "ro",
+    "parametrosJdbc": "mode=ro&date_class=TEXT&date_string_format=yyyy-MM-dd",
+    "heapPadrao": "-Xms256m -Xmx768m -XX:+UseG1GC"
+  },
+  "rede": {
+    "nomeRede": "fiscal_net",
+    "driver": "bridge",
+    "politicaExposicao": "Nenhum container interno (sidecar) deve expor portas no host. Apenas a aplicação Web 'mcm-web' mapeia 3000:3000."
+  }
+}

@@ -42,6 +42,8 @@ import {
 import type { PrecificacaoItemInput } from '@/lib/extrator-nfe-types';
 import { esc } from '@/lib/html';
 import { PORTELA_HEADER_CSS, renderHeaderPortela } from '@/lib/relatorio-header';
+import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
+import { formatarCnpj } from '@/lib/fiscal/perfil-tributario';
 
 export interface PrecificarProps {
   itensIniciais?: PrecificacaoItemInput[];
@@ -76,6 +78,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   // ---------------------------------------------------------------------------
   // 1. HOOKS DE ESTADO (ORDEM ESTRITA NO TOPO ABSOLUTO - scripts/hookcheck.mjs)
   // ---------------------------------------------------------------------------
+  const { empresaAtiva, perfilAtivo } = useEmpresaAtiva();
   const [ds, setDs] = useState<Dataset | null>(null);
   const [reforma, setReforma] = useState<Reforma | null>(null);
   const [marco, setMarco] = useState<MarcoLegal | null>(null);
@@ -163,6 +166,26 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   // ---------------------------------------------------------------------------
   // 2. EFEITOS DE CARGA E SINCRONIZAÇÃO
   // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (perfilAtivo) {
+      if (perfilAtivo.regimeTributario === 'SIMPLES_NACIONAL') {
+        if (perfilAtivo.simplesOptanteHibrido2027) {
+          setRegime('simples_hibrido');
+        } else {
+          setRegime('simples');
+        }
+      } else if (perfilAtivo.regimeTributario === 'LUCRO_PRESUMIDO') {
+        setRegime('presumido');
+      } else if (perfilAtivo.regimeTributario === 'LUCRO_REAL') {
+        setRegime('real');
+      }
+
+      if (perfilAtivo.beneficiosParana?.regimeEspecialSefaPr?.includes('48/2026') || perfilAtivo.beneficiosParana?.diferimentoParcialArt28) {
+        setIncluirIbsCbsBcIcms(true);
+      }
+    }
+  }, [perfilAtivo]);
+
   useEffect(() => {
     let ativo = true;
     Promise.all([loadDataset(), loadReforma(), loadMarcoLegal()]).then(([d, ref, m]) => {
@@ -1251,6 +1274,32 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   // ---------------------------------------------------------------------------
   return (
     <section className="painel-precificacao" aria-label="Painel de Precificação e Margens">
+      {empresaAtiva && (
+        <div
+          style={{
+            background: 'var(--panel)',
+            border: '1px solid #3b82f6',
+            borderRadius: 6,
+            padding: '10px 14px',
+            marginBottom: 16,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: 13,
+            flexWrap: 'wrap',
+            gap: 8,
+          }}
+        >
+          <div>
+            🏢 <b>Empresa Ativa:</b> {empresaAtiva.razaoSocial} &middot; CNPJ:{' '}
+            <span className="mono">{formatarCnpj(empresaAtiva.cnpj)}</span> &middot; UF: <b>{empresaAtiva.uf}</b> &middot; Regime Sincronizado:{' '}
+            <b>{perfilAtivo?.regimeTributario || 'Não configurado'}</b>
+          </div>
+          <span style={{ fontSize: 11, background: '#1e3a5f', color: '#93c5fd', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+            Regime Ativo Conectado
+          </span>
+        </div>
+      )}
       {/* CABEÇALHO EXECUTIVO */}
       <div className="card" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>

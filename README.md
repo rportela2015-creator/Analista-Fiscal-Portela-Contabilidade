@@ -1,13 +1,15 @@
-# Aplicativo_MCM- · Classificador de NCM + Auditoria Fiscal e Precificação
+# Analista Fiscal Portela Contabilidade · v6.0.0
 
+[![Versão](https://img.shields.io/badge/versão-6.0.0-blue.svg)](CHANGELOG.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
 [![Ollama](https://img.shields.io/badge/Ollama-Local%20GPU%20RX%20580-orange.svg)](https://ollama.com/)
-[![Tests](https://img.shields.io/badge/Tests-100%25%20Passing-brightgreen.svg)](#testes-e-garantia-de-qualidade)
+[![Docker Sidecars](https://img.shields.io/badge/Docker-RFB%20RTC%20Sidecars-2496ED.svg)](docker-compose.yml)
+[![Tests](https://img.shields.io/badge/Tests-42%2F42%20Suítes%20(100%25)-brightgreen.svg)](#testes-e-garantia-de-qualidade)
 
-Plataforma integrada de **Inteligência Artificial Soberana, Auditoria Pericial Fiscal e Formação Científica de Preços** desenvolvida para a **Portela Contabilidade**.
+Plataforma integrada de **Inteligência Artificial Soberana, Auditoria Pericial Fiscal, Conciliação com Motores Oficiais da RFB (RTC & DANFSe) e Formação Científica de Preços** desenvolvida para a **Portela Contabilidade**.
 
-O sistema combina a precisão determinística do vocabulário oficial do Siscomex (10.515 NCMs vigentes) com o motor pericial local via Ollama na GPU AMD Radeon RX 580 (Vulkan / ROCm), fallback em nuvem para Google Gemini Cloud (3.8-flash / 3.6-flash), auditoria de entrada de NF-e (Modelo 55) e DANFE (PDF), parametrização de ERP e o motor de precificação multi-regime fundamentado no Marco Legal Brasileiro (NBC TG 16/CPC 16, RIR/2018, LC 87/96, RICMS/PR e Reforma Tributária do Consumo LC 214/2025 e LC 227/2025).
+O sistema combina a precisão determinística do vocabulário oficial do Siscomex (10.515 NCMs vigentes) com o motor pericial local via Ollama na GPU AMD Radeon RX 580 (Vulkan / ROCm), fallback em nuvem para Google Gemini Cloud (3.8-flash / 3.6-flash), auditoria de entrada de NF-e (Modelo 55), auditoria de NFS-e / DPS Nacional (NT 004/007/008/009), geração oficial de DANFSe (Go/Echo), orquestrador causal DAG em 6 etapas, persistência relacional multi-tenant bitemporal no PostgreSQL 17 e motor de precificação multi-regime fundamentado no Marco Legal Brasileiro (NBC TG 16/CPC 16, RIR/2018, LC 87/96, RICMS/PR e Reforma Tributária do Consumo EC 132/2023, LC 214/2025 e LC 227/2025).
 
 > **Aviso de Conformidade Fiscal:** O aplicativo opera como ferramenta pericial de apoio à tomada de decisão contábil e tributária fundamentada. Todas as classificações fiscais, De-Para de CFOP e formações de preço trazem as notas legais, fundamentações normativas e memórias de cálculo auditáveis.
 
@@ -184,14 +186,17 @@ O projeto adota uma política rigorosa de **Definition of Done (DoD)** com teste
   ```bash
   npm test
   ```
-  Executa todas as suítes de testes:
-  - `tests/auditoria.test.mjs`: Testes do motor de auditoria de entrada.
-  - `tests/precificacao.test.mjs`: 32 testes de cálculo de custo real, 4 regimes e margens.
-  - `tests/exportacao-precificacao.test.mjs`: Testes de integridade da exportação HTML e CSV.
-  - `tests/headers.test.mjs`: Validação dos headers de cache e CSP no `next.config.mjs`.
-  - `tests/api-security.test.mjs`: Testes de autenticação, rate limit, limites de 5 MB e magic bytes.
-  - `tests/engine.test.mjs`: Testes do motor BM25 e classificação fiscal.
-  - E mais 18 suítes complementares.
+  Executa todas as 42 suítes oficiais de testes automatizados:
+  - `tests/paridade-rfb-relatorio.test.mjs`: Auditoria de paridade RFB vs. Local e Laudo Pericial Unificado (v6.0.0).
+  - `tests/auditoria-nfse-danfse.test.mjs`: Auditoria pericial de NFS-e/DPS Nacional e geração de DANFSe.
+  - `tests/orquestrador-fiscal-dag.test.mjs`: Orquestrador fiscal causal DAG em 6 etapas.
+  - `tests/persistencia-perfil-bitemporal.test.mjs`: Persistência relacional PostgreSQL 17 e motor bitemporal.
+  - `tests/integracao-rfb-rtc.test.mjs`: Clientes de integração aos sidecars RTC e DANFSe.
+  - `tests/credito-tripartido-decimal.test.mjs`: Camada de precisão DecimalHalfEven e créditos em 3 camadas.
+  - `tests/auditoria-difal-entrada.test.mjs`: Apuração de DIFAL, FECOP e Antecipação PR.
+  - `tests/precificacao.test.mjs`: 32 testes de cálculo de custo real CPC 16, 4 regimes e mark-up.
+  - `tests/api-security.test.mjs`: Autenticação, rate limit, limites de 5 MB, anti-XXE e CSP.
+  - E mais 33 suítes determinísticas complementares.
 
 ---
 

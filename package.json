@@ -12,6 +12,7 @@
     "start": "next start -H 0.0.0.0 -p 3000",
     "typecheck": "tsc --noEmit",
     "test": "node scripts/test.mjs",
+    "db:migrate": "node scripts/db-migrate.mjs",
     "build:reforma": "python3 scripts/baixar_reforma.py && python3 scripts/baixar_is.py && python3 scripts/pipeline.py",
     "reforma": "python3 scripts/baixar_reforma.py",
     "ui:test": "node scripts/ui-smoke.mjs",
@@ -20,9 +21,11 @@
   "dependencies": {
     "@google/genai": "^2.22.0",
     "@types/pdf-parse": "^1.1.5",
+    "decimal.js": "^10.6.0",
     "fast-xml-parser": "^5.11.1",
     "next": "16.3.4",
     "pdf-parse": "^2.4.5",
+    "pg": "^8.23.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zod": "^4.6.7"
@@ -30,6 +33,7 @@
   "devDependencies": {
     "@types/jsdom": "^30.0.0",
     "@types/node": "^22",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "esbuild": "^0.28.2",

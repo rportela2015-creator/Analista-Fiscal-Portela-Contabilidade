@@ -1,5 +1,7 @@
 services:
+  # ----------------------------------------------------------------------------
   # Servidor Principal Next.js (Web / Produção)
+  # ----------------------------------------------------------------------------
   mcm-web:
     build:
       context: .
@@ -11,6 +13,11 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/mcm_db}
+      - RTC_REGIME_REGULAR_URL=${RTC_REGIME_REGULAR_URL:-http://rtc-regime-regular:8080/api}
+      - RTC_SIMPLES_URL=${RTC_SIMPLES_URL:-http://rtc-simples:8082/api}
+      - RTC_DANFSE_URL=${RTC_DANFSE_URL:-http://rtc-danfse:8084}
+      - RTC_MODE=${RTC_MODE:-hybrid_fallback}
       - ENABLE_UPDATE_ROUTE=false
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - OLLAMA_KEEP_ALIVE=5m
@@ -19,14 +26,155 @@ services:
     volumes:
       - ./public/data:/app/public/data:ro
       - ./rules:/app/rules:ro
+    networks:
+      - fiscal_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rtc-regime-regular:
+        condition: service_healthy
+      rtc-simples:
+        condition: service_healthy
+      rtc-danfse:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
 
+  # ----------------------------------------------------------------------------
+  # Banco de Dados Relacional Primário (PostgreSQL 17 Alpine)
+  # Portas NÃO expostas no host (apenas expose: na fiscal_net)
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    container_name: mcm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-mcm_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fiscal_net
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-mcm_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # Init-Container: Gerador e Auditor da Base SQLite Oficial RTC
+  # Executa migrações Flyway e gera /output/rtc-oficial.db + checksum sha256
+  # ----------------------------------------------------------------------------
+  rtc-db-builder:
+    build:
+      context: ./services/rtc-db-builder
+      dockerfile: Dockerfile
+    container_name: mcm-rtc-db-builder
+    restart: "no"
+    volumes:
+      - rtc_sqlite_data:/output
+    networks:
+      - fiscal_net
+
+  # ----------------------------------------------------------------------------
+  # Sidecar RFB: Calculadora RTC - Regime Regular (Java 25 / Spring Boot 4)
+  # Montagem estritamente somente leitura (:ro) do banco SQLite e teto de heap
+  # ----------------------------------------------------------------------------
+  rtc-regime-regular:
+    build:
+      context: ./services/rtc-regime-regular
+      dockerfile: Dockerfile
+    container_name: mcm-rtc-regime-regular
+    restart: unless-stopped
+    environment:
+      - SPRING_PROFILES_ACTIVE=offline
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx768m -XX:+UseG1GC
+      - SPRING_DATASOURCE_URL=jdbc:sqlite:file:/app/calculadora/db/rtc-oficial.db?mode=ro&date_class=TEXT&date_string_format=yyyy-MM-dd
+      - APPLICATION_DB_FILENAME=rtc-oficial.db
+    volumes:
+      - rtc_sqlite_data:/app/calculadora/db:ro
+    networks:
+      - fiscal_net
+    expose:
+      - "8080"
+      - "9101"
+    depends_on:
+      rtc-db-builder:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/api/calculadora/dados-abertos/versao"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ----------------------------------------------------------------------------
+  # Sidecar RFB: Calculadora RTC - Simples Nacional (Java 25 / Spring Boot 4)
+  # Compartilha a base SQLite (:ro) com limite de heap estrito
+  # ----------------------------------------------------------------------------
+  rtc-simples:
+    build:
+      context: ./services/rtc-simples
+      dockerfile: Dockerfile
+    container_name: mcm-rtc-simples
+    restart: unless-stopped
+    environment:
+      - SPRING_PROFILES_ACTIVE=offline
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx768m -XX:+UseG1GC
+      - SPRING_DATASOURCE_URL=jdbc:sqlite:file:/app/calculadora/db/rtc-oficial.db?mode=ro&date_class=TEXT&date_string_format=yyyy-MM-dd
+      - APPLICATION_DB_FILENAME=rtc-oficial.db
+    volumes:
+      - rtc_sqlite_data:/app/calculadora/db:ro
+    networks:
+      - fiscal_net
+    expose:
+      - "8082"
+      - "9103"
+    depends_on:
+      rtc-db-builder:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/api/versao"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ----------------------------------------------------------------------------
+  # Sidecar RFB: Gerador de DANFSe (Go 1.x / Echo v5)
+  # Gera PDF oficial do DANFSe da NFSe RTC
+  # ----------------------------------------------------------------------------
+  rtc-danfse:
+    build:
+      context: ./services/rtc-danfse
+      dockerfile: Dockerfile
+    container_name: mcm-rtc-danfse
+    restart: unless-stopped
+    environment:
+      - SERVER_PORT=8084
+      - LOG_LEVEL=info
+    networks:
+      - fiscal_net
+    expose:
+      - "8084"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8084/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
   # Atualizador Legal Efêmero Sob Demanda (Profile: updater)
   # Execução manual: docker compose --profile updater run --rm mcm-legal-updater
+  # ----------------------------------------------------------------------------
   mcm-legal-updater:
     image: python:3.11-slim
     container_name: mcm-legal-updater
@@ -37,8 +185,20 @@ services:
       - .:/app
       - ./rules:/app/rules
       - ./public/data:/app/public/data
+    networks:
+      - fiscal_net
     command: >
       sh -c "pip install --no-cache-dir requests urllib3 &&
              python scripts/atualizar_marco_legal.py --check &&
              python scripts/pipeline.py &&
              echo '[OK] Atualizacao legal concluida com sucesso.'"
+
+networks:
+  fiscal_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  rtc_sqlite_data:
+    driver: local

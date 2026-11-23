@@ -25,6 +25,13 @@ import {
 import { RegimeTributario, DestinacaoMercadoria } from '@/lib/marco-legal';
 import { auditarDifalNotaEntrada } from '@/lib/engine/difal-pr';
 import type { DiagnosticoDifalEntrada, ResumoDifalNfeEntrada } from '@/lib/types/motor-tributario';
+import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
+import { formatarCnpj } from '@/lib/fiscal/perfil-tributario';
+import type { ResultadoOrquestracaoNfe } from '@/lib/engine/orquestrador-fiscal';
+import type { StatusExtincaoDebitoFornecedor } from '@/lib/fiscal/credito-tributario';
+import { detectarTipoXmlFiscal } from '@/lib/extrator-nfse';
+import type { ResultadoAuditoriaNfse } from '@/lib/extrator-nfse-types';
+import { PainelNfseDanfse } from './PainelNfseDanfse';
 
 /* =========================================================================
  * CONTRATOS DE TIPOS PARA A ETAPA 2 (M2 ↔ M3)
@@ -101,11 +108,23 @@ export function adaptAuditResultForERP(
 export default function AuditoriaEntrada() {
   // ---- Hooks chamados estritamente no topo para cumprir scripts/hookcheck.mjs ----
 
+  // 0. Sincronização com Empresa Ativa
+  const { empresaAtiva, perfilAtivo } = useEmpresaAtiva();
+
   // 1. Configuração e Arquivo de Entrada
   const [file, setFile] = useState<File | null>(null);
   const [regime, setRegime] = useState('Simples Nacional');
   const [finalidade, setFinalidade] = useState('Revenda/Comercialização');
   const [autoSync, setAutoSync] = useState(true);
+
+  // 1.0 Estado da NFS-e / DPS Padrão Nacional (Sub-Etapa 19.6)
+  const [resultadoNfse, setResultadoNfse] = useState<ResultadoAuditoriaNfse | null>(null);
+
+  // 1.1 Estados da Orquestração Fiscal Unificada (DAG - Sub-etapa 19.5)
+  const [statusExtincaoRtc, setStatusExtincaoRtc] = useState<StatusExtincaoDebitoFornecedor>('EXTINTO_SPLIT');
+  const [isOrquestrando, setIsOrquestrando] = useState(false);
+  const [resultadoOrquestracao, setResultadoOrquestracao] = useState<ResultadoOrquestracaoNfe | null>(null);
+  const [orquestracaoErro, setOrquestracaoErro] = useState<string | null>(null);
 
   // 2. Estados da Etapa 1 (Extração Determinística Imediata)
   const [isExtracting, setIsExtracting] = useState(false);
@@ -150,11 +169,28 @@ export default function AuditoriaEntrada() {
     else setDestinacaoPadrao('comercializacao');
   }, [finalidade]);
 
+  // Sincronização automática do Regime e Parâmetros com a Empresa Ativa
+  React.useEffect(() => {
+    if (perfilAtivo) {
+      if (perfilAtivo.regimeTributario === 'SIMPLES_NACIONAL') {
+        setRegime('Simples Nacional');
+      } else if (perfilAtivo.regimeTributario === 'LUCRO_PRESUMIDO' || perfilAtivo.regimeTributario === 'LUCRO_REAL') {
+        setRegime('Regime Regular');
+      } else if (perfilAtivo.regimeTributario === 'MEI') {
+        setRegime('Simples Nacional');
+      }
+
+      if (perfilAtivo.beneficiosParana?.diferimentoParcialArt28 !== undefined) {
+        setIncluirIbsCbsBcIcms(Boolean(perfilAtivo.beneficiosParana.diferimentoParcialArt28));
+      }
+    }
+  }, [perfilAtivo]);
+
   // ─── Handlers da Etapa 1 (Extração Determinística) ──────────────────────────
   const handleFileUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
-      setExtractionError('Selecione um arquivo XML ou PDF da NF-e.');
+      setExtractionError('Selecione um arquivo XML ou PDF da NF-e / NFS-e.');
       return;
     }
 
@@ -162,6 +198,42 @@ export default function AuditoriaEntrada() {
     setExtractionError(null);
     setExtractedInvoice(null);
     setAuditResult(null);
+    setResultadoNfse(null);
+
+    // Auto-detecção de tipo de documento para arquivos XML (NF-e vs NFS-e / DPS Nacional)
+    if (file.name.toLowerCase().endsWith('.xml')) {
+      try {
+        const textContent = await file.text();
+        const tipoXml = detectarTipoXmlFiscal(textContent);
+
+        if (tipoXml === 'NFSE_NACIONAL' || tipoXml === 'DPS_NACIONAL') {
+          const respNfse = await fetch('/api/fiscal/auditar-nfse', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              xml: textContent,
+              empresaId: empresaAtiva?.id,
+              statusExtincaoRtc,
+              persistir: true,
+            }),
+          });
+
+          if (!respNfse.ok) {
+            const errNfseJson = await respNfse.json().catch(() => ({}));
+            throw new Error(errNfseJson.mensagem || `Erro HTTP ${respNfse.status} ao processar NFS-e.`);
+          }
+
+          const resultadoNfseAudit: ResultadoAuditoriaNfse = await respNfse.json();
+          setResultadoNfse(resultadoNfseAudit);
+          setIsExtracting(false);
+          return;
+        }
+      } catch (errNfse: any) {
+        setExtractionError(errNfse.message || 'Falha ao processar NFS-e Padrão Nacional.');
+        setIsExtracting(false);
+        return;
+      }
+    }
 
     const formData = new FormData();
     formData.append('file', file);
@@ -266,10 +338,76 @@ export default function AuditoriaEntrada() {
   const handleResetToUpload = () => {
     setExtractedInvoice(null);
     setAuditResult(null);
+    setResultadoOrquestracao(null);
     setSelectedIndices(new Set());
     setExtractionError(null);
     setAuditError(null);
+    setOrquestracaoErro(null);
     setFile(null);
+  };
+
+  const handleExecutarOrquestracaoCompleta = async () => {
+    if (!file) {
+      setExtractionError('Selecione um arquivo XML da NF-e para a orquestração completa.');
+      return;
+    }
+
+    setIsOrquestrando(true);
+    setOrquestracaoErro(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (empresaAtiva?.id) formData.append('empresaId', empresaAtiva.id);
+      formData.append('statusExtincaoRtc', statusExtincaoRtc);
+      formData.append('destinacaoPadrao', destinacaoPadrao);
+      formData.append('persistir', 'true');
+      formData.append('validarGruposXmlRtc', 'true');
+
+      const res = await fetch('/api/fiscal/orquestrar-nfe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.sucesso) {
+        throw new Error(data.mensagem || 'Falha ao orquestrar auditoria da NF-e.');
+      }
+
+      setResultadoOrquestracao(data.resultado);
+
+      // Se a extração já estiver pronta, sincroniza o extrato
+      if (!extractedInvoice) {
+        await handleFileUpload({ preventDefault: () => {} } as any);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setOrquestracaoErro(msg);
+    } finally {
+      setIsOrquestrando(false);
+    }
+  };
+
+  const handleEnviarCustoEfetivoParaPrecificacao = () => {
+    if (!resultadoOrquestracao || !extractedInvoice || !extractedInvoice.itens) return;
+    const itensParaEnviar = extractedInvoice.itens.map((it, idx) => {
+      const precItem = converterItemExtracaoParaPrecificacao(it);
+      const itemCredito = resultadoOrquestracao.etapas.creditos.itensCredito[idx];
+      if (itemCredito) {
+        const creditoEfetivado = itemCredito.classificacao.creditoEfetivadoCusto.total;
+        const cmvLiquidoItem = Math.max(0.01, precItem.valorBrutoEntrada - creditoEfetivado);
+        precItem.valorBrutoEntrada = cmvLiquidoItem;
+      }
+      return precItem;
+    });
+
+    const evt = new CustomEvent('navegar-aba', {
+      detail: {
+        tab: 'precificar',
+        itens: itensParaEnviar,
+      },
+    });
+    window.dispatchEvent(evt);
   };
 
   const handleReturnToSelection = () => {
@@ -370,6 +508,8 @@ export default function AuditoriaEntrada() {
         ...auditResult,
         itens: itensEnriquecidos,
         resumoDifalEntrada: apuracaoDifalNota?.resumoDifalNota,
+        orquestracaoDag: resultadoOrquestracao || undefined,
+        sha256: (extractedInvoice as any)?.sha256 || resultadoOrquestracao?.sha256Xml || undefined,
         format,
       };
 
@@ -519,7 +659,45 @@ export default function AuditoriaEntrada() {
       {/* =========================================================================
        * ETAPA 1: Formulário de Upload e Extração Determinística Imediata
        * ========================================================================= */}
-      {!extractedInvoice && (
+      {empresaAtiva && (
+        <div
+          style={{
+            background: 'var(--panel)',
+            border: '1px solid #3b82f6',
+            borderRadius: 6,
+            padding: '10px 14px',
+            marginBottom: 16,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: 13,
+            flexWrap: 'wrap',
+            gap: 8,
+          }}
+        >
+          <div>
+            🏢 <b>Empresa Ativa:</b> {empresaAtiva.razaoSocial} &middot; CNPJ:{' '}
+            <span className="mono">{formatarCnpj(empresaAtiva.cnpj)}</span> &middot; UF: <b>{empresaAtiva.uf}</b> &middot; Regime:{' '}
+            <b>{perfilAtivo?.regimeTributario || 'Não configurado'}</b>
+          </div>
+          <span style={{ fontSize: 11, background: '#1e3a5f', color: '#93c5fd', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
+            Perfil Bitemporal Sincronizado
+          </span>
+        </div>
+      )}
+
+      {resultadoNfse && (
+        <PainelNfseDanfse
+          resultado={resultadoNfse}
+          onVoltarParaUpload={() => {
+            setResultadoNfse(null);
+            setFile(null);
+          }}
+          empresaAtivaNome={empresaAtiva?.razaoSocial}
+        />
+      )}
+
+      {!extractedInvoice && !resultadoNfse && (
         <form onSubmit={handleFileUpload}>
           <label className="field">
             <span>Arquivo da Nota Fiscal (.xml, .pdf)</span>
@@ -548,6 +726,19 @@ export default function AuditoriaEntrada() {
             </select>
           </label>
 
+          <label className="field">
+            <span>Status de Extinção no Fornecedor (LC 214/2025 Art. 47)</span>
+            <select
+              value={statusExtincaoRtc}
+              onChange={(e) => setStatusExtincaoRtc(e.target.value as StatusExtincaoDebitoFornecedor)}
+            >
+              <option value="EXTINTO_SPLIT">Split Payment Extinto (Apropriação Imediata de Crédito)</option>
+              <option value="EXTINTO_PAGAMENTO">Extinto por Pagamento Regular (Débito Liquidado)</option>
+              <option value="AGUARDANDO_EXTINCAO">Aguardando Extinção (Crédito Retido pelo Art. 47)</option>
+              <option value="SIMULACAO_PROJETADA">Simulação Projetada (Projeção Ampla de Cenário)</option>
+            </select>
+          </label>
+
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontSize: 13, cursor: 'pointer' }}>
             <input
               type="checkbox"
@@ -557,12 +748,29 @@ export default function AuditoriaEntrada() {
             <span>⚡ Sincronizar Automaticamente com Precificação e ERP ao Auditar XML</span>
           </label>
 
-          <div style={{ marginTop: 16 }}>
-            <button type="submit" disabled={isExtracting || !file} className="btn primary">
-              {isExtracting ? 'Extraindo Itens da NF-e (< 200ms)...' : 'Auditar Documento (Extrair Itens)'}
+          <div style={{ marginTop: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button type="submit" disabled={isExtracting || isOrquestrando || !file} className="btn primary">
+              {isExtracting ? 'Extraindo Itens (< 200ms)...' : 'Auditar Documento (Extrair Itens)'}
+            </button>
+            <button
+              type="button"
+              onClick={handleExecutarOrquestracaoCompleta}
+              disabled={isExtracting || isOrquestrando || !file}
+              className="btn primary"
+              style={{ background: '#2563eb', borderColor: '#2563eb', fontWeight: 600 }}
+              title="Executa em DAG: Extração + Motor Oficial RFB RTC + ICMS/PR v5.0.0 + Créditos 3 Camadas + 4 Regimes + Persistência"
+            >
+              {isOrquestrando ? '⚡ Executando Orquestrador DAG...' : '⚡ Executar Orquestração Completa (RFB RTC + ICMS/PR + Créditos + 4 Regimes)'}
             </button>
           </div>
         </form>
+      )}
+
+      {orquestracaoErro && (
+        <div className="note error" style={{ marginTop: 20 }}>
+          <div className="t">Erro na orquestração fiscal da NF-e</div>
+          <div className="x">{orquestracaoErro}</div>
+        </div>
       )}
 
       {isExtracting && (
@@ -608,6 +816,318 @@ export default function AuditoriaEntrada() {
               <div><strong>Valor Total NF:</strong> {extractedInvoice.resumoFinanceiro?.vNF?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</div>
             </div>
           </div>
+
+          {/* =========================================================================
+           * PAINEL INTEGRADO DA ORQUESTRAÇÃO FISCAL DAG (SUB-ETAPA 19.5)
+           * ========================================================================= */}
+          {resultadoOrquestracao && (
+            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* BLOCO 1: STATUS RFB RTC & VALIDAÇÃO XML */}
+              <div
+                className="card"
+                style={{
+                  background: 'var(--panel)',
+                  border: '1px solid #3b82f6',
+                  borderRadius: 8,
+                  padding: 14,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>🏛️</span>
+                    <strong style={{ fontSize: 14 }}>Motor Oficial RFB RTC & Reforma Tributária</strong>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        background:
+                          resultadoOrquestracao.etapas.rtc.origemCalculoRtc === 'OFICIAL_RFB'
+                            ? '#1e3a1e'
+                            : '#3a2a1e',
+                        color:
+                          resultadoOrquestracao.etapas.rtc.origemCalculoRtc === 'OFICIAL_RFB'
+                            ? '#6ee7b7'
+                            : '#fcd34d',
+                        border: `1px solid ${
+                          resultadoOrquestracao.etapas.rtc.origemCalculoRtc === 'OFICIAL_RFB'
+                            ? '#059669'
+                            : '#d97706'
+                        }`,
+                      }}
+                    >
+                      {resultadoOrquestracao.etapas.rtc.origemCalculoRtc === 'OFICIAL_RFB'
+                        ? 'OFICIAL RFB'
+                        : 'FALLBACK LOCAL ESTIMADO'}
+                    </span>
+                    {resultadoOrquestracao.etapas.rtc.validacaoXml?.executada && (
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          background:
+                            resultadoOrquestracao.etapas.rtc.validacaoXml.status === 'VALIDO'
+                              ? '#1e3a1e'
+                              : resultadoOrquestracao.etapas.rtc.validacaoXml.status === 'INVALIDO'
+                              ? '#3a1e1e'
+                              : '#3a2a1e',
+                          color:
+                            resultadoOrquestracao.etapas.rtc.validacaoXml.status === 'VALIDO'
+                              ? '#6ee7b7'
+                              : resultadoOrquestracao.etapas.rtc.validacaoXml.status === 'INVALIDO'
+                              ? '#fca5a5'
+                              : '#fcd34d',
+                        }}
+                      >
+                        XML: {resultadoOrquestracao.etapas.rtc.validacaoXml.status}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                    Motor: <b>{resultadoOrquestracao.etapas.rtc.motorRtcUtilizado}</b> · Latência:{' '}
+                    <b>{resultadoOrquestracao.etapas.rtc.duracaoRtcMs}ms</b>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                    gap: 10,
+                    marginTop: 10,
+                    fontSize: 12,
+                  }}
+                >
+                  <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
+                    <div style={{ color: 'var(--muted)' }}>IBS Estadual (UF)</div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>
+                      R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIbsUf.toFixed(2)}
+                    </div>
+                  </div>
+                  <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
+                    <div style={{ color: 'var(--muted)' }}>IBS Municipal</div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>
+                      R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIbsMun.toFixed(2)}
+                    </div>
+                  </div>
+                  <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
+                    <div style={{ color: 'var(--muted)' }}>CBS Federal</div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>
+                      R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vCbs.toFixed(2)}
+                    </div>
+                  </div>
+                  <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
+                    <div style={{ color: 'var(--muted)' }}>Imposto Seletivo (IS)</div>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>
+                      R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIs.toFixed(2)}
+                    </div>
+                  </div>
+                  <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
+                    <div style={{ color: 'var(--muted)' }}>Total IVA Dual</div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#3b82f6' }}>
+                      R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIvaTotal.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOCO 2: AUDITORIA DE CRÉDITOS EM 3 CAMADAS */}
+              <div
+                className="card"
+                style={{
+                  background: 'var(--panel)',
+                  border: '1px solid var(--line)',
+                  borderRadius: 8,
+                  padding: 14,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <strong style={{ fontSize: 14 }}>⚖️ Auditoria Tripartida de Créditos de Entrada</strong>
+                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+                    Status Extinção: <b>{resultadoOrquestracao.etapas.creditos.statusExtincaoFornecedor}</b>
+                  </span>
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', textAlign: 'right' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--line)', color: 'var(--muted)' }}>
+                        <th style={{ textAlign: 'left', padding: '6px 8px' }}>Tributo</th>
+                        <th style={{ padding: '6px 8px' }}>Camada 1: Destacado no XML</th>
+                        <th style={{ padding: '6px 8px' }}>Camada 2: Admitido pela Regra</th>
+                        <th style={{ padding: '6px 8px' }}>Camada 3: Efetivado no CMV (CPC 16)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>ICMS Próprio</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.icms.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.icms.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.icms.toFixed(2)}</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>PIS / PASEP</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.pis.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.pis.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.pis.toFixed(2)}</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>COFINS</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.cofins.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.cofins.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.cofins.toFixed(2)}</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>IPI</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.ipi.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.ipi.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.ipi.toFixed(2)}</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>IBS</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.ibs.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.ibs.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.ibs.toFixed(2)}</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>CBS</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.cbs.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.cbs.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.cbs.toFixed(2)}</td>
+                      </tr>
+                      <tr style={{ fontWeight: 700, borderTop: '2px solid var(--line)' }}>
+                        <td style={{ textAlign: 'left', padding: '8px' }}>TOTAL DE CRÉDITOS</td>
+                        <td style={{ padding: '8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.total.toFixed(2)}</td>
+                        <td style={{ padding: '8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.total.toFixed(2)}</td>
+                        <td style={{ padding: '8px', color: '#10b981' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.total.toFixed(2)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {resultadoOrquestracao.etapas.creditos.retidoAguardandoExtincaoIbsCbs.total > 0 && (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      padding: '8px 12px',
+                      borderRadius: 4,
+                      background: '#451a03',
+                      color: '#fcd34d',
+                      fontSize: 12,
+                      border: '1px solid #b45309',
+                    }}
+                  >
+                    ⚠️ <b>Atenção (Art. 47 LC 214/2025):</b> R${' '}
+                    {resultadoOrquestracao.etapas.creditos.retidoAguardandoExtincaoIbsCbs.total.toFixed(2)} em créditos de IBS/CBS foram retidos
+                    e NÃO abatem o CMV de imediato por estarem com status <b>AGUARDANDO_EXTINCAO</b> do débito pelo fornecedor.
+                  </div>
+                )}
+              </div>
+
+              {/* BLOCO 3: COMPARATIVO DOS 4 REGIMES TRIBUTÁRIOS */}
+              <div
+                className="card"
+                style={{
+                  background: 'var(--panel)',
+                  border: '1px solid #10b981',
+                  borderRadius: 8,
+                  padding: 14,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                  <div>
+                    <strong style={{ fontSize: 14 }}>📊 Comparativo Tributário dos 4 Regimes (Custo Aterrissado & Preço)</strong>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                      Calculado com precisão numérica ADR003 HALF_EVEN e mark-up divisor considerando desembolsos e créditos efetivos.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleEnviarCustoEfetivoParaPrecificacao}
+                    className="btn primary"
+                    style={{ background: '#059669', borderColor: '#059669', fontSize: 12, fontWeight: 700 }}
+                  >
+                    💰 Enviar Custo Efetivo para Precificação (Camada 3 CPC 16)
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+                  {(
+                    ['SIMPLES_TRADICIONAL', 'SIMPLES_HIBRIDO_2027', 'LUCRO_PRESUMIDO', 'LUCRO_REAL'] as const
+                  ).map((key) => {
+                    const c = resultadoOrquestracao.etapas.custosEPrecificacao.comparativoRegimes[key];
+                    if (!c) return null;
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          background: 'var(--bg)',
+                          border: `1px solid ${c.melhorCenario ? '#10b981' : 'var(--line)'}`,
+                          borderRadius: 6,
+                          padding: 12,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 6,
+                          position: 'relative',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 700, fontSize: 13, color: c.melhorCenario ? '#6ee7b7' : 'var(--text)' }}>
+                            {c.nomeExibicao}
+                          </span>
+                          {c.melhorCenario && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 800,
+                                background: '#064e3b',
+                                color: '#a7f3d0',
+                                border: '1px solid #059669',
+                                padding: '1px 6px',
+                                borderRadius: 3,
+                              }}
+                            >
+                              MAIS ECONÔMICO
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ fontSize: 11, color: 'var(--muted)' }}>{c.justificativa}</div>
+
+                        <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--muted)' }}>CMV Líquido:</span>
+                            <b>R$ {c.cmvLiquidoTotal.toFixed(2)}</b>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--muted)' }}>Créditos Entrada:</span>
+                            <span style={{ color: '#10b981' }}>R$ {c.creditosAproveitados.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--muted)' }}>Tributos Saída:</span>
+                            <span>R$ {c.tributosSaidaEstimados.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--line)', paddingTop: 4, marginTop: 2 }}>
+                            <span>Preço Sugerido:</span>
+                            <b style={{ color: c.melhorCenario ? '#6ee7b7' : '#3b82f6', fontSize: 13 }}>
+                              R$ {c.precoVendaSugerido.toFixed(2)}
+                            </b>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)' }}>
+                            <span>Carga Efetiva:</span>
+                            <span>{c.cargaTributariaEfetivaPct.toFixed(2)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Resumo Analítico de Custo e Tributos da NF-e (Etapa 3 / CPC 16 R1) */}
           {consolidadoCPC16 && (

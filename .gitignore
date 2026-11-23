@@ -14,3 +14,11 @@ data/raw/reforma/*.part.json
 
 .env.local
 .env*.local
+
+# Serviços RFB Upstream e Dados SQLite Locais
+services/*/.upstream
+services/**/.upstream
+services/rtc-db-builder/output/
+services/rtc-db-builder/sql/
+*.db
+*.db.sha256

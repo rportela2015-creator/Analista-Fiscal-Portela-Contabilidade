@@ -7,3 +7,5 @@ export * from './matriz-icms-pr';
 export * from './difal-pr';
 export * from './icms-pr-regras';
 export * from './precificacao-pr-2027';
+export * from './orquestrador-fiscal';
+export * from '../fiscal/paridade-rfb';

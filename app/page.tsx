@@ -9,9 +9,11 @@ import Parametrizar from '@/components/Parametrizar';
 import ReformaTab from '@/components/Reforma';
 import AuditoriaEntrada from '@/components/AuditoriaEntrada';
 import Precificar from '@/components/Precificar';
+import CadastroEmpresas from '@/components/CadastroEmpresas';
 import type { PrecificacaoItemInput, ParametrizacaoItemInput } from '@/lib/extrator-nfe-types';
 
 const TABS = [
+  { id: 'empresas', nome: '0 · Clientes & Perfis', hint: 'gestão de empresas, CNPJs, perfis tributários bitemporais e status dos sidecars' },
   { id: 'classificar', nome: '1 · Classificar produto', hint: 'descrição → candidatos de NCM com RGI, tributos e parametrização' },
   { id: 'lote', nome: '2 · Lote (CSV)', hint: 'centenas de itens de uma vez, com triagem por confiança' },
   { id: 'consultar', nome: '3 · Consultar NCM', hint: 'busca na tabela oficial por código, palavra ou capítulo' },
@@ -132,6 +134,7 @@ export default function Home() {
           </div>
         </div>
 
+        {tab === 'empresas' && <CadastroEmpresas />}
         {tab === 'classificar' && <Classificar />}
         {tab === 'lote' && <Lote />}
         {tab === 'consultar' && <Consultar />}
