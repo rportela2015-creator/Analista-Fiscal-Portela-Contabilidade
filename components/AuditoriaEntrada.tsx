@@ -157,34 +157,40 @@ export default function AuditoriaEntrada() {
   const [destinacaoPorItem, setDestinacaoPorItem] = useState<Record<string | number, 'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado'>>({});
 
   React.useEffect(() => {
-    if (regime.toLowerCase().includes('simples')) setCrtDestinatario('1');
-    else if (regime.toLowerCase().includes('mei')) setCrtDestinatario('4');
-    else setCrtDestinatario('3');
+    const novoCrt = regime.toLowerCase().includes('simples') ? '1' : regime.toLowerCase().includes('mei') ? '4' : '3';
+    setCrtDestinatario((prev) => (prev === novoCrt ? prev : novoCrt));
   }, [regime]);
 
   React.useEffect(() => {
-    if (finalidade.toLowerCase().includes('ind')) setDestinacaoPadrao('industrializacao');
-    else if (finalidade.toLowerCase().includes('ativo')) setDestinacaoPadrao('ativo_imobilizado');
-    else if (finalidade.toLowerCase().includes('consumo') || finalidade.toLowerCase().includes('uso')) setDestinacaoPadrao('uso_consumo');
-    else setDestinacaoPadrao('comercializacao');
+    let novaDest: 'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado' = 'comercializacao';
+    if (finalidade.toLowerCase().includes('ind')) novaDest = 'industrializacao';
+    else if (finalidade.toLowerCase().includes('ativo')) novaDest = 'ativo_imobilizado';
+    else if (finalidade.toLowerCase().includes('consumo') || finalidade.toLowerCase().includes('uso')) novaDest = 'uso_consumo';
+    setDestinacaoPadrao((prev) => (prev === novaDest ? prev : novaDest));
   }, [finalidade]);
 
-  // Sincronização automática do Regime e Parâmetros com a Empresa Ativa
-  React.useEffect(() => {
-    if (perfilAtivo) {
-      if (perfilAtivo.regimeTributario === 'SIMPLES_NACIONAL') {
-        setRegime('Simples Nacional');
-      } else if (perfilAtivo.regimeTributario === 'LUCRO_PRESUMIDO' || perfilAtivo.regimeTributario === 'LUCRO_REAL') {
-        setRegime('Regime Regular');
-      } else if (perfilAtivo.regimeTributario === 'MEI') {
-        setRegime('Simples Nacional');
-      }
+  // Sincronização automática do Regime e Parâmetros com a Empresa Ativa via escalares
+  const perfilRegimeTributario = perfilAtivo?.regimeTributario;
+  const perfilDiferimentoArt28 = perfilAtivo?.beneficiosParana?.diferimentoParcialArt28;
 
-      if (perfilAtivo.beneficiosParana?.diferimentoParcialArt28 !== undefined) {
-        setIncluirIbsCbsBcIcms(Boolean(perfilAtivo.beneficiosParana.diferimentoParcialArt28));
+  React.useEffect(() => {
+    if (perfilRegimeTributario) {
+      let novoRegime = '';
+      if (perfilRegimeTributario === 'SIMPLES_NACIONAL' || perfilRegimeTributario === 'MEI') {
+        novoRegime = 'Simples Nacional';
+      } else if (perfilRegimeTributario === 'LUCRO_PRESUMIDO' || perfilRegimeTributario === 'LUCRO_REAL') {
+        novoRegime = 'Regime Regular';
+      }
+      if (novoRegime) {
+        setRegime((prev) => (prev === novoRegime ? prev : novoRegime));
       }
     }
-  }, [perfilAtivo]);
+
+    if (perfilDiferimentoArt28 !== undefined) {
+      const novoIncluir = Boolean(perfilDiferimentoArt28);
+      setIncluirIbsCbsBcIcms((prev) => (prev === novoIncluir ? prev : novoIncluir));
+    }
+  }, [perfilRegimeTributario, perfilDiferimentoArt28]);
 
   // ─── Handlers da Etapa 1 (Extração Determinística) ──────────────────────────
   const handleFileUpload = async (e: React.FormEvent) => {

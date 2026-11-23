@@ -166,25 +166,28 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   // ---------------------------------------------------------------------------
   // 2. EFEITOS DE CARGA E SINCRONIZAÇÃO
   // ---------------------------------------------------------------------------
-  useEffect(() => {
-    if (perfilAtivo) {
-      if (perfilAtivo.regimeTributario === 'SIMPLES_NACIONAL') {
-        if (perfilAtivo.simplesOptanteHibrido2027) {
-          setRegime('simples_hibrido');
-        } else {
-          setRegime('simples');
-        }
-      } else if (perfilAtivo.regimeTributario === 'LUCRO_PRESUMIDO') {
-        setRegime('presumido');
-      } else if (perfilAtivo.regimeTributario === 'LUCRO_REAL') {
-        setRegime('real');
-      }
+  const perfilRegimeTributario = perfilAtivo?.regimeTributario;
+  const perfilSimplesHibrido2027 = perfilAtivo?.simplesOptanteHibrido2027;
+  const perfilRegimeEspecialSefaPr = perfilAtivo?.beneficiosParana?.regimeEspecialSefaPr;
+  const perfilDiferimentoArt28 = perfilAtivo?.beneficiosParana?.diferimentoParcialArt28;
 
-      if (perfilAtivo.beneficiosParana?.regimeEspecialSefaPr?.includes('48/2026') || perfilAtivo.beneficiosParana?.diferimentoParcialArt28) {
-        setIncluirIbsCbsBcIcms(true);
+  useEffect(() => {
+    if (perfilRegimeTributario) {
+      let novoRegime: typeof regime = 'simples';
+      if (perfilRegimeTributario === 'SIMPLES_NACIONAL') {
+        novoRegime = perfilSimplesHibrido2027 ? 'simples_hibrido' : 'simples';
+      } else if (perfilRegimeTributario === 'LUCRO_PRESUMIDO') {
+        novoRegime = 'presumido';
+      } else if (perfilRegimeTributario === 'LUCRO_REAL') {
+        novoRegime = 'real';
+      }
+      setRegime((prev) => (prev === novoRegime ? prev : novoRegime));
+
+      if (perfilRegimeEspecialSefaPr?.includes('48/2026') || perfilDiferimentoArt28) {
+        setIncluirIbsCbsBcIcms((prev) => (prev ? prev : true));
       }
     }
-  }, [perfilAtivo]);
+  }, [perfilRegimeTributario, perfilSimplesHibrido2027, perfilRegimeEspecialSefaPr, perfilDiferimentoArt28]);
 
   useEffect(() => {
     let ativo = true;
@@ -224,15 +227,43 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   useEffect(() => {
     const itemSel = itens[itemIndex];
     if (itemSel) {
-      if (itemSel.destinacao) setDestinacao(itemSel.destinacao);
-      if (itemSel.crtEmitente) setCrtEmitente(itemSel.crtEmitente);
-      if (itemSel.origemMercadoria) setOrigemMercadoria(itemSel.origemMercadoria);
-      if (itemSel.pisCofinsMonofasico !== undefined) setPisCofinsMonofasico(itemSel.pisCofinsMonofasico);
-      if (itemSel.baseReduzidaSaidaPct !== undefined) setBaseReduzidaSaidaPct(itemSel.baseReduzidaSaidaPct);
-      if (itemSel.tipoEstabelecimento) setTipoEstabelecimento(itemSel.tipoEstabelecimento);
-      if ((itemSel as any).ufOrigem) setUfOrigem((itemSel as any).ufOrigem);
-      if ((itemSel as any).ufDestino) setUfDestino((itemSel as any).ufDestino);
-      if (itemSel.modFrete === '0' || itemSel.modFrete === '1') setModFrete(itemSel.modFrete);
+      if (itemSel.destinacao) {
+        const d = itemSel.destinacao;
+        setDestinacao((prev) => (prev === d ? prev : d));
+      }
+      if (itemSel.crtEmitente) {
+        const c = itemSel.crtEmitente;
+        setCrtEmitente((prev) => (prev === c ? prev : c));
+      }
+      if (itemSel.origemMercadoria) {
+        const o = itemSel.origemMercadoria;
+        setOrigemMercadoria((prev) => (prev === o ? prev : o));
+      }
+      if (itemSel.pisCofinsMonofasico !== undefined) {
+        const p = itemSel.pisCofinsMonofasico;
+        setPisCofinsMonofasico((prev) => (prev === p ? prev : p));
+      }
+      if (itemSel.baseReduzidaSaidaPct !== undefined) {
+        const b = itemSel.baseReduzidaSaidaPct;
+        setBaseReduzidaSaidaPct((prev) => (prev === b ? prev : b));
+      }
+      if (itemSel.tipoEstabelecimento) {
+        const t = itemSel.tipoEstabelecimento;
+        setTipoEstabelecimento((prev) => (prev === t ? prev : t));
+      }
+      const itemAny = itemSel as any;
+      if (itemAny.ufOrigem) {
+        const uo = itemAny.ufOrigem;
+        setUfOrigem((prev) => (prev === uo ? prev : uo));
+      }
+      if (itemAny.ufDestino) {
+        const ud = itemAny.ufDestino;
+        setUfDestino((prev) => (prev === ud ? prev : ud));
+      }
+      if (itemSel.modFrete === '0' || itemSel.modFrete === '1') {
+        const m = itemSel.modFrete;
+        setModFrete((prev) => (prev === m ? prev : m));
+      }
     }
   }, [itens, itemIndex]);
 

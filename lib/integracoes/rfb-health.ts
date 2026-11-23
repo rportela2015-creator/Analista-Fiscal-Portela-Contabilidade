@@ -110,16 +110,27 @@ export function getCircuitBreakerStatus(servico: ServicoRfb): CircuitBreakerReco
 }
 
 /**
+ * Detecta se o erro decorre de falha de DNS ou recusa de conexão.
+ */
+export function isDnsOrConnectionRefused(err: any): boolean {
+  if (!err) return false;
+  const code = err.code || err.cause?.code;
+  if (code === 'ENOTFOUND' || code === 'ECONNREFUSED') return true;
+  const msg = `${err.message || ''} ${err.cause?.message || ''}`;
+  return msg.includes('ENOTFOUND') || msg.includes('ECONNREFUSED');
+}
+
+/**
  * Atualiza o circuit breaker após falha.
  */
-function registrarFalhaCircuitBreaker(servico: ServicoRfb): CircuitBreakerState {
+export function registrarFalhaCircuitBreaker(servico: ServicoRfb, imediato = false): CircuitBreakerState {
   const cb = circuitBreakers[servico];
   const now = Date.now();
 
   cb.lastFailureTime = now;
   cb.consecutiveFailures += 1;
 
-  if (cb.state === 'HALF_OPEN' || cb.consecutiveFailures >= CB_FAILURE_THRESHOLD) {
+  if (imediato || cb.state === 'HALF_OPEN' || cb.consecutiveFailures >= CB_FAILURE_THRESHOLD) {
     cb.state = 'OPEN';
   }
 
@@ -161,9 +172,11 @@ export function getRfbConfig() {
 export async function executarChamadaRfb<T>(
   servico: ServicoRfb,
   fn: (signal: AbortSignal) => Promise<Response>,
-  extractor?: (res: Response) => Promise<T>
+  extractor?: (res: Response) => Promise<T>,
+  options?: { timeoutMs?: number }
 ): Promise<{ data: T; duracaoMs: number; headers: Headers }> {
   const cfg = getRfbConfig();
+  const effectiveTimeoutMs = options?.timeoutMs ?? cfg.timeoutMs;
   const cb = getCircuitBreakerStatus(servico);
 
   if (cb.state === 'OPEN') {
@@ -178,7 +191,7 @@ export async function executarChamadaRfb<T>(
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), cfg.timeoutMs);
+  const timeoutId = setTimeout(() => controller.abort(), effectiveTimeoutMs);
   const inicio = performance.now();
 
   try {
@@ -244,11 +257,13 @@ export async function executarChamadaRfb<T>(
     }
 
     // Erros de rede (fetch failed, timeout, conexão recusada)
-    registrarFalhaCircuitBreaker(servico);
+    // Se for ENOTFOUND ou ECONNREFUSED, trip imediato para OPEN
+    const isFastFail = isDnsOrConnectionRefused(err);
+    registrarFalhaCircuitBreaker(servico, isFastFail);
 
     const isTimeout = err.name === 'AbortError' || controller.signal.aborted;
     const mensagem = isTimeout
-      ? `Timeout de integração (${cfg.timeoutMs}ms) excedido ao comunicar com ${servico}`
+      ? `Timeout de integração (${effectiveTimeoutMs}ms) excedido ao comunicar com ${servico}`
       : `Erro de comunicação de rede com ${servico}: ${err.message || 'Desconhecido'}`;
 
     throw new ErroIntegracaoRfb({
@@ -270,19 +285,26 @@ export async function executarChamadaRfb<T>(
  */
 export async function consultarStatusServicosRfb() {
   const cfg = getRfbConfig();
+  const PROBE_TIMEOUT_MS = parseInt(process.env.RTC_PROBE_TIMEOUT_MS || '1500', 10);
 
   const [regularRes, simplesRes, danfseRes] = await Promise.allSettled([
     executarChamadaRfb(
       'rtc-regime-regular',
-      (signal) => fetch(`${cfg.regimeRegularUrl}/api/calculadora/dados-abertos/versao`, { signal, method: 'GET' })
+      (signal) => fetch(`${cfg.regimeRegularUrl}/api/calculadora/dados-abertos/versao`, { signal, method: 'GET' }),
+      undefined,
+      { timeoutMs: PROBE_TIMEOUT_MS }
     ),
     executarChamadaRfb(
       'rtc-simples',
-      (signal) => fetch(`${cfg.simplesUrl}/api/versao`, { signal, method: 'GET' })
+      (signal) => fetch(`${cfg.simplesUrl}/api/versao`, { signal, method: 'GET' }),
+      undefined,
+      { timeoutMs: PROBE_TIMEOUT_MS }
     ),
     executarChamadaRfb(
       'rtc-danfse',
-      (signal) => fetch(`${cfg.danfseUrl}/health/live`, { signal, method: 'GET' })
+      (signal) => fetch(`${cfg.danfseUrl}/health/live`, { signal, method: 'GET' }),
+      undefined,
+      { timeoutMs: PROBE_TIMEOUT_MS }
     ),
   ]);
 

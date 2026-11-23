@@ -6,6 +6,31 @@
 import { Pool, PoolConfig } from 'pg';
 
 let globalPool: Pool | null = null;
+let isDatabaseOffline = false;
+let lastDbFailureTime = 0;
+const DB_OFFLINE_COOLDOWN_MS = 30_000;
+
+export function markDatabaseOffline(): void {
+  isDatabaseOffline = true;
+  lastDbFailureTime = Date.now();
+}
+
+export function resetDatabaseOfflineStatusForTests(): void {
+  isDatabaseOffline = false;
+  lastDbFailureTime = 0;
+}
+
+export function isDatabaseAccessible(): boolean {
+  if (!isDatabaseConfigured()) return false;
+  if (isDatabaseOffline) {
+    if (Date.now() - lastDbFailureTime > DB_OFFLINE_COOLDOWN_MS) {
+      isDatabaseOffline = false;
+      return true;
+    }
+    return false;
+  }
+  return true;
+}
 
 export function isDatabaseConfigured(): boolean {
   const url = process.env.DATABASE_URL?.trim();
@@ -32,7 +57,7 @@ export function getDbPool(): Pool | null {
     connectionString,
     max: parseInt(process.env.DATABASE_POOL_MAX || '10', 10),
     idleTimeoutMillis: parseInt(process.env.DATABASE_IDLE_TIMEOUT_MS || '30000', 10),
-    connectionTimeoutMillis: parseInt(process.env.DATABASE_CONNECT_TIMEOUT_MS || '5000', 10),
+    connectionTimeoutMillis: parseInt(process.env.DATABASE_CONNECT_TIMEOUT_MS || '1500', 10),
   };
 
   if (isSupabaseOrSsl) {
@@ -67,6 +92,14 @@ export async function checkDatabaseHealth(): Promise<DatabaseHealthResult> {
     };
   }
 
+  if (!isDatabaseAccessible()) {
+    return {
+      connected: false,
+      duracaoMs: Date.now() - inicio,
+      erro: 'PostgreSQL em cooldown offline (modo In-Memory ativo)',
+    };
+  }
+
   const pool = getDbPool();
   if (!pool) {
     return {
@@ -80,6 +113,7 @@ export async function checkDatabaseHealth(): Promise<DatabaseHealthResult> {
     const client = await pool.connect();
     try {
       const res = await client.query('SELECT version() AS versao, now() AS timestamp_db');
+      isDatabaseOffline = false;
       return {
         connected: true,
         versao: res.rows[0]?.versao,
@@ -89,6 +123,7 @@ export async function checkDatabaseHealth(): Promise<DatabaseHealthResult> {
       client.release();
     }
   } catch (err: unknown) {
+    markDatabaseOffline();
     const msg = err instanceof Error ? err.message : String(err);
     return {
       connected: false,
@@ -103,4 +138,5 @@ export async function closeDbPoolForTests(): Promise<void> {
     await globalPool.end();
     globalPool = null;
   }
+  resetDatabaseOfflineStatusForTests();
 }

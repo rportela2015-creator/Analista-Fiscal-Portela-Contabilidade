@@ -8,6 +8,7 @@
     "dados": "python3 scripts/pipeline.py",
     "build:dados": "npm run fontes && npm run dados",
     "dev": "next dev -H 0.0.0.0 -p 3000",
+    "dev:webpack": "next dev --webpack -H 0.0.0.0 -p 3000",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
     "typecheck": "tsc --noEmit",

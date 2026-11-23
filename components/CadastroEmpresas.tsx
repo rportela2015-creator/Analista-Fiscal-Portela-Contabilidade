@@ -12,6 +12,15 @@ import {
 
 export const CHAVE_STORAGE_EMPRESA_ATIVA = 'portela_empresa_ativa_v1';
 
+interface SidecarsCache {
+  simples: boolean;
+  regular: boolean;
+  danfse: boolean;
+  timestamp: number;
+}
+let sidecarsCache: SidecarsCache | null = null;
+const SIDECARS_CACHE_TTL_MS = 60_000;
+
 export default function CadastroEmpresas() {
   // ==========================================================================
   // 1. DECLARAÇÃO DE TODOS OS HOOKS NO TOPO ABSOLUTO (DoD hookcheck.mjs)
@@ -36,6 +45,7 @@ export default function CadastroEmpresas() {
     regular: false,
     danfse: false,
   });
+  const [verificandoSidecars, setVerificandoSidecars] = useState<boolean>(false);
 
   // Formulário de Nova Empresa
   const [formCnpj, setFormCnpj] = useState<string>('');
@@ -72,17 +82,28 @@ export default function CadastroEmpresas() {
       setCarregando(true);
       const res = await fetch('/api/empresas');
       const data = await res.json();
+      if (res.ok) {
+        setDbStatus({
+          conectado: true,
+          modo: 'PostgreSQL 17 / In-Memory Dual-Mode Ativo',
+        });
+      } else {
+        setDbStatus({ conectado: false, modo: 'Offline' });
+      }
+
       if (data.sucesso && Array.isArray(data.empresas)) {
         setEmpresas(data.empresas);
 
         // Se houver empresa salva no storage, seleciona ela; senão a primeira
         const salvaJson = typeof window !== 'undefined' ? localStorage.getItem(CHAVE_STORAGE_EMPRESA_ATIVA) : null;
         let idParaAtivar = '';
+        let salvaId = '';
         if (salvaJson) {
           try {
             const parsed = JSON.parse(salvaJson);
             if (data.empresas.some((e: Empresa) => e.id === parsed.id)) {
               idParaAtivar = parsed.id;
+              salvaId = parsed.id;
             }
           } catch { /* parse error */ }
         }
@@ -95,51 +116,73 @@ export default function CadastroEmpresas() {
           setEmpresaAtivaId(idParaAtivar);
           const selecionada = data.empresas.find((e: Empresa) => e.id === idParaAtivar);
           if (selecionada && typeof window !== 'undefined') {
-            localStorage.setItem(CHAVE_STORAGE_EMPRESA_ATIVA, JSON.stringify(selecionada));
-            window.dispatchEvent(new CustomEvent('empresa_ativa_changed', { detail: selecionada }));
+            // Apenas grava no localStorage e despacha se a empresa ativa REALMENTE mudou
+            if (salvaId !== idParaAtivar) {
+              localStorage.setItem(CHAVE_STORAGE_EMPRESA_ATIVA, JSON.stringify(selecionada));
+              window.dispatchEvent(new CustomEvent('empresa_ativa_changed', { detail: selecionada }));
+            }
           }
         }
       }
     } catch {
+      setDbStatus({ conectado: false, modo: 'Offline' });
       setMensagem({ tipo: 'erro', texto: 'Não foi possível carregar a lista de empresas.' });
     } finally {
       setCarregando(false);
     }
   }, []);
 
-  const checarStatusInfra = useCallback(async () => {
-    try {
-      const resRtc = await fetch('/api/rtc/status');
-      const rtcData = await resRtc.json();
-      if (rtcData.circuitBreakers) {
-        setSidecarsStatus({
-          simples: rtcData.circuitBreakers['rtc-simples']?.online ?? false,
-          regular: rtcData.circuitBreakers['rtc-regime-regular']?.online ?? false,
-          danfse: rtcData.circuitBreakers['rtc-danfse']?.online ?? false,
-        });
-      }
-    } catch {
-      setSidecarsStatus({ simples: false, regular: false, danfse: false });
+  const checarStatusInfra = useCallback(async (forcar: boolean = false) => {
+    const agora = Date.now();
+    if (!forcar && sidecarsCache && agora - sidecarsCache.timestamp < SIDECARS_CACHE_TTL_MS) {
+      setSidecarsStatus({
+        simples: sidecarsCache.simples,
+        regular: sidecarsCache.regular,
+        danfse: sidecarsCache.danfse,
+      });
+      return;
     }
 
-    // Checar conexão DB
     try {
-      const resDb = await fetch('/api/empresas');
-      if (resDb.ok) {
-        setDbStatus({
-          conectado: true,
-          modo: 'PostgreSQL 17 / In-Memory Dual-Mode Ativo',
-        });
+      setVerificandoSidecars(true);
+      const resRtc = await fetch('/api/rtc/status');
+      const rtcData = await resRtc.json();
+      if (rtcData.servicos) {
+        const novoStatus = {
+          simples: Boolean(rtcData.servicos.simplesNacional?.online),
+          regular: Boolean(rtcData.servicos.regimeRegular?.online),
+          danfse: Boolean(rtcData.servicos.danfse?.online),
+        };
+        sidecarsCache = { ...novoStatus, timestamp: Date.now() };
+        setSidecarsStatus(novoStatus);
+      } else if (rtcData.circuitBreakers) {
+        const novoStatus = {
+          simples: Boolean(rtcData.circuitBreakers['rtc-simples']?.online),
+          regular: Boolean(rtcData.circuitBreakers['rtc-regime-regular']?.online),
+          danfse: Boolean(rtcData.circuitBreakers['rtc-danfse']?.online),
+        };
+        sidecarsCache = { ...novoStatus, timestamp: Date.now() };
+        setSidecarsStatus(novoStatus);
       }
     } catch {
-      setDbStatus({ conectado: false, modo: 'Offline' });
+      const offlineStatus = { simples: false, regular: false, danfse: false };
+      sidecarsCache = { ...offlineStatus, timestamp: Date.now() };
+      setSidecarsStatus(offlineStatus);
+    } finally {
+      setVerificandoSidecars(false);
     }
   }, []);
 
   useEffect(() => {
     carregarEmpresas();
-    checarStatusInfra();
-  }, [carregarEmpresas, checarStatusInfra]);
+    if (sidecarsCache) {
+      setSidecarsStatus({
+        simples: sidecarsCache.simples,
+        regular: sidecarsCache.regular,
+        danfse: sidecarsCache.danfse,
+      });
+    }
+  }, [carregarEmpresas]);
 
   const empresaAtiva = useMemo(() => {
     return empresas.find((e) => e.id === empresaAtivaId) || null;
@@ -152,11 +195,14 @@ export default function CadastroEmpresas() {
 
   const selecionarEmpresa = useCallback(
     (empresa: Empresa) => {
-      setEmpresaAtivaId(empresa.id);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(CHAVE_STORAGE_EMPRESA_ATIVA, JSON.stringify(empresa));
-        window.dispatchEvent(new CustomEvent('empresa_ativa_changed', { detail: empresa }));
-      }
+      setEmpresaAtivaId((prevId) => {
+        if (prevId === empresa.id) return prevId;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(CHAVE_STORAGE_EMPRESA_ATIVA, JSON.stringify(empresa));
+          window.dispatchEvent(new CustomEvent('empresa_ativa_changed', { detail: empresa }));
+        }
+        return empresa.id;
+      });
     },
     []
   );
@@ -371,6 +417,24 @@ export default function CadastroEmpresas() {
           >
             Sidecar Regular: {sidecarsStatus.regular ? 'Online (8082)' : 'Offline/Fallback'}
           </span>
+
+          <button
+            type="button"
+            onClick={() => checarStatusInfra(true)}
+            disabled={verificandoSidecars}
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              padding: '4px 10px',
+              borderRadius: 4,
+              background: 'var(--panel-alt, #2a2a2a)',
+              color: 'var(--text, #fff)',
+              border: '1px solid var(--line, #444)',
+              cursor: verificandoSidecars ? 'wait' : 'pointer',
+            }}
+          >
+            {verificandoSidecars ? 'Verificando...' : 'Verificar Sidecars RFB'}
+          </button>
         </div>
       </section>
 

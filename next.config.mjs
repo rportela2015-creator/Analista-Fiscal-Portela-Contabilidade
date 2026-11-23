@@ -11,6 +11,32 @@ const nextConfig = {
   reactStrictMode: true,
   // aceita o host de preview do ambiente (porta-*.dominio)
   allowedDevOrigins: ['*.e2b.app', 'localhost', '127.0.0.1'],
+  outputFileTracingExcludes: {
+    '*': [
+      './services/**',
+      './data/raw/**',
+      './db/**',
+      './colab/**',
+      './**/.git/**',
+    ],
+  },
+  turbopack: {},
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [
+          '**/services/**',
+          '**/data/raw/**',
+          '**/db/**',
+          '**/colab/**',
+          '**/.git/**',
+          '**/node_modules/**',
+        ],
+      };
+    }
+    return config;
+  },
   async headers() {
     return [
       {

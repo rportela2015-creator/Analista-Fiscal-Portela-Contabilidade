@@ -201,15 +201,28 @@ export function loadDataset(): Promise<Dataset> {
         cest: {}, cfop: [], attrs: { codigos: [], defs: {} },
         pronto: Promise.resolve<Dataset>(null as unknown as Dataset),
       };
-      // carga fria em paralelo — nunca bloqueia a primeira classificação
-      ds.pronto = (async (): Promise<Dataset> => {
-        const [frio, cest, cfop, attrs] = await Promise.all([
-          get('ncm-frio.json'), get('cest.json'), get('cfop.json'), get('atributos.json'),
-        ]);
-        for (const r of records) Object.assign(r, frio[r.d8] || { cest: [], attrs: [] });
-        ds.cest = cest; ds.cfop = cfop; ds.attrs = attrs;
-        return ds;
-      })().catch(() => ds);   // campos frios indisponiveis: nada quebra, painel mostra '—'
+      // Carga fria diferida sob demanda: ncm-frio.json (3.24 MB) e 10.515 Object.assign só executam quando ds.pronto for acessado
+      let prontoPromise: Promise<Dataset> | null = null;
+      Object.defineProperty(ds, 'pronto', {
+        get() {
+          if (!prontoPromise) {
+            prontoPromise = (async (): Promise<Dataset> => {
+              const [frio, cest, cfop, attrs] = await Promise.all([
+                get('ncm-frio.json'), get('cest.json'), get('cfop.json'), get('atributos.json'),
+              ]);
+              for (const r of records) Object.assign(r, frio[r.d8] || { cest: [], attrs: [] });
+              ds.cest = cest; ds.cfop = cfop; ds.attrs = attrs;
+              return ds;
+            })().catch(() => ds);
+          }
+          return prontoPromise;
+        },
+        set(val: Promise<Dataset>) {
+          prontoPromise = val;
+        },
+        configurable: true,
+        enumerable: true,
+      });
       return ds;
     })().catch((e) => { cache = null; throw e; });
   }

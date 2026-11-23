@@ -5,6 +5,15 @@ import type { Empresa, PerfilTributario } from '@/lib/fiscal/perfil-tributario';
 import { resolverPerfilVigenteNaData } from '@/lib/fiscal/perfil-tributario';
 import { CHAVE_STORAGE_EMPRESA_ATIVA } from '@/components/CadastroEmpresas';
 
+function aplicarEmpresaSeMudou(prev: Empresa | null, nova: Empresa | null): Empresa | null {
+  if (prev === nova) return prev;
+  if (!prev && !nova) return null;
+  if (prev?.id === nova?.id && prev?.atualizadoEm === nova?.atualizadoEm) {
+    return prev;
+  }
+  return nova;
+}
+
 export function useEmpresaAtiva() {
   const [empresaAtiva, setEmpresaAtivaState] = useState<Empresa | null>(null);
   const [carregado, setCarregado] = useState<boolean>(false);
@@ -15,12 +24,12 @@ export function useEmpresaAtiva() {
       const salvo = localStorage.getItem(CHAVE_STORAGE_EMPRESA_ATIVA);
       if (salvo) {
         const parsed = JSON.parse(salvo);
-        setEmpresaAtivaState(parsed);
+        setEmpresaAtivaState((prev) => aplicarEmpresaSeMudou(prev, parsed));
       } else {
-        setEmpresaAtivaState(null);
+        setEmpresaAtivaState((prev) => (prev === null ? prev : null));
       }
     } catch {
-      setEmpresaAtivaState(null);
+      setEmpresaAtivaState((prev) => (prev === null ? prev : null));
     }
   }, []);
 
@@ -30,7 +39,13 @@ export function useEmpresaAtiva() {
 
     const onEmpresaChanged = (e: Event) => {
       const customEvent = e as CustomEvent<Empresa | null>;
-      setEmpresaAtivaState(customEvent.detail || null);
+      if (customEvent && customEvent.detail !== undefined) {
+        const nova = customEvent.detail;
+        setEmpresaAtivaState((prev) => aplicarEmpresaSeMudou(prev, nova));
+      } else {
+        // Disparado sem detail: fallback seguro recarregando do localStorage
+        carregarEmpresaLocal();
+      }
     };
 
     const onStorage = (e: StorageEvent) => {
@@ -49,14 +64,27 @@ export function useEmpresaAtiva() {
   }, [carregarEmpresaLocal]);
 
   const setEmpresaAtiva = useCallback((empresa: Empresa | null) => {
-    setEmpresaAtivaState(empresa);
+    setEmpresaAtivaState((prev) => aplicarEmpresaSeMudou(prev, empresa));
     if (typeof window !== 'undefined') {
-      if (empresa) {
-        localStorage.setItem(CHAVE_STORAGE_EMPRESA_ATIVA, JSON.stringify(empresa));
-      } else {
-        localStorage.removeItem(CHAVE_STORAGE_EMPRESA_ATIVA);
+      let salvoId: string | null = null;
+      let salvoAtualizadoEm: string | null = null;
+      try {
+        const salvo = localStorage.getItem(CHAVE_STORAGE_EMPRESA_ATIVA);
+        if (salvo) {
+          const parsed = JSON.parse(salvo);
+          salvoId = parsed.id;
+          salvoAtualizadoEm = parsed.atualizadoEm;
+        }
+      } catch {}
+
+      if (salvoId !== empresa?.id || salvoAtualizadoEm !== empresa?.atualizadoEm) {
+        if (empresa) {
+          localStorage.setItem(CHAVE_STORAGE_EMPRESA_ATIVA, JSON.stringify(empresa));
+        } else {
+          localStorage.removeItem(CHAVE_STORAGE_EMPRESA_ATIVA);
+        }
+        window.dispatchEvent(new CustomEvent('empresa_ativa_changed', { detail: empresa }));
       }
-      window.dispatchEvent(new CustomEvent('empresa_ativa_changed', { detail: empresa }));
     }
   }, []);
 

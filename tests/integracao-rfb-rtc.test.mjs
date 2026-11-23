@@ -343,7 +343,7 @@ export default async function testIntegracaoRfbRtc() {
   let tentativasFetch = 0;
   globalThis.fetch = async () => {
     tentativasFetch++;
-    throw new Error('ECONNREFUSED sidecar offline');
+    throw new Error('500 sidecar internal error');
   };
 
   // Falhas 1, 2 e 3
@@ -390,6 +390,39 @@ export default async function testIntegracaoRfbRtc() {
   }
   process.env.RTC_MODE = 'hybrid_fallback'; // Restaura default
   console.log('     ✓ Circuit Breaker (OPEN) e políticas de fallback local vs strict_rfb aprovadas.');
+
+  // ----------------------------------------------------------------------------
+  // Teste 4b: Fast-Fail Imediato no Circuit Breaker para ENOTFOUND e ECONNREFUSED
+  // ----------------------------------------------------------------------------
+  console.log('  4b. Fast-Fail: ENOTFOUND e ECONNREFUSED abrem circuito imediatamente (1ª falha)...');
+  resetCircuitBreakersForTests();
+
+  let tentativasFastFail = 0;
+  globalThis.fetch = async () => {
+    tentativasFastFail++;
+    const err = new Error('fetch failed');
+    err.cause = { code: 'ECONNREFUSED' };
+    throw err;
+  };
+
+  try {
+    await calcularRegimeRegularRfb(payloadRegular);
+  } catch {}
+
+  assert.strictEqual(tentativasFastFail, 1, 'Deve ter tentado apenas 1 vez antes do fast-fail');
+  const cbFastStatus = getCircuitBreakerStatus('rtc-regime-regular');
+  assert.strictEqual(cbFastStatus.state, 'OPEN', 'Circuit Breaker deve estar OPEN imediatamente na 1ª falha de conexão');
+
+  // Chamada subsequente bloqueada sem disparar fetch
+  try {
+    await calcularRegimeRegularRfb(payloadRegular);
+    assert.fail('Deveria ter bloqueado de imediato pelo Circuit Breaker');
+  } catch (err) {
+    assert.ok(err instanceof ErroIntegracaoRfb);
+    assert.strictEqual(err.codigo, 'CIRCUIT_BREAKER_OPEN');
+    assert.strictEqual(tentativasFastFail, 1, 'Fetch não deve ter sido invocado com circuito aberto');
+  }
+  console.log('     ✓ Fast-fail para ECONNREFUSED (abertura imediata na 1ª falha) confirmado.');
 
   // ----------------------------------------------------------------------------
   // Teste 5: Validações de Segurança (Limite 5MB, anti-XXE e sintaxe XML)

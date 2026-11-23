@@ -1,15 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Classificar from '@/components/Classificar';
-import Lote from '@/components/Lote';
-import Consultar from '@/components/Consultar';
-import Regras from '@/components/Regras';
-import Parametrizar from '@/components/Parametrizar';
-import ReformaTab from '@/components/Reforma';
-import AuditoriaEntrada from '@/components/AuditoriaEntrada';
-import Precificar from '@/components/Precificar';
-import CadastroEmpresas from '@/components/CadastroEmpresas';
+import dynamic from 'next/dynamic';
+
+const CadastroEmpresas = dynamic(() => import('@/components/CadastroEmpresas'), { ssr: false });
+const Classificar = dynamic(() => import('@/components/Classificar'), { ssr: false });
+const Lote = dynamic(() => import('@/components/Lote'), { ssr: false });
+const Consultar = dynamic(() => import('@/components/Consultar'), { ssr: false });
+const Parametrizar = dynamic(() => import('@/components/Parametrizar'), { ssr: false });
+const AuditoriaEntrada = dynamic(() => import('@/components/AuditoriaEntrada'), { ssr: false });
+const Precificar = dynamic(() => import('@/components/Precificar'), { ssr: false });
+const ReformaTab = dynamic(() => import('@/components/Reforma'), { ssr: false });
+const Regras = dynamic(() => import('@/components/Regras'), { ssr: false });
+
 import type { PrecificacaoItemInput, ParametrizacaoItemInput } from '@/lib/extrator-nfe-types';
 
 const TABS = [
@@ -25,7 +28,7 @@ const TABS = [
 ] as const;
 
 export default function Home() {
-  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('classificar');
+  const [tab, setTab] = useState<(typeof TABS)[number]['id']>('empresas');
   const [itensPrecificacao, setItensPrecificacao] = useState<PrecificacaoItemInput[]>([]);
   const [itensParametrizacao, setItensParametrizacao] = useState<ParametrizacaoItemInput[]>([]);
 
