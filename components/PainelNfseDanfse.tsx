@@ -154,50 +154,44 @@ export function PainelNfseDanfse({
   const totalAtencao = (resultado.alertas || []).filter((a) => a.severidade === 'ATENCAO').length;
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Banner de Identificação do Documento */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-5 rounded-xl shadow-lg border border-blue-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="st-nfse-banner">
         <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="bg-blue-500/30 text-blue-200 text-xs px-2.5 py-1 rounded font-mono font-semibold border border-blue-400/40">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span className="badge blue mono">
               {extracao.tipoDocumento === 'NFSE_NACIONAL' ? 'NFS-e Padrão Nacional' : 'DPS Nacional'}
             </span>
             {ident.temNt004 && (
-              <span className="bg-emerald-500/30 text-emerald-200 text-xs px-2 py-0.5 rounded font-mono border border-emerald-400/40">
-                NT 004 (IBS/CBS)
-              </span>
+              <span className="badge green mono">NT 004 (IBS/CBS)</span>
             )}
             {ident.temNt007 && (
-              <span className="bg-purple-500/30 text-purple-200 text-xs px-2 py-0.5 rounded font-mono border border-purple-400/40">
-                NT 007 (tpRetPisCofins)
-              </span>
+              <span className="badge blue mono">NT 007 (tpRetPisCofins)</span>
             )}
             {ident.temNt009 && (
-              <span className="bg-amber-500/30 text-amber-200 text-xs px-2 py-0.5 rounded font-mono border border-amber-400/40">
-                NT 009 (Imobiliário/CIB)
-              </span>
+              <span className="badge amber mono">NT 009 (Imobiliário/CIB)</span>
             )}
           </div>
-          <h2 className="text-xl font-bold mt-2">
+          <h2 style={{ margin: '8px 0 4px', fontSize: '19px', fontWeight: 700, color: '#f9fafb' }}>
             NFS-e Nº {ident.nNFSe || ident.nDPS || 'S/N'} • Série {ident.serie || '1'}
           </h2>
-          <p className="text-slate-300 text-xs mt-1 font-mono">
+          <p className="mono" style={{ margin: 0, fontSize: '12px', color: '#9ca3af' }}>
             Chave / ID: {ident.chNFSe || ident.idDps || extracao.sha256.slice(0, 32)}
           </p>
           {empresaAtivaNome && (
-            <p className="text-blue-300 text-xs mt-1">
-              Tomador Ativo no Sistema: <span className="font-semibold">{empresaAtivaNome}</span>
+            <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#6ee7b7' }}>
+              Tomador Ativo no Sistema: <b>{empresaAtivaNome}</b>
             </p>
           )}
         </div>
 
         {/* Ações Rápidas de Laudo Pericial */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={() => handleBaixarLaudoNfse('html')}
             disabled={baixandoRelatorio}
-            className="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-semibold rounded-lg border border-emerald-500 shadow-sm transition flex items-center gap-1.5"
+            className="btn"
             style={{ minHeight: '44px' }}
             title="Exportar Laudo Pericial completo em HTML com governança e visual corporativo"
           >
@@ -207,7 +201,7 @@ export function PainelNfseDanfse({
             type="button"
             onClick={() => handleBaixarLaudoNfse('txt')}
             disabled={baixandoRelatorio}
-            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-100 text-xs font-semibold rounded-lg border border-slate-500 shadow-sm transition flex items-center gap-1.5"
+            className="st-btn-secondary"
             style={{ minHeight: '44px' }}
             title="Exportar Laudo Pericial em TXT estruturado para arquivamento contábil"
           >
@@ -218,7 +212,7 @@ export function PainelNfseDanfse({
             <button
               type="button"
               onClick={onVoltarParaUpload}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-600 transition"
+              className="st-btn-secondary"
               style={{ minHeight: '44px' }}
             >
               ← Voltar / Novo Arquivo
@@ -228,12 +222,12 @@ export function PainelNfseDanfse({
       </div>
 
       {erroRelatorio && (
-        <div className="bg-red-950/50 border border-red-700 text-red-200 text-xs p-3 rounded-lg flex items-center justify-between" role="alert">
+        <div className="err" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} role="alert">
           <span>⚠️ {erroRelatorio}</span>
           <button
             type="button"
             onClick={() => setErroRelatorio(null)}
-            className="text-red-300 hover:text-white font-bold ml-2 p-1"
+            className="mini"
             aria-label="Fechar erro"
           >
             ×
@@ -242,75 +236,69 @@ export function PainelNfseDanfse({
       )}
 
       {/* Grid de Partes: Prestador e Tomador */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Card Prestador */}
-        <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700 shadow-sm">
-          <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold block mb-2">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+        <div className="card" style={{ marginBottom: 0 }}>
+          <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-2)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
             Prestador do Serviço (Emitente)
           </span>
-          <p className="font-semibold text-slate-100 text-sm">{prest.xNome || 'Nome não informado'}</p>
-          <p className="text-xs text-slate-300 font-mono mt-0.5">CNPJ/CPF: {prest.cnpj || prest.cpf || '-'}</p>
-          {prest.im && <p className="text-xs text-slate-300 font-mono">Inscrição Municipal: {prest.im}</p>}
-          <div className="mt-2 text-xs text-slate-400 border-t border-slate-700/60 pt-2">
-            <p>
-              {prest.endereco?.xLgr || 'Logradouro não informado'}, {prest.endereco?.nro || 'S/N'}
-            </p>
-            <p>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: '14px', color: 'var(--ink)' }}>{prest.xNome || 'Nome não informado'}</p>
+          <p className="mono" style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>CNPJ/CPF: {prest.cnpj || prest.cpf || '-'}</p>
+          {prest.im && <p className="mono" style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>Inscrição Municipal: {prest.im}</p>}
+          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-muted)', fontSize: '12px', color: 'var(--ink-2)' }}>
+            <div>{prest.endereco?.xLgr || 'Logradouro não informado'}, {prest.endereco?.nro || 'S/N'}</div>
+            <div>
               {prest.endereco?.xBairro ? `${prest.endereco.xBairro} • ` : ''}
               {prest.endereco?.xMun || prest.endereco?.cMun || 'Município'} - {prest.endereco?.uf || 'UF'}
-            </p>
+            </div>
           </div>
         </div>
 
-        {/* Card Tomador */}
-        <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700 shadow-sm">
-          <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold block mb-2">
+        <div className="card" style={{ marginBottom: 0 }}>
+          <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-2)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
             Tomador do Serviço (Adquirente)
           </span>
-          <p className="font-semibold text-slate-100 text-sm">{toma?.xNome || 'Nome não informado'}</p>
-          <p className="text-xs text-slate-300 font-mono mt-0.5">CNPJ/CPF: {toma?.cnpj || toma?.cpf || '-'}</p>
-          {toma?.im && <p className="text-xs text-slate-300 font-mono">Inscrição Municipal: {toma.im}</p>}
-          <div className="mt-2 text-xs text-slate-400 border-t border-slate-700/60 pt-2">
-            <p>
-              {toma?.endereco?.xLgr || 'Logradouro não informado'}, {toma?.endereco?.nro || 'S/N'}
-            </p>
-            <p>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: '14px', color: 'var(--ink)' }}>{toma?.xNome || 'Nome não informado'}</p>
+          <p className="mono" style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>CNPJ/CPF: {toma?.cnpj || toma?.cpf || '-'}</p>
+          {toma?.im && <p className="mono" style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>Inscrição Municipal: {toma.im}</p>}
+          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-muted)', fontSize: '12px', color: 'var(--ink-2)' }}>
+            <div>{toma?.endereco?.xLgr || 'Logradouro não informado'}, {toma?.endereco?.nro || 'S/N'}</div>
+            <div>
               {toma?.endereco?.xBairro ? `${toma.endereco.xBairro} • ` : ''}
               {toma?.endereco?.xMun || toma?.endereco?.cMun || 'Município'} - {toma?.endereco?.uf || 'UF'}
-            </p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Card Principal: Discriminação do Serviço e Valores */}
-      <div className="bg-slate-800/80 rounded-xl p-5 border border-slate-700 shadow-sm space-y-4">
+      <div className="card" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div>
-          <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold block mb-1">
+          <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-2)', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
             Discriminação dos Serviços Prestados
           </span>
-          <p className="text-slate-200 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap bg-slate-900/60 p-3 rounded-lg border border-slate-700/70">
+          <p className="st-subcard" style={{ margin: 0, fontSize: '13px', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
             {serv.xDescServ || 'Descrição não detalhada no XML.'}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2">
-          <div className="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60">
-            <span className="text-slate-400 block">Código Trib. Nacional:</span>
-            <strong className="text-blue-300 font-mono">{serv.cTribNac || 'Não inf.'}</strong>
+        <div className="st-nfse-grid-4" style={{ fontSize: '12px' }}>
+          <div className="st-subcard">
+            <span className="muted" style={{ display: 'block' }}>Código Trib. Nacional:</span>
+            <strong className="mono" style={{ color: 'var(--accent-blue)' }}>{serv.cTribNac || 'Não inf.'}</strong>
           </div>
-          <div className="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60">
-            <span className="text-slate-400 block">Código NBS:</span>
-            <strong className="text-blue-300 font-mono">{serv.cNBS || 'Não inf.'}</strong>
+          <div className="st-subcard">
+            <span className="muted" style={{ display: 'block' }}>Código NBS:</span>
+            <strong className="mono" style={{ color: 'var(--accent-blue)' }}>{serv.cNBS || 'Não inf.'}</strong>
           </div>
-          <div className="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60">
-            <span className="text-slate-400 block">Valor dos Serviços:</span>
-            <strong className="text-emerald-400 font-mono text-sm tabular-nums">
+          <div className="st-subcard">
+            <span className="muted" style={{ display: 'block' }}>Valor dos Serviços:</span>
+            <strong className="mono tabular-nums" style={{ color: 'var(--ok)', fontSize: '14px' }}>
               R$ {(val.vServ || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </strong>
           </div>
-          <div className="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60">
-            <span className="text-slate-400 block">Valor Líquido:</span>
-            <strong className="text-slate-100 font-mono text-sm tabular-nums">
+          <div className="st-subcard">
+            <span className="muted" style={{ display: 'block' }}>Valor Líquido:</span>
+            <strong className="mono tabular-nums" style={{ color: 'var(--ink)', fontSize: '14px' }}>
               R$ {(val.vLiq || val.vServ || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </strong>
           </div>
@@ -325,58 +313,55 @@ export function PainelNfseDanfse({
         title={`Alertas de Auditoria (${(resultado.alertas || []).length})`}
         subtitle="Inconformidades de preenchimento, schema e cruzamento tributário"
       >
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 mb-2">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={() => setFiltroAlertas('TODOS')}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition ${
-                filtroAlertas === 'TODOS' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'
-              }`}
+              className={`mini ${filtroAlertas === 'TODOS' ? 'is-active' : ''}`}
+              style={{ minHeight: '44px', borderColor: filtroAlertas === 'TODOS' ? 'var(--accent-emerald)' : undefined }}
             >
               Todos ({(resultado.alertas || []).length})
             </button>
             <button
               type="button"
               onClick={() => setFiltroAlertas('CRITICO')}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition ${
-                filtroAlertas === 'CRITICO' ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-300'
-              }`}
+              className="mini"
+              style={{ minHeight: '44px', borderColor: filtroAlertas === 'CRITICO' ? 'var(--accent-crimson)' : undefined }}
             >
               Críticos ({totalCriticos})
             </button>
             <button
               type="button"
               onClick={() => setFiltroAlertas('ATENCAO')}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition ${
-                filtroAlertas === 'ATENCAO' ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300'
-              }`}
+              className="mini"
+              style={{ minHeight: '44px', borderColor: filtroAlertas === 'ATENCAO' ? 'var(--accent-amber)' : undefined }}
             >
               Atenção ({totalAtencao})
             </button>
           </div>
 
           {alertasFiltrados.length === 0 ? (
-            <p className="text-slate-500 text-xs">Nenhum alerta apontado com o filtro selecionado.</p>
+            <p className="muted small">Nenhum alerta apontado com o filtro selecionado.</p>
           ) : (
             alertasFiltrados.map((alerta, idx) => (
               <div
                 key={idx}
-                className={`p-3 rounded-lg border text-xs space-y-1 ${
+                className={`note ${
                   alerta.severidade === 'CRITICO'
-                    ? 'border-red-300 bg-red-50 text-red-950'
+                    ? 'critico'
                     : alerta.severidade === 'ATENCAO'
-                    ? 'border-amber-300 bg-amber-50 text-amber-950'
-                    : 'border-blue-300 bg-blue-50 text-blue-950'
+                    ? 'atencao'
+                    : 'info'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-[10px] uppercase">{alerta.severidade}</span>
-                  <span className="font-mono text-slate-500">{alerta.codigo}</span>
-                  <strong>{alerta.titulo}</strong>
+                <div className="t" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span className="badge grey">{alerta.severidade}</span>
+                  <span className="mono">{alerta.codigo}</span>
+                  <span>{alerta.titulo}</span>
                 </div>
-                <p>{alerta.detalhe}</p>
-                {alerta.baseLegal && <p className="font-mono text-[11px] pt-1">⚖ Base: {alerta.baseLegal}</p>}
+                <div className="x">{alerta.detalhe}</div>
+                {alerta.baseLegal && <div className="src mono">⚖ Base: {alerta.baseLegal}</div>}
               </div>
             ))
           )}
@@ -384,25 +369,25 @@ export function PainelNfseDanfse({
       </ProgressiveSection>
 
       {/* Card de Geração e Pré-Visualização do DANFSe Oficial (RFB em Go) */}
-      <div className="bg-slate-800/90 rounded-xl p-5 border border-slate-700 shadow-md space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-700 pb-3">
+      <div className="card" style={{ marginBottom: 0, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--border-muted)' }}>
           <div>
-            <h3 className="font-bold text-slate-100 text-sm uppercase tracking-wide">
+            <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--ink)' }}>
               Gerador Oficial DANFSe em PDF (RFB Go)
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="hint" style={{ margin: '3px 0 0', fontSize: '12px' }}>
               Renderizado diretamente pelo microsserviço oficial da Receita Federal (rtc-danfse:8084).
             </p>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-1.5 text-xs text-slate-300">
-              <label htmlFor="select-stc" className="font-medium">Situação:</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+              <label htmlFor="select-stc" style={{ fontWeight: 600 }}>Situação:</label>
               <select
                 id="select-stc"
                 value={stc}
                 onChange={(e) => setStc(e.target.value as '0' | '1' | '2')}
-                className="bg-slate-900 border border-slate-700 text-slate-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-blue-500"
+                style={{ width: 'auto', minHeight: '44px' }}
               >
                 <option value="0">0 - Válida (Normal)</option>
                 <option value="1">1 - Substituída</option>
@@ -410,35 +395,26 @@ export function PainelNfseDanfse({
               </select>
             </div>
 
-            <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+            <label className="check" style={{ cursor: 'pointer', minHeight: '44px' }}>
               <input
                 type="checkbox"
                 checked={canhoto}
                 onChange={(e) => setCanhoto(e.target.checked)}
-                className="rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0"
               />
-              Exibir Canhoto
+              <span>Exibir Canhoto</span>
             </label>
 
-            {/* AÇÃO PRINCIPAL SÓLIDA DE ALTO CONTRASTE */}
             <button
               type="button"
               disabled={gerandoPdf}
               onClick={handleGerarDanfse}
               aria-busy={gerandoPdf}
-              className={`px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold shadow-md transition flex items-center justify-center gap-2 select-none ${
-                gerandoPdf
-                  ? 'bg-blue-800 text-blue-200 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white'
-              }`}
+              className="st-btn-primary"
               style={{ minHeight: '44px', minWidth: '220px' }}
             >
               {gerandoPdf ? (
                 <>
-                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
+                  <span className="spin" aria-hidden="true" />
                   <span>Renderizando DANFSe...</span>
                 </>
               ) : (
@@ -448,31 +424,27 @@ export function PainelNfseDanfse({
           </div>
         </div>
 
-        {/* Mensagem de Erro / Orientação se o container Go estiver offline */}
         {erroDanfse && (
-          <div className="p-4 rounded-lg bg-red-950/40 border border-red-700/50 text-xs text-red-200 space-y-1" role="alert">
-            <p className="font-semibold text-red-300">Falha ao emitir DANFSe:</p>
-            <p>{erroDanfse}</p>
+          <div className="note critico" role="alert">
+            <div className="t">Falha ao emitir DANFSe:</div>
+            <div className="x">{erroDanfse}</div>
             {orientacaoDanfse && (
-              <p className="font-mono text-amber-300 text-[11px] pt-1">
-                💡 Orientação: {orientacaoDanfse}
-              </p>
+              <div className="src mono">💡 Orientação: {orientacaoDanfse}</div>
             )}
           </div>
         )}
 
-        {/* Preview do PDF renderizado via Blob URL segura */}
         {pdfUrl && (
-          <div className="space-y-3">
-            <div className="flex justify-between items-center bg-slate-900/60 p-2.5 rounded-lg border border-slate-700">
-              <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="st-subcard" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--ok)', fontWeight: 700 }}>
                 ✓ DANFSe gerado com sucesso via rtc-danfse
               </span>
               <a
                 href={pdfUrl}
                 download={`DANFSe_${ident.nNFSe || ident.nDPS || 'nacional'}.pdf`}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded transition flex items-center gap-1"
-                style={{ minHeight: '40px' }}
+                className="btn"
+                style={{ minHeight: '44px', textDecoration: 'none' }}
               >
                 💾 Baixar Arquivo PDF
               </a>
@@ -481,7 +453,7 @@ export function PainelNfseDanfse({
             <iframe
               src={pdfUrl}
               title="Pré-visualização do DANFSe Oficial em PDF"
-              className="w-full h-[650px] rounded-lg border border-slate-700 bg-white"
+              style={{ width: '100%', height: '650px', borderRadius: '10px', border: '1px solid var(--border-muted)', background: '#ffffff' }}
             />
           </div>
         )}
@@ -495,10 +467,10 @@ export function PainelNfseDanfse({
         title="Cadeia de Custódia Digital & Hash Criptográfico"
         subtitle="Rastreabilidade pericial imutável do XML recebido"
       >
-        <div className="bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-xs space-y-1">
-          <div>SHA-256: <strong className="text-blue-300">{extracao.sha256}</strong></div>
-          <div>Versão Schema: <span className="text-slate-400">{extracao.versaoSchema || 'Padrão Nacional'}</span></div>
-          <div>Tipo: <span className="text-emerald-400">{extracao.tipoDocumento}</span></div>
+        <div className="st-legal-memory">
+          <div>SHA-256: <strong style={{ color: 'var(--accent-blue)' }}>{extracao.sha256}</strong></div>
+          <div>Versão Schema: <span className="muted">{extracao.versaoSchema || 'Padrão Nacional'}</span></div>
+          <div>Tipo: <span style={{ color: 'var(--ok)' }}>{extracao.tipoDocumento}</span></div>
         </div>
       </ProgressiveSection>
     </div>

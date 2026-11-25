@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useId, useCallback, useMemo } from 'react';
+import React, { useState, useId, useCallback, useMemo, useEffect } from 'react';
 import type { NivelOperacional } from '@/lib/hooks/useNivelOperacional';
 
 export interface NormativeCitation {
@@ -47,7 +47,6 @@ export default function LegalCitationBlock({
   const generatedId = useId();
   const contentId = `legal-block-content-${generatedId}`;
 
-  // Se nível sênior, inicia aberto por padrão, a menos que especificado explicitamente
   const initialOpen = useMemo(() => {
     if (typeof defaultCollapsed === 'boolean') return !defaultCollapsed;
     return currentLevel === 'senior';
@@ -55,6 +54,14 @@ export default function LegalCitationBlock({
 
   const [isOpen, setIsOpen] = useState<boolean>(initialOpen);
   const [copied, setCopied] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof defaultCollapsed === 'boolean') {
+      setIsOpen(!defaultCollapsed);
+    } else {
+      setIsOpen(currentLevel === 'senior');
+    }
+  }, [currentLevel, defaultCollapsed]);
 
   const toggleOpen = useCallback(() => {
     setIsOpen((prev) => !prev);
@@ -89,81 +96,73 @@ export default function LegalCitationBlock({
   }, [title, citations, calculationSteps, calculationMemory, auditHashSha256]);
 
   return (
-    <div
-      role="region"
-      aria-label={title}
-      className={`bg-amber-50/60 border border-amber-200/80 rounded-xl overflow-hidden my-3 shadow-sm ${className}`}
-    >
-      {/* Botão de Toggle / Cabeçalho do Bloco */}
-      <div className="flex items-center justify-between px-4 py-3 bg-amber-100/50 border-b border-amber-200/60">
+    <div role="region" aria-label={title} className={`st-legal-block ${className}`}>
+      <div className="st-legal-header">
         <button
           type="button"
           onClick={toggleOpen}
           aria-expanded={isOpen}
           aria-controls={contentId}
-          className="flex items-center gap-2 text-left font-bold text-amber-950 text-xs sm:text-sm hover:text-amber-800 transition-colors focus-visible:ring-2 focus-visible:ring-amber-600 outline-none rounded-md p-1 -m-1"
+          className="st-legal-toggle"
           style={{ minHeight: '44px' }}
         >
           <svg
-            className={`w-4 h-4 text-amber-700 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
+            width="16"
+            height="16"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
             aria-hidden="true"
+            style={{
+              color: 'var(--warn)',
+              transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.18s ease',
+              flexShrink: 0,
+            }}
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          <span className="flex items-center gap-1.5">
-            <span>⚖️</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span aria-hidden="true">⚖️</span>
             <span>{title}</span>
-            <span className="text-[10px] font-semibold bg-amber-200/70 text-amber-900 px-2 py-0.5 rounded-full">
+            <span className="badge amber">
               {citations.length} {citations.length === 1 ? 'norma' : 'normas'}
             </span>
           </span>
         </button>
 
-        <div className="flex items-center gap-2">
-          {enableCopyMarkdown && isOpen && (
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-900 bg-amber-200/60 hover:bg-amber-200 border border-amber-300 px-2.5 py-1 rounded-md transition-colors"
-              title="Copiar fundamentação pericial formatada"
-              style={{ minHeight: '36px' }}
-            >
-              {copied ? '✓ Copiado' : 'Copiar Citação'}
-            </button>
-          )}
-        </div>
+        {enableCopyMarkdown && isOpen && (
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="st-legal-copy-btn"
+            title="Copiar fundamentação pericial formatada"
+            style={{ minHeight: '44px' }}
+          >
+            {copied ? '✓ Copiado' : 'Copiar Citação'}
+          </button>
+        )}
       </div>
 
-      {/* Conteúdo Expandido */}
       {isOpen && (
-        <div id={contentId} className="p-4 text-xs text-amber-950 space-y-3">
-          {/* Lista de Normas */}
-          <div className="space-y-2">
+        <div id={contentId} className="st-legal-body">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {citations.map((c) => (
-              <div
-                key={c.id}
-                className="bg-white/80 border border-amber-200/60 rounded-lg p-2.5 shadow-xs"
-              >
-                <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
-                  <strong className="text-amber-900 font-bold">{c.norma}</strong>
-                  <span className="text-[10px] font-mono font-semibold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
-                    {c.artigo}
-                  </span>
+              <div key={c.id} className="st-legal-item">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                  <strong style={{ color: 'var(--warn)', fontSize: '12.5px' }}>{c.norma}</strong>
+                  <span className="badge grey mono">{c.artigo}</span>
                 </div>
-                <p className="text-slate-700 text-[11px] leading-relaxed">{c.ementa}</p>
+                <p style={{ margin: 0, color: 'var(--ink-2)', fontSize: '12px', lineHeight: 1.5 }}>{c.ementa}</p>
                 {c.linkOficial && (
-                  <div className="mt-1">
+                  <div style={{ marginTop: '6px' }}>
                     <a
                       href={c.linkOficial}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[10px] text-blue-700 hover:underline inline-flex items-center gap-1"
+                      style={{ color: 'var(--accent-blue)', fontSize: '11px', textDecoration: 'underline' }}
                     >
-                      <span>Ver texto oficial</span>
-                      <span>↗</span>
+                      Ver texto oficial ↗
                     </a>
                   </div>
                 )}
@@ -171,41 +170,39 @@ export default function LegalCitationBlock({
             ))}
           </div>
 
-          {/* Memória de Cálculo Passo a Passo */}
-          {(calculationSteps && calculationSteps.length > 0) && (
-            <div className="mt-3 pt-3 border-t border-amber-200/60">
-              <span className="font-bold text-[11px] uppercase tracking-wider text-amber-900 block mb-2">
+          {calculationSteps && calculationSteps.length > 0 && (
+            <div style={{ marginTop: '6px' }}>
+              <span style={{ display: 'block', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--warn)', marginBottom: '6px' }}>
                 Memória de Cálculo (Decimal Half-Even)
               </span>
-              <div className="bg-slate-900 text-slate-100 rounded-lg p-3 font-mono text-[11px] space-y-1 overflow-x-auto">
+              <div className="st-legal-memory">
                 {calculationSteps.map((step, idx) => (
-                  <div key={idx} className="flex justify-between gap-4">
-                    <span className="text-slate-400">{step.step}:</span>
-                    <span className="text-blue-300">{step.formula}</span>
-                    <span className="text-emerald-400 font-bold tabular-nums">{step.result}</span>
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', padding: '2px 0' }}>
+                    <span style={{ color: '#9ca3af' }}>{step.step}:</span>
+                    <span style={{ color: '#93c5fd' }}>{step.formula}</span>
+                    <span className="tabular-nums" style={{ color: '#34d399', fontWeight: 700 }}>{step.result}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {(!calculationSteps && calculationMemory) && (
-            <div className="mt-3 pt-3 border-t border-amber-200/60">
-              <span className="font-bold text-[11px] uppercase tracking-wider text-amber-900 block mb-1">
+          {!calculationSteps && calculationMemory && (
+            <div style={{ marginTop: '6px' }}>
+              <span style={{ display: 'block', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--warn)', marginBottom: '6px' }}>
                 Memória de Cálculo
               </span>
-              <pre className="bg-slate-900 text-slate-100 rounded-lg p-3 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap">
+              <pre className="st-legal-memory" style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
                 {calculationMemory}
               </pre>
             </div>
           )}
 
-          {/* Custódia Digital & Hash SHA-256 */}
           {(auditHashSha256 || verifiedAtUtc) && (
-            <div className="mt-2 pt-2 border-t border-amber-200/60 flex items-center justify-between text-[10px] text-amber-800 flex-wrap gap-2">
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', fontSize: '11px', color: 'var(--ink-2)', borderTop: '1px solid var(--border-muted)', paddingTop: '8px' }}>
               {auditHashSha256 && (
                 <span>
-                  Digest SHA-256: <code className="font-mono font-bold">{auditHashSha256}</code>
+                  Digest SHA-256: <code className="mono">{auditHashSha256}</code>
                 </span>
               )}
               {verifiedAtUtc && <span>Conferido em: {verifiedAtUtc}</span>}

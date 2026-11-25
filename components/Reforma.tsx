@@ -133,6 +133,21 @@ export default function ReformaTab() {
 
   return (
     <>
+      <div className="st-page-header">
+        <div>
+          <div className="st-page-title-row">
+            <h2 className="st-page-title">Reforma Tributária</h2>
+            <span className="st-badge-norma">LC 214/2025</span>
+            <span className="st-badge-norma">LC 227/2026</span>
+            <span className="st-badge-norma">NT 2026.008</span>
+            <span className="st-badge-norma">2026–2033</span>
+          </div>
+          <p className="hint" style={{ margin: '4px 0 0' }}>
+            IBS, CBS e Imposto Seletivo — catálogos oficiais de classificação tributária e cronograma de transição.
+          </p>
+        </div>
+      </div>
+
       <div style={{ marginBottom: 16 }}>
         <KpiStrip
           items={kpiItems}
@@ -147,7 +162,7 @@ export default function ReformaTab() {
       </div>
 
       <div className="card">
-        <h2>Reforma Tributária do Consumo — IBS, CBS e Imposto Seletivo</h2>
+        <h2>Catálogo Oficial IBS, CBS e Imposto Seletivo</h2>
         <p className="hint">
           Tabelas oficiais carregadas sem recorte: <b>{rf.classificacoes.length}</b> códigos{' '}
           <span className="mono">cClassTrib</span> em <b>{rf.cst.length}</b> situações (CST-IBS/CBS),{' '}

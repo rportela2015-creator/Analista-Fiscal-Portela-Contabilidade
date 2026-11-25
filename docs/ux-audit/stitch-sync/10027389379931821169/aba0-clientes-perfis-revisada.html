@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-BR"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><title>MargemReal Portela — Inteligência Fiscal</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { 'colors': { 'surface-dim': '#0e1511', 'accent-forest-deep': '#1B4332', 'on-secondary-fixed-variant': '#274e3d', 'surface-container-high': '#1F2937', 'on-primary-fixed': '#002113', 'on-primary': '#003824', 'text-secondary': '#9CA3AF', 'surface-tint': '#4edea3', 'tertiary-fixed': '#c9e6ff', 'on-tertiary-fixed-variant': '#004c6e', 'on-tertiary-container': '#003d59', 'text-tertiary': '#6B7280', 'surface-bright': '#343b36', 'primary-fixed-dim': '#4edea3', 'on-tertiary': '#00344d', 'outline': '#86948a', 'surface-variant': '#2f3632', 'error': '#ffb4ab', 'primary-fixed': '#6ffbbe', 'border-muted': '#1F2937', 'semantic-warning': '#F59E0B', 'inverse-surface': '#dde4dd', 'inverse-on-surface': '#2b322d', 'secondary': '#a5d0b9', 'on-secondary-container': '#97c2ab', 'on-secondary': '#0e3727', 'on-primary-fixed-variant': '#005236', 'surface-container-low': '#161d19', 'primary-container': '#10b981', 'semantic-danger': '#EF4444', 'accent-forest-medium': '#2D5A43', 'surface-card': '#111827', 'secondary-fixed-dim': '#a5d0b9', 'on-error': '#690005', 'primary': '#4edea3', 'on-surface': '#dde4dd', 'outline-variant': '#3c4a42', 'tertiary': '#89ceff', 'tertiary-fixed-dim': '#89ceff', 'error-container': '#93000a', 'on-error-container': '#ffdad6', 'semantic-info': '#0EA5E9', 'surface-container': '#1E293B', 'on-tertiary-fixed': '#001e2f', 'on-background': '#dde4dd', 'tertiary-container': '#23acf1', 'surface': '#0e1511', 'border-subtle': '#374151', 'secondary-fixed': '#c1ecd4', 'secondary-container': '#29513f', 'on-primary-container': '#00422b', 'on-secondary-fixed': '#002114', 'accent-emerald-bright': '#34D399', 'on-surface-variant': '#bbcabf', 'text-primary': '#F9FAFB', 'surface-container-highest': '#2f3632', 'semantic-compliance': '#10B981', 'surface-container-lowest': '#09100c', 'inverse-primary': '#006c49', 'surface-canvas': '#0B0F17', 'background': '#0e1511' }, 'borderRadius': { 'DEFAULT': '0.125rem', 'lg': '0.25rem', 'xl': '0.5rem', 'full': '0.75rem' }, 'spacing': { 'space-xl': '2rem', 'gutter': '1rem', 'space-lg': '1.25rem', 'margin': '1.5rem', 'space-sm': '0.5rem', 'space-xs': '0.25rem', 'gutter-mobile': '0.75rem', 'margin-mobile': '1rem', 'space-md': '0.875rem' }, 'fontFamily': { 'headline-lg-mobile': ['Space Grotesk'], 'headline-lg': ['Space Grotesk'], 'label-md': ['JetBrains Mono'], 'headline-md': ['Space Grotesk'], 'display-lg-mobile': ['Space Grotesk'], 'display-lg': ['Space Grotesk'], 'body-sm': ['Plus Jakarta Sans'], 'headline-sm': ['Plus Jakarta Sans'], 'body-md': ['Plus Jakarta Sans'], 'label-sm': ['JetBrains Mono'], 'data-metric': ['JetBrains Mono'], 'body-lg': ['Plus Jakarta Sans'] }, 'fontSize': { 'headline-lg-mobile': ['22px', { 'lineHeight': '30px', 'letterSpacing': '-0.01em', 'fontWeight': '600' }], 'headline-lg': ['26px', { 'lineHeight': '34px', 'letterSpacing': '-0.02em', 'fontWeight': '600' }], 'label-md': ['12px', { 'lineHeight': '16px', 'letterSpacing': '0.02em', 'fontWeight': '500' }], 'headline-md': ['18px', { 'lineHeight': '26px', 'fontWeight': '600' }], 'display-lg-mobile': ['28px', { 'lineHeight': '36px', 'letterSpacing': '-0.02em', 'fontWeight': '700' }], 'display-lg': ['36px', { 'lineHeight': '44px', 'letterSpacing': '-0.03em', 'fontWeight': '700' }], 'body-sm': ['12px', { 'lineHeight': '18px', 'fontWeight': '400' }], 'headline-sm': ['15px', { 'lineHeight': '22px', 'fontWeight': '600' }], 'body-md': ['13px', { 'lineHeight': '20px', 'fontWeight': '400' }], 'label-sm': ['10px', { 'lineHeight': '14px', 'letterSpacing': '0.04em', 'fontWeight': '500' }], 'data-metric': ['24px', { 'lineHeight': '30px', 'letterSpacing': '-0.02em', 'fontWeight': '600' }], 'body-lg': ['15px', { 'lineHeight': '24px', 'fontWeight': '400' }] } } } };</script></head><body class="bg-surface-canvas text-on-surface font-body-md text-body-md antialiased min-h-screen selection:bg-primary selection:text-on-primary"><header class="fixed top-0 left-0 right-0 h-20 bg-surface-canvas/95 backdrop-blur-xl z-50 shadow-[0_1px_8px_rgba(0,0,0,0.4)] border-b border-border-muted/60"><div class="h-20 w-full px-margin flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md xl:gap-space-lg flex-shrink-0"><button class="p-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-card border border-border-subtle/50 transition-all flex items-center justify-center" id="headerSidebarToggleBtn" title="Expandir Menu Lateral" type="button"><span class="material-symbols-outlined text-[20px] transition-transform duration-300" id="headerToggleIcon">menu</span></button><div class="flex items-center gap-space-sm sm:gap-space-md"><img alt="Logo Escritório.jpg" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrCXpENvsD5CnnGIV3QYqlMWlcnM7dIE8Zk_h1VTD8fT1h6W9eNxbeR4qJIqnsPE6oOysCZw1oeEvTTCakGJD8nxzI6oOeWu78qqXB1EfoXpERyzssPZeW36_0Zh0VcKt9ebtS3SbUtfpUGxWTyjVRGBI243YoxGrC3Ll1O5yznX93jitdgSe9gzD8LwhS_LsHhoch0YpjpedYhSDKeWuGr2LFZUBKYZpoHQcEXZn4Qbv6iWCLE3KecEnrRa"/><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-md text-headline-md text-text-primary tracking-tight">MargemReal</span><span class="font-headline-md text-headline-md text-primary font-bold">Portela</span></div><span class="font-label-sm text-label-sm text-text-secondary tracking-wider uppercase hidden sm:inline">Inteligência Fiscal</span></div></div><div class="hidden 2xl:flex items-center bg-surface-card px-space-md py-space-xs rounded-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] cursor-pointer hover:bg-surface-container transition-colors"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-text-tertiary uppercase">Empresa Ativa</span><span class="font-headline-sm text-headline-sm text-text-primary truncate max-w-[220px]">Portela Agro &amp; Indústria S/A</span></div><span class="material-symbols-outlined text-text-secondary ml-space-xs text-[18px]">unfold_more</span></div></div><div class="flex-1 max-w-xl mx-2 xl:mx-space-md hidden md:block"><div class="relative flex items-center"><span class="material-symbols-outlined absolute left-3 text-text-secondary text-[18px]">search</span><input class="w-full bg-surface-card text-text-primary font-body-sm text-body-sm pl-10 pr-14 py-space-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-text-tertiary transition-all" placeholder="Busca rápida por NCM, Regime ou CFOP..." type="text"/><kbd class="absolute right-3 px-1.5 py-0.5 rounded bg-surface-container text-text-secondary font-label-sm text-label-sm">⌘K</kbd></div></div><div class="flex items-center gap-space-sm xl:gap-space-md flex-shrink-0"><div class="hidden 2xl:flex items-center gap-space-md px-space-md py-space-xs rounded-xl bg-surface-card"><div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-semantic-compliance animate-pulse"></span><span class="font-label-sm text-label-sm text-text-secondary">SEFAZ-SP: Ativo</span></div><div class="w-px h-3 bg-surface-container-high"></div><div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-semantic-compliance"></span><span class="font-label-sm text-label-sm text-text-secondary">Receita Fed.: Sinc</span></div></div><div class="flex items-center gap-space-xs"><button class="relative p-2 rounded-xl text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" title="Alertas de Risco Fiscal" type="button"><span class="material-symbols-outlined text-[20px]">warning</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-semantic-warning"></span></button><button class="p-2 rounded-xl text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" title="Ações Rápidas de Cálculo" type="button"><span class="material-symbols-outlined text-[20px]">bolt</span></button></div><div class="h-8 w-px bg-surface-container-high hidden sm:block"></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="text-right hidden lg:flex flex-col"><div class="flex items-center justify-end gap-space-xs"><span class="font-headline-sm text-headline-sm text-text-primary">Desenvovido por </span><span class="font-label-sm text-label-sm text-accent-emerald-bright bg-accent-forest-deep px-1.5 py-0.5 rounded hidden xl:inline">Contabilidade Portela</span></div><span class="font-label-sm text-label-sm text-primary uppercase font-medium">todos os direitos reservados</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 cursor-pointer shadow-sm" title="Dr. Ricardo Portela (Auditor Fiscal Sênior)"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><aside class="fixed left-0 top-20 bottom-0 w-16 bg-surface-dim z-40 flex flex-col justify-between p-2 shadow-[1px_0_12px_rgba(0,0,0,0.5)] overflow-y-auto border-r border-border-muted/60 transition-all duration-300" id="appSidebar"><div class="flex flex-col gap-space-md"><div class="flex items-center justify-center pt-space-xs pb-space-xs"><button class="p-1.5 rounded-lg text-text-secondary hover:text-primary hover:bg-surface-card transition-colors flex items-center justify-center" id="sidebarInternalToggleBtn" title="Expandir menu" type="button"><span class="material-symbols-outlined text-[18px] transition-transform duration-300" id="sidebarToggleIcon">chevron_right</span></button></div><nav class="flex flex-col gap-space-xs" data-active-classes="bg-accent-forest-deep text-accent-emerald-bright font-semibold rounded-xl"><a class="flex items-center justify-center px-2 py-space-sm rounded-xl bg-accent-forest-deep text-accent-emerald-bright font-semibold transition-all group" data-path="painel-e-regimes" href="#" title="Painel &amp; Regimes"><span class="material-symbols-outlined text-[20px] text-accent-emerald-bright flex-shrink-0">dashboard</span><span class="sidebar-text font-body-md text-body-md truncate transition-opacity duration-200 hidden">Painel &amp; Regimes</span></a><a class="flex items-center justify-center px-2 py-space-sm rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="simulador-de-precificacao-e-margem-real" href="#" title="Simulador Margem Real"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">calculate</span><span class="sidebar-text font-body-md text-body-md truncate transition-opacity duration-200 hidden">Simulador Margem Real</span></a><a class="flex items-center justify-center px-2 py-space-sm rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="auditoria-ncm-e-aliquotas" href="#" title="Auditoria NCM &amp; Alíquotas"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">rule</span><span class="sidebar-text font-body-md text-body-md truncate transition-opacity duration-200 hidden">Auditoria NCM &amp; Alíquotas</span></a><a class="flex items-center justify-center px-2 py-space-sm rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="reforma-tributaria-ibs-cbs-dual" href="#" title="Reforma (IBS / CBS)"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">balance</span><span class="sidebar-text font-body-md text-body-md truncate transition-opacity duration-200 hidden">Reforma (IBS / CBS)</span></a><a class="flex items-center justify-center px-2 py-space-sm rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="planejamento-tributario-comparativo" href="#" title="Planejamento Comparativo"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">query_stats</span><span class="sidebar-text font-body-md text-body-md truncate transition-opacity duration-200 hidden">Planejamento Comparativo</span></a><a class="flex items-center justify-center px-2 py-space-sm rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="relatorios-e-exportacao-sped" href="#" title="Relatórios &amp; SPED"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">file_download</span><span class="sidebar-text font-body-md text-body-md truncate transition-opacity duration-200 hidden">Relatórios &amp; SPED</span></a><a class="flex items-center justify-center px-2 py-space-sm rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="configuracoes-de-acesso-e-parametros" href="#" title="Parâmetros &amp; Acesso"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">settings</span><span class="sidebar-text font-body-md text-body-md truncate transition-opacity duration-200 hidden">Parâmetros &amp; Acesso</span></a></nav></div><div class="pt-space-md flex flex-col gap-space-xs"><div class="sidebar-card bg-surface-card p-2 rounded-xl shadow-[inset_0_1px_0_0_rgba(16,185,129,0.1)] border border-border-muted flex flex-col items-center" title="Ambiente de Produção Ativo"><span class="w-2 h-2 rounded-full bg-semantic-compliance animate-pulse"></span></div><button class="w-full flex items-center justify-center py-2 px-1 rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-card border border-border-subtle/40 transition-all group" id="sidebarFooterToggleBtn" title="Expandir Menu" type="button"><span class="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors" id="sidebarFooterToggleIcon">keyboard_double_arrow_right</span></button></div></aside><div class="transition-all duration-300 pl-16" id="mainLayoutWrapper"><div class="flex w-full min-h-screen pt-20"><main class="flex-1 min-w-0 px-margin py-margin bg-surface-canvas overflow-x-hidden"><div class="flex flex-col w-full gap-space-lg">
+<!-- Trilha Superior / Contexto Multi-Tenant & Infraestrutura -->
+<header class="flex flex-col gap-space-md bg-surface-container-low p-space-lg rounded-xl shadow-md">
+<div class="flex flex-wrap items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center justify-center w-11 h-11 rounded-lg bg-surface-card text-primary shadow-sm">
+<span class="material-symbols-outlined text-[24px]">corporate_fare</span>
+</div>
+<div>
+<div class="flex items-center gap-space-sm">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-accent-forest-deep text-accent-emerald-bright uppercase font-medium">Aba 00</span>
+<span class="font-body-sm text-body-sm text-text-tertiary">/</span>
+<span class="font-label-md text-label-md text-primary font-semibold tracking-wide">Multi-Tenant Engine</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-text-primary mt-0.5 tracking-tight">Clientes &amp; Perfis Tributários</h1>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-space-xs sm:gap-space-sm">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-card text-text-secondary font-label-sm text-label-sm shadow-sm">
+<span class="w-2 h-2 rounded-full bg-semantic-compliance animate-pulse"></span>
+          PostgreSQL 17 Dual-Mode
+        </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-card text-accent-emerald-bright font-label-sm text-label-sm shadow-sm">
+<span class="material-symbols-outlined text-[15px]">domain</span>
+          40 Empresas Ativas
+        </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-card text-text-secondary font-label-sm text-label-sm shadow-sm">
+<span class="material-symbols-outlined text-[15px]">security</span>
+          Soberania Local-First (LGPD)
+        </span>
+</div>
+</div>
+<!-- Navegação Numérica das Abas Funcionais (0 a 8) -->
+<nav aria-label="Abas do Sistema" class="flex items-center gap-space-xs overflow-x-auto pb-space-xs pt-space-xs">
+<a class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-forest-deep text-accent-emerald-bright font-headline-sm text-headline-sm flex-shrink-0 shadow-sm" href="#">
+<span class="font-label-sm text-label-sm bg-accent-emerald-bright text-surface-canvas rounded px-1.5 py-0.2">0</span>
+<span>Clientes &amp; Perfis</span>
+</a>
+<a class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card text-text-secondary hover:text-text-primary hover:bg-surface-container font-body-sm text-body-sm flex-shrink-0 transition-colors" href="#">
+<span class="font-label-sm text-label-sm text-text-tertiary">1</span>
+<span>Regimes</span>
+</a>
+<a class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card text-text-secondary hover:text-text-primary hover:bg-surface-container font-body-sm text-body-sm flex-shrink-0 transition-colors" href="#">
+<span class="font-label-sm text-label-sm text-text-tertiary">2</span>
+<span>Margem Real</span>
+</a>
+<a class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card text-text-secondary hover:text-text-primary hover:bg-surface-container font-body-sm text-body-sm flex-shrink-0 transition-colors" href="#">
+<span class="font-label-sm text-label-sm text-text-tertiary">3</span>
+<span>NCM &amp; Alíquotas</span>
+</a>
+<a class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card text-text-secondary hover:text-text-primary hover:bg-surface-container font-body-sm text-body-sm flex-shrink-0 transition-colors" href="#">
+<span class="font-label-sm text-label-sm text-text-tertiary">4</span>
+<span>Dual IBS/CBS</span>
+</a>
+<a class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card text-text-secondary hover:text-text-primary hover:bg-surface-container font-body-sm text-body-sm flex-shrink-0 transition-colors" href="#">
+<span class="font-label-sm text-label-sm text-text-tertiary">5</span>
+<span>Planejamento</span>
+</a>
+<a class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card text-text-secondary hover:text-text-primary hover:bg-surface-container font-body-sm text-body-sm flex-shrink-0 transition-colors" href="#">
+<span class="font-label-sm text-label-sm text-text-tertiary">6</span>
+<span>SPED &amp; EFD</span>
+</a>
+<a class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card text-text-secondary hover:text-text-primary hover:bg-surface-container font-body-sm text-body-sm flex-shrink-0 transition-colors" href="#">
+<span class="font-label-sm text-label-sm text-text-tertiary">7</span>
+<span>Split Payment</span>
+</a>
+<a class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card text-text-secondary hover:text-text-primary hover:bg-surface-container font-body-sm text-body-sm flex-shrink-0 transition-colors" href="#">
+<span class="font-label-sm text-label-sm text-text-tertiary">8</span>
+<span>Auditoria Live</span>
+</a>
+</nav>
+</header>
+<!-- Top KPIs Cards (Resumo Executivo da Carteira) -->
+<section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<div class="flex flex-col justify-between bg-surface-card p-space-lg rounded-xl shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase tracking-wider">Total Carteira Ativa</span>
+<span class="material-symbols-outlined text-primary text-[20px]">groups</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-data-metric text-data-metric text-text-primary">40</span>
+<span class="font-body-sm text-body-sm text-text-secondary">empresas auditadas</span>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between text-label-sm">
+<span class="text-accent-emerald-bright">32 Simples</span>
+<span class="text-semantic-info">6 Presumido</span>
+<span class="text-semantic-warning">2 Real</span>
+</div>
+</div>
+<div class="flex flex-col justify-between bg-surface-card p-space-lg rounded-xl shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase tracking-wider">Certificados Digitais A1</span>
+<span class="material-symbols-outlined text-semantic-compliance text-[20px]">verified</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-data-metric text-data-metric text-text-primary">22</span>
+<span class="font-body-sm text-body-sm text-semantic-compliance">operantes</span>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between text-label-sm">
+<span class="text-semantic-warning inline-flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-semantic-warning"></span> 1 a vencer &lt;30d
+        </span>
+<span class="text-text-tertiary">17 sem chave A1</span>
+</div>
+</div>
+<div class="flex flex-col justify-between bg-surface-card p-space-lg rounded-xl shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase tracking-wider">Capturas DF-e / Mês</span>
+<span class="material-symbols-outlined text-semantic-info text-[20px]">cloud_sync</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-data-metric text-data-metric text-text-primary">331</span>
+<span class="font-body-sm text-body-sm text-text-secondary">NF-e &amp; CT-e</span>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between text-label-sm text-text-secondary">
+<span>SEFAZ PR &amp; SP: Online</span>
+<span class="text-accent-emerald-bright font-medium">+18% vs jan</span>
+</div>
+</div>
+<div class="flex flex-col justify-between bg-surface-card p-space-lg rounded-xl shadow-sm relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase tracking-wider">RFB &amp; Sidecars Status</span>
+<span class="material-symbols-outlined text-primary text-[20px]">swap_horiz</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-data-metric text-data-metric text-accent-emerald-bright">100%</span>
+<span class="font-body-sm text-body-sm text-text-secondary">conectado</span>
+</div>
+<div class="mt-space-md pt-space-xs flex items-center justify-between text-label-sm text-text-secondary">
+<span class="text-semantic-compliance">Dual-Mode: Local DB</span>
+<span class="text-text-tertiary">Latência: 12ms</span>
+</div>
+</div>
+</section>
+<!-- Barra de Ações & Filtros Rápidos -->
+<section class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md bg-surface-card p-space-md rounded-xl shadow-sm">
+<div class="flex-1 relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-text-tertiary text-[20px]">search</span>
+<input class="w-full bg-surface-container-low text-text-primary font-body-sm text-body-sm pl-10 pr-space-md py-2.5 rounded-lg placeholder:text-text-tertiary focus:outline-none focus:bg-surface-container transition-all" id="tenantSearchInput" placeholder="Buscar por Razão Social, Nome Fantasia, CNPJ ou Inscrição Estadual..." type="text"/>
+</div>
+<div class="flex flex-wrap items-center gap-space-xs">
+<button class="px-3 py-1.5 rounded-lg bg-accent-forest-deep text-accent-emerald-bright font-label-sm text-label-sm font-semibold shadow-sm" type="button">Todos (40)</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-low text-text-secondary hover:text-text-primary hover:bg-surface-container font-label-sm text-label-sm transition-colors" type="button">Simples (32)</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-low text-text-secondary hover:text-text-primary hover:bg-surface-container font-label-sm text-label-sm transition-colors" type="button">Presumido (6)</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-low text-text-secondary hover:text-text-primary hover:bg-surface-container font-label-sm text-label-sm transition-colors" type="button">Real (2)</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-low text-accent-emerald-bright hover:bg-surface-container font-label-sm text-label-sm transition-colors" type="button">Com A1 (22)</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-low text-text-tertiary hover:text-text-primary hover:bg-surface-container font-label-sm text-label-sm transition-colors" type="button">Sem A1 (18)</button>
+</div>
+<div class="flex items-center gap-space-xs flex-shrink-0">
+<button class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container text-text-secondary hover:text-text-primary font-body-sm text-body-sm transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">upload_file</span>
+<span>Importar SPED</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface-container text-text-secondary hover:text-text-primary font-body-sm text-body-sm transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+<span>Sincronizar DF-e</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-on-primary font-headline-sm text-headline-sm font-semibold shadow-md hover:bg-accent-emerald-bright transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>+ Cadastrar Empresa</span>
+</button>
+</div>
+</section>
+<!-- Layout Dividido (Split-View em 2 Colunas) -->
+<section class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- Coluna Esquerda (~58% / 7 cols): Carteira de Empresas -->
+<div class="xl:col-span-7 flex flex-col bg-surface-card rounded-xl shadow-sm overflow-hidden">
+<div class="flex items-center justify-between p-space-md bg-surface-container-low">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">table_chart</span>
+<h2 class="font-headline-sm text-headline-sm text-text-primary">Empresas na Carteira Portela</h2>
+</div>
+<span class="font-label-sm text-label-sm text-text-tertiary">40 Cadastros Totais</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm text-body-sm border-collapse">
+<thead>
+<tr class="bg-surface-canvas text-text-secondary font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-space-sm px-space-md font-medium">Empresa &amp; CNPJ</th>
+<th class="py-space-sm px-space-sm font-medium">Regime</th>
+<th class="py-space-sm px-space-sm font-medium">A1 Validade</th>
+<th class="py-space-sm px-space-sm font-medium text-right">SKUs</th>
+<th class="py-space-sm px-space-md font-medium text-center">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-transparent">
+<!-- Row 1: Ativa no Workspace -->
+<tr class="bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer group">
+<td class="py-space-md px-space-md">
+<div class="flex items-start gap-space-sm">
+<div class="w-2.5 h-2.5 rounded-full bg-semantic-compliance mt-1 flex-shrink-0" title="Empresa Ativa em Memória"></div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-accent-emerald-bright truncate">Portela Auto &amp; Ferramentas Ltda</span>
+<span class="font-label-sm text-label-sm text-text-tertiary">12.345.678/0001-90</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="inline-flex px-2 py-0.5 rounded font-label-sm text-label-sm bg-accent-forest-deep text-accent-emerald-bright">
+                  CRT 1 - Simples
+                </span>
+</td>
+<td class="py-space-md px-space-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-text-primary font-medium">182 dias</span>
+<span class="font-label-sm text-label-sm text-semantic-compliance">Ativo (SHA-256)</span>
+</div>
+</td>
+<td class="py-space-md px-space-sm text-right font-label-md text-label-md text-text-primary">428</td>
+<td class="py-space-md px-space-md text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-accent-emerald-bright/15 text-accent-emerald-bright font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> No Workspace
+                </span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="bg-surface-card hover:bg-surface-container-low transition-colors cursor-pointer group">
+<td class="py-space-md px-space-md">
+<div class="flex items-start gap-space-sm">
+<div class="w-2.5 h-2.5 rounded-full bg-surface-container-high mt-1 flex-shrink-0"></div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-text-primary truncate">Novafrota Equipamentos S/A</span>
+<span class="font-label-sm text-label-sm text-text-tertiary">88.901.234/0001-12</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="inline-flex px-2 py-0.5 rounded font-label-sm text-label-sm bg-semantic-info/10 text-semantic-info">
+                  CRT 3 - Presumido
+                </span>
+</td>
+<td class="py-space-md px-space-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-text-primary font-medium">45 dias</span>
+<span class="font-label-sm text-label-sm text-accent-emerald-bright">Ativo</span>
+</div>
+</td>
+<td class="py-space-md px-space-sm text-right font-label-md text-label-md text-text-primary">1.250</td>
+<td class="py-space-md px-space-md text-center">
+<button class="px-2.5 py-1 rounded bg-surface-container text-text-secondary hover:text-text-primary font-label-sm text-label-sm transition-colors" type="button">
+                  Carregar
+                </button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="bg-surface-card hover:bg-surface-container-low transition-colors cursor-pointer group">
+<td class="py-space-md px-space-md">
+<div class="flex items-start gap-space-sm">
+<div class="w-2.5 h-2.5 rounded-full bg-surface-container-high mt-1 flex-shrink-0"></div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-text-primary truncate">Altair Jose Alessi Eireli</span>
+<span class="font-label-sm text-label-sm text-text-tertiary">04.551.789/0001-34</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="inline-flex px-2 py-0.5 rounded font-label-sm text-label-sm bg-accent-forest-deep text-accent-emerald-bright">
+                  CRT 1 - Simples
+                </span>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-text-tertiary">
+<span class="material-symbols-outlined text-[14px]">link_off</span> Sem A1
+                </span>
+</td>
+<td class="py-space-md px-space-sm text-right font-label-md text-label-md text-text-primary">85</td>
+<td class="py-space-md px-space-md text-center">
+<button class="px-2.5 py-1 rounded bg-surface-container text-text-secondary hover:text-text-primary font-label-sm text-label-sm transition-colors" type="button">
+                  Carregar
+                </button>
+</td>
+</tr>
+<!-- Row 4: Alerta A1 -->
+<tr class="bg-surface-card hover:bg-surface-container-low transition-colors cursor-pointer group">
+<td class="py-space-md px-space-md">
+<div class="flex items-start gap-space-sm">
+<div class="w-2.5 h-2.5 rounded-full bg-semantic-warning mt-1 flex-shrink-0" title="Certificado Próximo do Vencimento"></div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-text-primary truncate">Mecânica &amp; Autopeças Araucária</span>
+<span class="font-label-sm text-label-sm text-text-tertiary">77.342.109/0001-55</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="inline-flex px-2 py-0.5 rounded font-label-sm text-label-sm bg-accent-forest-deep text-accent-emerald-bright">
+                  CRT 1 - Simples
+                </span>
+</td>
+<td class="py-space-md px-space-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-semantic-warning font-semibold">14 dias</span>
+<span class="font-label-sm text-label-sm text-semantic-warning">Renovação</span>
+</div>
+</td>
+<td class="py-space-md px-space-sm text-right font-label-md text-label-md text-text-primary">612</td>
+<td class="py-space-md px-space-md text-center">
+<button class="px-2.5 py-1 rounded bg-surface-container text-text-secondary hover:text-text-primary font-label-sm text-label-sm transition-colors" type="button">
+                  Carregar
+                </button>
+</td>
+</tr>
+<!-- Row 5: Lucro Real -->
+<tr class="bg-surface-card hover:bg-surface-container-low transition-colors cursor-pointer group">
+<td class="py-space-md px-space-md">
+<div class="flex items-start gap-space-sm">
+<div class="w-2.5 h-2.5 rounded-full bg-surface-container-high mt-1 flex-shrink-0"></div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-headline-sm text-text-primary truncate">Distribuidora Paranaense de Rolamentos</span>
+<span class="font-label-sm text-label-sm text-text-tertiary">33.210.987/0001-00</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="inline-flex px-2 py-0.5 rounded font-label-sm text-label-sm bg-semantic-warning/10 text-semantic-warning">
+                  CRT 3 - Real
+                </span>
+</td>
+<td class="py-space-md px-space-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-text-primary font-medium">290 dias</span>
+<span class="font-label-sm text-label-sm text-semantic-compliance">Ativo</span>
+</div>
+</td>
+<td class="py-space-md px-space-sm text-right font-label-md text-label-md text-text-primary">3.400</td>
+<td class="py-space-md px-space-md text-center">
+<button class="px-2.5 py-1 rounded bg-surface-container text-text-secondary hover:text-text-primary font-label-sm text-label-sm transition-colors" type="button">
+                  Carregar
+                </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="flex items-center justify-between p-space-md bg-surface-container-low text-label-sm text-label-sm text-text-tertiary">
+<span>Exibindo 5 de 40 empresas cadastradas</span>
+<div class="flex items-center gap-space-xs">
+<button class="px-2.5 py-1 rounded bg-surface-card text-text-secondary hover:text-text-primary font-medium transition-colors" disabled="" type="button">Anterior</button>
+<span class="px-2 text-text-primary font-semibold">1 de 8</span>
+<button class="px-2.5 py-1 rounded bg-surface-card text-text-secondary hover:text-text-primary font-medium transition-colors" type="button">Próxima</button>
+</div>
+</div>
+</div>
+<!-- Coluna Direita (~42% / 5 cols): Painel de Inspeção & Parametrização -->
+<div class="xl:col-span-5 flex flex-col gap-space-md bg-surface-card p-space-lg rounded-xl shadow-md">
+<!-- Cabeçalho da Empresa Selecionada -->
+<div class="flex flex-col gap-space-xs bg-surface-container-low p-space-md rounded-xl">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-accent-emerald-bright font-medium flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-semantic-compliance animate-pulse"></span> Perfil Ativo no Workspace
+          </span>
+<span class="font-label-sm text-label-sm text-text-tertiary">ID #TENANT-0428</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-text-primary font-bold">Portela Auto &amp; Ferramentas Ltda</h3>
+<div class="grid grid-cols-2 gap-x-space-md gap-y-1 font-body-sm text-body-sm mt-1 text-text-secondary">
+<div>CNPJ: <span class="font-label-sm text-label-sm text-text-primary font-semibold">12.345.678/0001-90</span></div>
+<div>IE PR: <span class="font-label-sm text-label-sm text-text-primary font-semibold">90.123.456-78</span></div>
+<div class="col-span-2">CNAE: <span class="text-text-primary font-medium">4530-7/03 — Varejo de Peças e Acessórios</span></div>
+<div class="col-span-2 text-text-tertiary">Município: Curitiba — PR (Região Sul)</div>
+</div>
+</div>
+<!-- Bloco 1: Parâmetros Tributários Vigentes (2025) -->
+<div class="flex flex-col gap-space-sm bg-surface-container-low p-space-md rounded-xl">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">tune</span>
+<span class="font-headline-sm text-headline-sm text-text-primary">Parâmetros Vigentes (2025)</span>
+</div>
+<span class="font-label-sm text-label-sm text-accent-emerald-bright">Regime Atual</span>
+</div>
+<div class="space-y-space-xs text-body-sm">
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-card">
+<span class="text-text-secondary">Enquadramento CRT</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-accent-forest-deep text-accent-emerald-bright font-semibold">CRT 1 · Simples Nacional</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-card">
+<span class="text-text-secondary">Anexo &amp; Alíquota Efetiva</span>
+<span class="font-label-sm text-label-sm text-text-primary font-semibold">Anexo I (Comércio) · 8,45%</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-card">
+<span class="text-text-secondary">Regra PIS/COFINS</span>
+<span class="font-label-sm text-label-sm text-accent-emerald-bright font-medium">Monofásico (Lei 10.485/02)</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-surface-card">
+<span class="text-text-secondary">Regra ICMS Paraná</span>
+<span class="font-label-sm text-label-sm text-text-primary">Substituição Tributária (Dec. 7.871)</span>
+</div>
+</div>
+</div>
+<!-- Bloco 2: Reforma Tributária (LC 214/2025 & Transição) -->
+<div class="flex flex-col gap-space-sm bg-surface-container-low p-space-md rounded-xl">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-semantic-info text-[18px]">transform</span>
+<span class="font-headline-sm text-headline-sm text-text-primary">Reforma Tributária (LC 214/2025)</span>
+</div>
+<span class="font-label-sm text-label-sm text-semantic-info">Transição Dual</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-xs text-body-sm">
+<div class="p-space-sm rounded-lg bg-surface-card flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-text-tertiary">Opção Simples Híbrido</span>
+<div class="mt-1 flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-accent-emerald-bright">Habilitado</span>
+<span class="material-symbols-outlined text-accent-emerald-bright text-[16px]">check_circle</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-tertiary mt-1">Transfere 26,5% B2B</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-card flex flex-col justify-between">
+<span class="font-label-sm text-label-sm text-text-tertiary">Split Payment Bancário</span>
+<div class="mt-1 flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-text-primary">Configurado</span>
+<span class="material-symbols-outlined text-semantic-compliance text-[16px]">payments</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-tertiary mt-1">Conta Gráfica Ativa</span>
+</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-card flex items-center justify-between text-body-sm">
+<span class="text-text-secondary">Mix de Faturamento</span>
+<div class="flex items-center gap-space-sm">
+<span class="font-label-sm text-label-sm text-primary font-semibold">40% B2B</span>
+<span class="text-text-tertiary">/</span>
+<span class="font-label-sm text-label-sm text-text-primary font-semibold">60% B2C</span>
+</div>
+</div>
+</div>
+<!-- Bloco 3: Certificado Digital A1 Conectado -->
+<div class="flex flex-col gap-space-sm bg-surface-container-low p-space-md rounded-xl">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-semantic-compliance text-[18px]">verified_user</span>
+<span class="font-headline-sm text-headline-sm text-text-primary">Certificado Digital A1</span>
+</div>
+<span class="font-label-sm text-label-sm text-semantic-compliance font-semibold">182 dias restantes</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-card flex flex-col gap-1">
+<div class="flex items-center justify-between text-body-sm">
+<span class="font-label-sm text-label-sm text-text-primary font-medium truncate">portela_auto_2026.pfx</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-container text-text-secondary">SHA-256</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-tertiary">Validade: 15/09/2026 · Certisign ICP-Brasil v5</span>
+</div>
+<div class="flex items-center gap-space-xs mt-1">
+<button class="flex-1 py-1.5 px-3 rounded-lg bg-surface-card hover:bg-surface-container text-text-primary font-body-sm text-body-sm flex items-center justify-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-accent-emerald-bright">network_check</span>
+<span>Testar SEFAZ-PR</span>
+</button>
+<button class="flex-1 py-1.5 px-3 rounded-lg bg-surface-card hover:bg-surface-container text-text-secondary hover:text-text-primary font-body-sm text-body-sm flex items-center justify-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">file_upload</span>
+<span>Substituir A1</span>
+</button>
+</div>
+</div>
+<!-- Ações do Perfil -->
+<div class="flex items-center gap-space-sm pt-space-xs">
+<button class="flex-1 py-2.5 px-space-md rounded-lg bg-primary text-on-primary font-headline-sm text-headline-sm font-semibold shadow-md hover:bg-accent-emerald-bright transition-all flex items-center justify-center gap-2" type="button">
+<span class="material-symbols-outlined text-[20px]">save</span>
+<span>Salvar Alterações do Perfil</span>
+</button>
+<button class="py-2.5 px-space-md rounded-lg bg-surface-container text-text-secondary hover:text-text-primary font-headline-sm text-headline-sm transition-colors flex items-center gap-1.5" title="Disparar auditoria e cruzamentos na base do cliente" type="button">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="hidden sm:inline">Auditar Malhas</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Rodapé Técnico & Citações Periciais Higienizadas -->
+<footer class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md bg-surface-container-low p-space-md rounded-xl text-body-sm">
+<div class="flex items-start sm:items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px] flex-shrink-0 mt-0.5 sm:mt-0">gavel</span>
+<div class="flex flex-col sm:flex-row sm:items-center gap-x-2 gap-y-0.5">
+<span class="font-headline-sm text-headline-sm text-text-primary font-semibold">Fundamentação Pericial:</span>
+<span class="font-label-sm text-label-sm text-text-tertiary">LC 123/2006 (Simples), LC 214/2025 (Dual IBS/CBS), IN RFB nº 2.169/2023 &amp; Dec. PR nº 7.871/2017.</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs flex-shrink-0">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-card hover:bg-surface-container text-accent-emerald-bright font-label-sm text-label-sm transition-colors shadow-sm" id="copyCitationBtn" onclick="(function(){ navigator.clipboard.writeText('Base Legal: LC 123/2006, LC 214/2025, IN RFB 2169/2023, Dec PR 7871/2017'); const btn = document.getElementById('copyCitationBtn'); const original = btn.innerHTML; btn.innerHTML = '&lt;span class=\'material-symbols-outlined text-[16px]\'&gt;check&lt;/span&gt; Copiado!'; setTimeout(() =&gt; btn.innerHTML = original, 2000); })()" type="button">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+<span>Copiar Citações do Perfil</span>
+</button>
+<span class="text-text-tertiary text-label-sm hidden sm:inline">·</span>
+<span class="text-text-tertiary text-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-semantic-compliance"></span> Sidecars 0.9.4
+      </span>
+</div>
+</footer>
+</div>
+<script>
+  // Filtro interativo instantâneo na tabela de empresas
+  (function initTenantFilter() {
+    const searchInput = document.getElementById('tenantSearchInput');
+    if (!searchInput) return;
+
+    searchInput.addEventListener('input', function (e) {
+      const term = e.target.value.toLowerCase().trim();
+      const rows = document.querySelectorAll('tbody tr');
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        if (text.includes(term)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    });
+  })();
+</script></main><aside class="flex-shrink-0 flex flex-row self-stretch relative transition-all duration-300 z-30" id="metricsSidebar">
+<!-- Barra/Aba Vertical de Acionamento (Sempre acessível para Expandir/Recolher) -->
+<div class="w-12 bg-surface-dim border-l border-border-muted/60 flex flex-col items-center justify-between py-space-md select-none">
+<button class="p-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-card border border-border-subtle/50 transition-all flex items-center justify-center" id="toggleMetricsSidebarBtn" onclick="(function(){ const aside = document.getElementById('metricsSidebar'); const content = document.getElementById('metricsContentWrapper'); const icon = document.getElementById('toggleMetricsIcon'); const isCollapsed = content.classList.contains('hidden'); if(isCollapsed){ content.classList.remove('hidden'); aside.classList.remove('w-12'); aside.classList.add('w-80', 'sm:w-96'); icon.textContent = 'chevron_right'; } else { content.classList.add('hidden'); aside.classList.remove('w-80', 'sm:w-96'); aside.classList.add('w-12'); icon.textContent = 'chevron_left'; } })()" title="Expandir / Recolher Painel de Métricas" type="button">
+<span class="material-symbols-outlined text-[20px] transition-transform duration-300 text-primary" id="toggleMetricsIcon">chevron_left</span>
+</button>
+<div class="flex flex-col items-center gap-space-sm py-4 cursor-pointer group" onclick="document.getElementById('toggleMetricsSidebarBtn').click()">
+<span class="material-symbols-outlined text-primary text-[20px] group-hover:scale-110 transition-transform">insights</span>
+<span class="font-label-sm text-label-sm text-text-secondary uppercase tracking-wider [writing-mode:vertical-rl] rotate-180 group-hover:text-primary transition-colors">Métricas Fiscais</span>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-semantic-compliance animate-pulse" title="Conectado"></span>
+</div>
+</div>
+<!-- Conteúdo do Painel Lateral de Métricas (Inicia Oculto/Recolhido) -->
+<div class="hidden flex-1 flex flex-col justify-between bg-surface-canvas/50 border-l border-border-muted px-margin py-margin w-72 sm:w-80 overflow-y-auto" id="metricsContentWrapper">
+<div class="flex flex-col flex-1 bg-surface-card border border-border-muted rounded-2xl overflow-hidden shadow-sm justify-between">
+<div>
+<div class="p-space-md border-b border-border-muted flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">insights</span>
+<h3 class="font-headline-sm text-headline-sm text-text-primary">Painel de Métricas Fiscais</h3>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-accent-forest-deep text-accent-emerald-bright border border-primary/30">Tempo Real</span>
+<button class="p-1 text-text-secondary hover:text-text-primary hover:bg-surface-container rounded-lg transition-colors" onclick="document.getElementById('toggleMetricsSidebarBtn').click()" title="Recolher painel" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<div class="overflow-y-auto p-space-md space-y-space-md">
+<div class="bg-surface-container/60 p-space-md rounded-xl border border-border-subtle/60">
+<div class="flex items-center justify-between pb-space-xs border-b border-border-subtle/50 mb-space-sm">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase">Alíquotas Médias Efetivas</span>
+<span class="font-label-sm text-label-sm text-accent-emerald-bright font-medium">Consolidado</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-body-sm"><span class="text-text-secondary">ICMS Médio</span><span class="font-label-md text-text-primary font-semibold">12,4%</span></div>
+<div class="flex justify-between text-body-sm"><span class="text-text-secondary">PIS/COFINS Débito</span><span class="font-label-md text-text-primary font-semibold">9,25%</span></div>
+<div class="flex justify-between text-body-sm"><span class="text-text-secondary">PIS/COFINS Crédito Efetivo</span><span class="font-label-md text-semantic-compliance font-semibold">7,88%</span></div>
+<div class="flex justify-between text-body-sm"><span class="text-text-secondary">IRPJ + CSLL (Trimestral)</span><span class="font-label-md text-text-primary font-semibold">5,88%</span></div>
+</div>
+</div>
+<div class="bg-surface-container/60 p-space-md rounded-xl border border-border-subtle/60">
+<div class="flex items-center justify-between pb-space-xs border-b border-border-subtle/50 mb-space-xs">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase">Risco de Glosa SEFAZ</span>
+<span class="material-symbols-outlined text-semantic-compliance text-[18px]">verified_user</span>
+</div>
+<div class="mt-1 flex items-center justify-between">
+<span class="font-headline-sm text-semantic-compliance">Nível Baixo (2,1%)</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-accent-forest-deep text-accent-emerald-bright">Auditado</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-secondary mt-2">Conformidade das EFD-ICMS/IPI e EFD-Contribuições sem inconsistências estruturais.</p>
+</div>
+</div>
+</div>
+<div class="p-space-md border-t border-border-muted flex items-center justify-between bg-surface-canvas/50">
+<span class="font-label-sm text-label-sm text-text-tertiary">Sincronizado via SPED Fiscal</span>
+<span class="inline-flex items-center gap-1 text-label-sm text-semantic-compliance font-medium"><span class="w-1.5 h-1.5 rounded-full bg-semantic-compliance animate-pulse"></span> Conectado</span>
+</div>
+</div>
+</div>
+</aside></div></div>
+<!-- Drawer Retrátil de Métricas Secundárias e Análise Fiscal -->
+<script>
+  // Inicialização do Sidebar Toggle (Expandir / Recolher Manual)
+  (function initSidebarToggle() {
+    const sidebar = document.getElementById('appSidebar');
+    const layoutWrapper = document.getElementById('mainLayoutWrapper');
+    const headerToggleBtn = document.getElementById('headerSidebarToggleBtn');
+    const headerToggleIcon = document.getElementById('headerToggleIcon');
+    const internalToggleBtn = document.getElementById('sidebarInternalToggleBtn');
+    const internalToggleIcon = document.getElementById('sidebarToggleIcon');
+    const footerToggleBtn = document.getElementById('sidebarFooterToggleBtn');
+    const footerToggleIcon = document.getElementById('sidebarFooterToggleIcon');
+
+    let isExpanded = true;
+
+    function setSidebarState(expanded) {
+      isExpanded = expanded;
+      const sidebarTexts = sidebar.querySelectorAll('.sidebar-text');
+      const sidebarCard = sidebar.querySelector('.sidebar-card');
+      const navLinks = sidebar.querySelectorAll('nav a');
+
+      if (isExpanded) {
+        // Expandido: w-64 (~260px)
+        sidebar.classList.remove('w-[68px]', 'p-2');
+        sidebar.classList.add('w-64', 'p-space-md');
+        if (layoutWrapper) {
+          layoutWrapper.classList.remove('pl-[68px]');
+          layoutWrapper.classList.add('pl-64');
+        }
+
+        // Mostrar textos
+        sidebarTexts.forEach(el => el.classList.remove('hidden'));
+        if (sidebarCard) {
+          sidebarCard.classList.remove('p-2', 'items-center');
+          sidebarCard.classList.add('p-space-md');
+        }
+
+        // Ajustar alinhamento dos links de navegação
+        navLinks.forEach(link => {
+          link.classList.remove('justify-center', 'px-2');
+          link.classList.add('px-space-md');
+        });
+
+        // Ícones
+        if (internalToggleIcon) internalToggleIcon.textContent = 'chevron_left';
+        if (headerToggleIcon) headerToggleIcon.textContent = 'menu_open';
+        if (footerToggleIcon) footerToggleIcon.textContent = 'keyboard_double_arrow_left';
+
+        if (internalToggleBtn) internalToggleBtn.title = 'Recolher menu lateral';
+        if (footerToggleBtn) footerToggleBtn.title = 'Recolher menu lateral';
+        if (headerToggleBtn) headerToggleBtn.title = 'Recolher menu lateral';
+      } else {
+        // Recolhido / Compacto: w-[68px]
+        sidebar.classList.remove('w-64', 'p-space-md');
+        sidebar.classList.add('w-[68px]', 'p-2');
+        if (layoutWrapper) {
+          layoutWrapper.classList.remove('pl-64');
+          layoutWrapper.classList.add('pl-[68px]');
+        }
+
+        // Ocultar textos
+        sidebarTexts.forEach(el => el.classList.add('hidden'));
+        if (sidebarCard) {
+          sidebarCard.classList.remove('p-space-md');
+          sidebarCard.classList.add('p-2', 'items-center');
+        }
+
+        // Centralizar ícones nos links
+        navLinks.forEach(link => {
+          link.classList.remove('px-space-md');
+          link.classList.add('justify-center', 'px-2');
+        });
+
+        // Ícones
+        if (internalToggleIcon) internalToggleIcon.textContent = 'chevron_right';
+        if (headerToggleIcon) headerToggleIcon.textContent = 'menu';
+        if (footerToggleIcon) footerToggleIcon.textContent = 'keyboard_double_arrow_right';
+
+        if (internalToggleBtn) internalToggleBtn.title = 'Expandir menu lateral';
+        if (footerToggleBtn) footerToggleBtn.title = 'Expandir menu lateral';
+        if (headerToggleBtn) headerToggleBtn.title = 'Expandir menu lateral';
+      }
+    }
+
+    if (headerToggleBtn) {
+      headerToggleBtn.addEventListener('click', () => setSidebarState(!isExpanded));
+    }
+    if (internalToggleBtn) {
+      internalToggleBtn.addEventListener('click', () => setSidebarState(!isExpanded));
+    }
+    if (footerToggleBtn) {
+      footerToggleBtn.addEventListener('click', () => setSidebarState(!isExpanded));
+    }
+
+    // Auto-colapso em telas menores
+    if (window.innerWidth < 1280) {
+      setSidebarState(false);
+    }
+  })();
+
+  // Drawer de Métricas Secundárias
+  (function initDrawer() {
+    const drawer = document.getElementById('secondaryMetricsDrawer');
+    const closedTrigger = document.getElementById('drawerClosedTrigger');
+    const closeBtn = document.getElementById('closeDrawerBtn');
+    const collapseWideBtn = document.getElementById('collapseButtonWide');
+    const topBarToggleBtn = document.getElementById('toggleSecondaryPanelBtn');
+    const backdrop = document.getElementById('drawerBackdrop');
+
+    let isOpen = true;
+
+    function updateDrawerState(open) {
+      isOpen = open;
+      if (isOpen) {
+        drawer.classList.remove('hidden');
+        closedTrigger.classList.add('hidden');
+        if (backdrop) {
+          if (window.innerWidth < 1024) {
+            backdrop.classList.remove('hidden');
+          } else {
+            backdrop.classList.add('hidden');
+          }
+        }
+        if (topBarToggleBtn) {
+          topBarToggleBtn.classList.add('bg-accent-forest-deep', 'text-accent-emerald-bright', 'border-primary/40');
+          topBarToggleBtn.classList.remove('bg-surface-card', 'text-text-primary', 'border-border-subtle');
+        }
+      } else {
+        drawer.classList.add('hidden');
+        closedTrigger.classList.remove('hidden');
+        if (backdrop) backdrop.classList.add('hidden');
+        if (topBarToggleBtn) {
+          topBarToggleBtn.classList.remove('bg-accent-forest-deep', 'text-accent-emerald-bright', 'border-primary/40');
+          topBarToggleBtn.classList.add('bg-surface-card', 'text-text-primary', 'border-border-subtle');
+        }
+      }
+    }
+
+    if (closedTrigger) {
+      closedTrigger.addEventListener('click', () => updateDrawerState(true));
+    }
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => updateDrawerState(false));
+    }
+    if (collapseWideBtn) {
+      collapseWideBtn.addEventListener('click', () => updateDrawerState(false));
+    }
+    if (topBarToggleBtn) {
+      topBarToggleBtn.addEventListener('click', () => updateDrawerState(!isOpen));
+    }
+    if (backdrop) {
+      backdrop.addEventListener('click', () => updateDrawerState(false));
+    }
+
+    if (window.innerWidth < 1280) {
+      updateDrawerState(false);
+    } else {
+      updateDrawerState(true);
+    }
+
+    window.addEventListener('resize', () => {
+      if (isOpen && window.innerWidth >= 1024 && backdrop) {
+        backdrop.classList.add('hidden');
+      }
+    });
+  })();
+</script>
+</body></html>

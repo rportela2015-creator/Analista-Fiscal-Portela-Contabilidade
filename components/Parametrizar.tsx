@@ -294,7 +294,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
     <>
       {/* ---------------- PAINEL EXECUTIVO: LOTE DE ENTRADA (NF-E) ---------------- */}
       {loteItens && loteItens.length > 0 && (
-        <div className="card" style={{ marginBottom: 16, background: '#f8fafc', border: '1px solid #cbd5e1', padding: '16px' }}>
+        <div className="card" style={{ marginBottom: 16, background: 'var(--bg-card-subtle)', border: '1px solid #cbd5e1', padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <div>
               <h3 style={{ margin: 0, fontSize: 16, color: 'var(--ink)' }}>
@@ -310,7 +310,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                   <span
                     className="badge"
                     style={{
-                      background: resultadoDiagnosticoLote.totalBloqueantes === 0 ? '#ecfdf5' : '#fee2e2',
+                      background: resultadoDiagnosticoLote.totalBloqueantes === 0 ? 'var(--accent-emerald-glow)' : 'var(--accent-crimson-subtle)',
                       color: resultadoDiagnosticoLote.totalBloqueantes === 0 ? '#065f46' : '#991b1b',
                       border: '1px solid #cbd5e1',
                       padding: '4px 10px',
@@ -336,7 +336,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                 type="button"
                 className="mini"
                 onClick={exportarLoteCsv}
-                style={{ background: '#107c41', color: '#fff', borderColor: '#107c41', fontWeight: 600, padding: '5px 10px' }}
+                style={{ background: '#107c41', color: '#fff', borderColor: 'var(--ok)', fontWeight: 600, padding: '5px 10px' }}
                 title="Exportar parâmetros cadastrais dos itens em formato CSV"
               >
                 📥 Exportar CSV
@@ -345,7 +345,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                 type="button"
                 className="mini"
                 onClick={exportarLoteJson}
-                style={{ background: '#0b3d91', color: '#fff', borderColor: '#0b3d91', fontWeight: 600, padding: '5px 10px' }}
+                style={{ background: '#0b3d91', color: '#fff', borderColor: 'var(--accent-blue)', fontWeight: 600, padding: '5px 10px' }}
                 title="Exportar parâmetros em formato JSON para integração com ERP"
               >
                 📥 Exportar JSON
@@ -385,7 +385,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                     <tr
                       key={idx}
                       style={{
-                        background: isAtivo ? '#eff6ff' : idx % 2 === 0 ? '#fff' : '#fcfcfc',
+                        background: isAtivo ? 'var(--accent-blue-subtle)' : idx % 2 === 0 ? '#fff' : 'var(--bg-card)',
                         cursor: 'pointer',
                       }}
                       onClick={() => carregarItemDoLote(it, idx)}
@@ -397,12 +397,12 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                       </td>
                       <td className="mono">{it.ncm}</td>
                       <td>
-                        <span className="badge" style={{ background: '#f1f5f9', color: '#1e293b', fontSize: 10.5 }}>
+                        <span className="badge" style={{ background: 'var(--bg-card-subtle)', color: 'var(--ink)', fontSize: 10.5 }}>
                           {it.cfopEntradaSugerido} ➔ {it.cfopSaidaSugerido}
                         </span>
                       </td>
                       <td>
-                        <span className="badge" style={{ background: '#ecfdf5', color: '#065f46', fontSize: 10.5 }}>
+                        <span className="badge" style={{ background: 'var(--accent-emerald-glow)', color: 'var(--ok)', fontSize: 10.5 }}>
                           {it.cClassTribSugerido || '000001'} {it.reducaoIbsCbsPct > 0 ? `(-${it.reducaoIbsCbsPct}%)` : ''}
                         </span>
                       </td>
@@ -412,7 +412,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                             ⛔ {diag.bloqueantes[0]}
                           </span>
                         ) : it.beneficioIcmsPr ? (
-                          <span className="badge" style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: 10.5 }} title={it.beneficioIcmsPr}>
+                          <span className="badge" style={{ background: 'var(--accent-amber-subtle)', color: 'var(--warn)', border: '1px solid #fde68a', fontSize: 10.5 }} title={it.beneficioIcmsPr}>
                             🏷️ {it.beneficioIcmsPr}
                           </span>
                         ) : (
@@ -600,7 +600,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
 
         <div style={{
           display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center',
-          marginBottom: 14, padding: '10px 14px', background: '#f8fafc',
+          marginBottom: 14, padding: '10px 14px', background: 'var(--bg-card-subtle)',
           borderRadius: 6, border: '1px solid #e2e8f0'
         }}>
           <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#2d3748' }}>Relatório para ERP:</span>
@@ -757,12 +757,12 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
             zIndex: 9999, padding: 16
           }}>
             <div style={{
-              background: 'white', borderRadius: 8, width: '100%', maxWidth: 960, maxHeight: '90vh',
+              background: 'var(--bg-card)', borderRadius: 8, width: '100%', maxWidth: 960, maxHeight: '90vh',
               display: 'flex', flexDirection: 'column', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', overflow: 'hidden'
             }}>
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc'
+                padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: 'var(--bg-card-subtle)'
               }}>
                 <div>
                   <strong style={{ fontSize: '1.1rem', color: '#1a365d' }}>
@@ -770,7 +770,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                       ? 'Relatório ERP — Modo Resumido (Somente Campo e Código)'
                       : 'Laudo Pericial ERP — Modo Detalhado com Citação Legal'}
                   </strong>
-                  <div style={{ fontSize: '0.8rem', color: '#718096' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--ink-2)' }}>
                     Contabilidade Portela (Desde 1970) · Codificação Parametrizada & Reforma Tributária
                   </div>
                 </div>
@@ -786,13 +786,13 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
 
               <div style={{
                 display: 'flex', gap: 10, padding: '10px 20px', borderBottom: '1px solid #edf2f7',
-                alignItems: 'center', flexWrap: 'wrap', background: '#ffffff'
+                alignItems: 'center', flexWrap: 'wrap', background: 'var(--bg-card)'
               }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Visualização:</span>
                 <button
                   type="button"
                   className={`mini ${formatoModal === 'html' ? 'on' : ''}`}
-                  style={{ background: formatoModal === 'html' ? '#2b6cb0' : '#edf2f7', color: formatoModal === 'html' ? 'white' : '#2d3748' }}
+                  style={{ background: formatoModal === 'html' ? '#2b6cb0' : 'var(--bg-card-subtle)', color: formatoModal === 'html' ? 'white' : '#2d3748' }}
                   onClick={() => setFormatoModal('html')}
                 >
                   Formatada (HTML)
@@ -800,7 +800,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                 <button
                   type="button"
                   className={`mini ${formatoModal === 'txt' ? 'on' : ''}`}
-                  style={{ background: formatoModal === 'txt' ? '#2b6cb0' : '#edf2f7', color: formatoModal === 'txt' ? 'white' : '#2d3748' }}
+                  style={{ background: formatoModal === 'txt' ? '#2b6cb0' : 'var(--bg-card-subtle)', color: formatoModal === 'txt' ? 'white' : '#2d3748' }}
                   onClick={() => setFormatoModal('txt')}
                 >
                   Texto Puro (TXT)
@@ -849,16 +849,16 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                 </div>
               </div>
 
-              <div style={{ flex: 1, overflow: 'auto', padding: 20, background: '#f7fafc' }}>
+              <div style={{ flex: 1, overflow: 'auto', padding: 20, background: 'var(--bg-app)' }}>
                 {formatoModal === 'html' ? (
                   <iframe
                     title="Pré-visualização do Relatório"
                     srcDoc={relatorioHtml}
-                    style={{ width: '100%', height: '550px', border: 'none', background: 'white', borderRadius: 4 }}
+                    style={{ width: '100%', height: '550px', border: 'none', background: 'var(--bg-card)', borderRadius: 4 }}
                   />
                 ) : (
                   <pre style={{
-                    background: 'white', padding: 16, borderRadius: 4, border: '1px solid #cbd5e0',
+                    background: 'var(--bg-card)', padding: 16, borderRadius: 4, border: '1px solid #cbd5e0',
                     fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap', maxHeight: '550px', overflow: 'auto'
                   }}>
                     {relatorioTxt}
@@ -866,7 +866,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                 )}
               </div>
 
-              <div style={{ padding: '10px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', textAlign: 'right' }}>
+              <div style={{ padding: '10px 20px', borderTop: '1px solid #e2e8f0', background: 'var(--bg-card-subtle)', textAlign: 'right' }}>
                 <button
                   type="button"
                   onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido' })}

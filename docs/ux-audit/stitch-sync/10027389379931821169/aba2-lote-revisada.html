@@ -1,0 +1,547 @@
+<!DOCTYPE html><html class="dark" lang="pt-BR"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "border-subtle": "#374151", "tertiary-fixed": "#c9e6ff", "outline": "#86948a", "tertiary-container": "#23acf1", "secondary-container": "#29513f", "semantic-danger": "#EF4444", "on-error": "#690005", "error-container": "#93000a", "surface-bright": "#343b36", "accent-forest-deep": "#1B4332", "surface-tint": "#4edea3", "semantic-warning": "#F59E0B", "on-surface-variant": "#bbcabf", "accent-emerald-bright": "#34D399", "primary-fixed": "#6ffbbe", "surface-card": "#111827", "primary-container": "#10b981", "surface-container-low": "#161d19", "surface-container-highest": "#2f3632", "on-surface": "#dde4dd", "background": "#0e1511", "tertiary": "#89ceff", "on-error-container": "#ffdad6", "on-primary-container": "#00422b", "surface-variant": "#2f3632", "secondary-fixed-dim": "#a5d0b9", "primary-fixed-dim": "#4edea3", "surface-dim": "#0e1511", "inverse-primary": "#006c49", "on-secondary-fixed-variant": "#274e3d", "surface-container": "#1E293B", "text-secondary": "#9CA3AF", "on-secondary-fixed": "#002114", "secondary-fixed": "#c1ecd4", "text-tertiary": "#6B7280", "on-secondary": "#0e3727", "inverse-surface": "#dde4dd", "on-tertiary-container": "#003d59", "semantic-info": "#0EA5E9", "semantic-compliance": "#10B981", "surface-container-high": "#242c27", "surface": "#0e1511", "tertiary-fixed-dim": "#89ceff", "surface-canvas": "#0B0F17", "outline-variant": "#3c4a42", "primary": "#4edea3", "secondary": "#a5d0b9", "accent-forest-medium": "#2D5A43", "on-tertiary-fixed-variant": "#004c6e", "inverse-on-surface": "#2b322d", "on-tertiary": "#00344d", "on-background": "#dde4dd", "text-primary": "#F9FAFB", "on-tertiary-fixed": "#001e2f", "on-primary-fixed": "#002113", "on-primary-fixed-variant": "#005236", "on-primary": "#003824", "surface-container-lowest": "#09100c", "error": "#ffb4ab", "border-muted": "#1F2937", "on-secondary-container": "#97c2ab" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-xl": "2rem", "margin": "1.5rem", "gutter": "1rem", "space-lg": "1.25rem", "margin-mobile": "1rem", "space-sm": "0.5rem", "gutter-mobile": "0.75rem", "space-md": "0.875rem", "space-xs": "0.25rem" }, "fontFamily": { "data-metric": [ "JetBrains Mono" ], "headline-lg": [ "Space Grotesk" ], "label-md": [ "JetBrains Mono" ], "body-lg": [ "Plus Jakarta Sans" ], "body-sm": [ "Plus Jakarta Sans" ], "label-sm": [ "JetBrains Mono" ], "display-lg-mobile": [ "Space Grotesk" ], "headline-lg-mobile": [ "Space Grotesk" ], "headline-md": [ "Space Grotesk" ], "headline-sm": [ "Plus Jakarta Sans" ], "display-lg": [ "Space Grotesk" ], "body-md": [ "Plus Jakarta Sans" ] }, "fontSize": { "data-metric": [ "24px", { "lineHeight": "30px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "headline-lg": [ "26px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "label-md": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" } ], "body-lg": [ "15px", { "lineHeight": "24px", "fontWeight": "400" } ], "body-sm": [ "12px", { "lineHeight": "18px", "fontWeight": "400" } ], "label-sm": [ "10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500" } ], "display-lg-mobile": [ "28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "headline-lg-mobile": [ "22px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "headline-md": [ "18px", { "lineHeight": "26px", "fontWeight": "600" } ], "headline-sm": [ "15px", { "lineHeight": "22px", "fontWeight": "600" } ], "display-lg": [ "36px", { "lineHeight": "44px", "letterSpacing": "-0.03em", "fontWeight": "700" } ], "body-md": [ "13px", { "lineHeight": "20px", "fontWeight": "400" } ] } } } };</script></head><body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 bottom-0 w-16 bg-surface-container-lowest z-50 flex flex-col items-center py-4 shadow-[0_1px_8px_rgba(0,0,0,0.5)]"><div class="flex flex-col items-center mb-6"><div class="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center"><span class="material-symbols-outlined text-primary text-[20px]">account_balance</span></div><span class="font-label-sm text-label-sm text-primary tracking-tighter mt-1">1970</span></div><nav class="flex-1 flex flex-col gap-1 w-full px-2" data-active-classes="bg-primary-container text-on-primary-container font-bold"><a class="group relative flex items-center justify-center w-full h-10 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="dashboard" href="#" title="Dashboard Gerencial"><span class="material-symbols-outlined text-[20px]">dashboard</span></a><a class="group relative flex items-center justify-center w-full h-10 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="clientes-perfis" href="#" title="0 · Clientes &amp; Perfis Tributários"><span class="material-symbols-outlined text-[20px]">domain</span></a><a class="group relative flex items-center justify-center w-full h-10 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="classificar-produto" href="#" title="1 · Classificação de Produtos"><span class="material-symbols-outlined text-[20px]">fact_check</span></a><a class="group relative flex items-center justify-center w-full h-10 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors bg-primary-container text-on-primary-container font-bold" data-path="lote-csv" href="#" title="2 · Importação em Lote (CSV)"><span class="material-symbols-outlined text-[20px]">dataset</span></a><a class="group relative flex items-center justify-center w-full h-10 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="consultar-ncm" href="#" title="3 · Consulta Inteligente NCM"><span class="material-symbols-outlined text-[20px]">manage_search</span></a><a class="group relative flex items-center justify-center w-full h-10 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="parametrizacao-erp" href="#" title="4 · Parametrização Fiscal ERP"><span class="material-symbols-outlined text-[20px]">tune</span></a><a class="group relative flex items-center justify-center w-full h-10 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="auditoria-entrada" href="#" title="5 · Auditoria de Documentos de Entrada"><span class="material-symbols-outlined text-[20px]">verified</span></a><a class="group relative flex items-center justify-center w-full h-10 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="precificacao-margens" href="#" title="6 · Engenharia de Preço &amp; Margens"><span class="material-symbols-outlined text-[20px]">calculate</span></a><a class="group relative flex items-center justify-center w-full h-10 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="reforma-ibscbs" href="#" title="7 · Simulador Reforma (IBS / CBS / IS)"><span class="material-symbols-outlined text-[20px]">balance</span></a><a class="group relative flex items-center justify-center w-full h-10 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="regras-fontes" href="#" title="8 · Regras Legais &amp; Doutrina Pericial"><span class="material-symbols-outlined text-[20px]">gavel</span></a></nav><div class="flex flex-col gap-1 w-full px-2 pt-2"><a class="flex items-center justify-center w-full h-10 rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" data-path="configuracoes" href="#" title="Configurações da Firma"><span class="material-symbols-outlined text-[20px]">settings</span></a></div></aside><div class="pl-16"><header class="fixed top-0 left-16 right-0 h-16 bg-surface-canvas/95 backdrop-blur-xl z-40 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.4)]"><div class="h-10 px-6 flex items-center justify-between"><div class="flex items-center gap-3"><img alt="Logo Escritório" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1Swz_9nruB24u9uPch2k6CCxBS4gpTmaP7mYZPrNmLi1592WvcjYgTlHYPX_4ZpXoa_ApFFKQ5-9QNLr_vNMTGwj2L8HGiWkmHFzoqm2nb3zqfGe07a6PVAgVwRsd85C1yYXEy-O-Yp9AAWSlxf4gH0QsHgCDmL4faOn_xtMRkGqOPgPBxz3tg7rAkKqvjOU2ATSbC7EitpbKrOmFKvuq7icseisfeRCnlwa39iihmRWC39bKBf-OXA"><div class="flex flex-col"><div class="flex items-center gap-2"><span class="font-headline-sm text-headline-sm text-text-primary tracking-tight font-bold">MargemReal Portela</span><span class="px-1.5 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-accent-emerald-bright font-mono">v4.8 PRO</span></div><span class="font-label-sm text-[10px] text-accent-emerald-bright tracking-wider uppercase font-semibold">INTELIGÊNCIA FISCAL</span></div></div><div class="flex items-center gap-4"><div class="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded bg-surface-container-low"><span class="w-2 h-2 rounded-full bg-semantic-compliance animate-pulse"></span><span class="font-label-sm text-label-sm text-on-surface-variant">SEFAZ / RFB Sync 100%</span><span class="font-label-sm text-label-sm text-text-tertiary">14:02:18</span></div><button class="relative p-1.5 text-on-surface-variant hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-semantic-danger"></span></button><div class="flex items-center gap-2 pl-2"><div class="text-right hidden sm:block"><div class="font-body-sm text-body-sm text-text-secondary leading-tight">Desenvolvido por <strong class="text-accent-emerald-bright font-semibold">Contabilidade Portela</strong></div><div class="font-label-sm text-[10px] text-text-tertiary tracking-wider uppercase mt-0.5">TODOS OS DIREITOS RESERVADOS</div></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div><nav class="h-6 px-6 flex items-center gap-6 overflow-x-auto whitespace-nowrap" data-active-classes="text-accent-emerald-bright font-semibold shadow-[inset_0_-2px_0_0_#10B981]"><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-0.5" data-path="clientes-perfis" href="#">0 · Clientes &amp; Perfis</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-0.5" data-path="classificar-produto" href="#">1 · Classificar produto</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-0.5 text-accent-emerald-bright font-semibold shadow-[inset_0_-2px_0_0_#10B981]" data-path="lote-csv" href="#">2 · Lote (CSV)</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-0.5" data-path="consultar-ncm" href="#">3 · Consultar NCM</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-0.5" data-path="parametrizacao-erp" href="#">4 · Parametrização ERP</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-0.5" data-path="auditoria-entrada" href="#">5 · Auditoria (Entrada)</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-0.5" data-path="precificacao-margens" href="#">6 · Precificação &amp; Margens</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-0.5" data-path="reforma-ibscbs" href="#">7 · Reforma (IBS/CBS/IS)</a><a class="h-full flex items-center font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors pb-0.5" data-path="regras-fontes" href="#">8 · Regras e fontes</a></nav></header><div class="flex"><main class="flex-1 pt-16 bg-surface-canvas min-h-screen"><div class="flex flex-col w-full">
+<!-- Sub-banner de Governança Pericial e Estatuto Legal -->
+<section class="w-full bg-surface-container-lowest px-6 py-2.5 flex items-center justify-between shadow-sm"><div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-semantic-compliance shadow-[0_0_8px_#10b981]"></div><div class="flex items-center gap-2"><span class="font-label-md text-label-md text-accent-emerald-bright uppercase tracking-wider font-semibold">Motor Determinístico Siscomex 2026.1</span><span class="text-text-tertiary">/</span><p class="font-body-sm text-body-sm text-on-surface-variant">Apoio à decisão técnica · Res. Gecex 926/26 e LC 214/25</p></div></div><div class="hidden xl:flex items-center gap-4 text-text-tertiary font-label-sm text-label-sm"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-semantic-compliance"></span>API Siscomex: 200 OK</span><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-semantic-compliance"></span>Tabela Gecex 926/26</span><span class="text-text-primary px-2 py-0.5 rounded bg-surface-container-high font-mono">10.515 Posições</span></div></section>
+<!-- Canvas Principal de Trabalho -->
+<div class="p-6 flex flex-col gap-6">
+<!-- Seção 1: Upload Dock, Drag & Drop e Status do Arquivo Carregado -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+<!-- Dropzone Interativo -->
+<div class="lg:col-span-8 p-6 rounded-xl bg-surface-card flex flex-col justify-between relative overflow-hidden group shadow-md hover:bg-surface-container-high/40 transition-colors">
+<div class="absolute -right-12 -top-12 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+<div>
+<div class="flex items-center justify-between mb-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[20px]">upload_file</span></div><div class="flex items-center gap-2.5"><h2 class="font-headline-sm text-headline-sm text-text-primary font-semibold">Auditoria em Lote</h2><span class="px-2 py-0.5 rounded bg-surface-container text-accent-emerald-bright font-label-sm text-label-sm font-mono">Siscomex 2026.1</span><span class="px-2 py-0.5 rounded bg-surface-container-high text-text-secondary font-label-sm text-label-sm flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Processamento Vetorial</span></div></div><span class="px-2.5 py-1 rounded-full bg-surface-container text-text-secondary font-label-sm text-label-sm flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-accent-emerald-bright">bolt</span> Pronto para auditoria</span></div>
+<!-- Drag and Drop Active Frame -->
+<div class="p-6 rounded-lg bg-surface-canvas/60 text-center flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-surface-canvas transition-all">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-accent-emerald-bright">
+<span class="material-symbols-outlined text-[28px]">cloud_upload</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="font-headline-sm text-headline-sm text-text-primary">Solte o arquivo CSV / XLSX ou clique para selecionar</span>
+<span class="font-body-sm text-body-sm text-text-tertiary">Suporta planilhas de até 50.000 SKUs simultâneos (máx. 45 MB)</span>
+</div>
+<!-- Badges de Layout Suportados -->
+<div class="flex flex-wrap items-center justify-center gap-2 mt-2">
+<span class="px-2 py-0.5 rounded bg-surface-card text-on-surface-variant font-label-sm text-label-sm">Layout ERP Padrão (Cód, Descr, NCM, Origem, CFOP)</span>
+<span class="px-2 py-0.5 rounded bg-surface-card text-on-surface-variant font-label-sm text-label-sm">SPED Fiscal (Bloco 0200)</span>
+<span class="px-2 py-0.5 rounded bg-surface-card text-on-surface-variant font-label-sm text-label-sm">Catálogo Portal Siscomex (JSON / CSV)</span>
+</div>
+</div>
+</div>
+<!-- Rodapé de Ações de Upload -->
+<div class="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 bg-surface-card/40">
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-text-secondary hover:text-text-primary font-label-md text-label-md flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">tune</span> ⚙ Mapeamento de Colunas (De-Para)
+            </button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container text-text-secondary hover:text-text-primary font-label-md text-label-md flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">file_download</span> 📥 Baixar Planilha Modelo
+            </button>
+</div>
+<button class="text-semantic-danger/80 hover:text-semantic-danger font-label-md text-label-md flex items-center gap-1 transition-colors px-2 py-1" type="button">
+<span class="material-symbols-outlined text-[16px]">delete_sweep</span> Limpar Lote
+          </button>
+</div>
+</div>
+<!-- File Status Card & Dispatch Center -->
+<div class="lg:col-span-4 p-5 rounded-xl bg-surface-card flex flex-col justify-between shadow-md relative overflow-hidden">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-10 h-10 rounded-lg bg-accent-forest-deep flex items-center justify-center text-accent-emerald-bright">
+<span class="material-symbols-outlined text-[24px]">description</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-text-primary leading-tight truncate max-w-[210px]" title="produtos_carteira_autopeças_novembro_2026.csv">
+                produtos_autopeças_2026.csv
+              </span>
+<span class="font-label-sm text-label-sm text-accent-emerald-bright font-mono mt-0.5">428 itens detectados · 1.4 MB</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-semantic-compliance/10 text-semantic-compliance font-label-sm text-label-sm font-semibold">
+            PRONTO
+          </span>
+</div>
+<!-- Detalhes do Encoding e Delimitadores -->
+<div class="my-4 p-3 rounded-lg bg-surface-canvas flex flex-col gap-2">
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-text-tertiary">Codificação:</span>
+<span class="font-mono text-text-primary">UTF-8 (Sem BOM)</span>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-text-tertiary">Delimitador:</span>
+<span class="font-mono text-text-primary">Ponto e Vírgula ( ; )</span>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-text-tertiary">Colunas Obrigatórias:</span>
+<span class="text-accent-emerald-bright font-semibold">6 / 6 Mapeadas</span>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm">
+<span class="text-text-tertiary">Integridade Cadastral:</span>
+<span class="text-text-primary">100% registros válidos</span>
+</div>
+</div>
+<!-- Botão Primário CTA de Disparo -->
+<div class="flex flex-col gap-2">
+<button class="w-full py-2.5 px-4 rounded-lg bg-primary text-surface-canvas font-headline-sm text-headline-sm font-bold flex items-center justify-center gap-2 hover:bg-accent-emerald-bright transition-all shadow-[0_0_16px_rgba(16,185,129,0.35)]" type="button">
+<span class="material-symbols-outlined text-[20px]">play_arrow</span>
+            Processar Lote (IA + Siscomex)
+          </button>
+<span class="font-label-sm text-label-sm text-text-tertiary text-center">Motor vetorial rodando localmente (Privacidade LGPD RFB garantida)</span>
+</div>
+</div>
+</div>
+<!-- Seção 2: Summary KPI Metric Strip (Indicadores Periciais do Lote) -->
+<div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
+<!-- Card 1 -->
+<div class="p-4 rounded-xl bg-surface-card flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase tracking-wider">Total Analisado</span>
+<span class="material-symbols-outlined text-text-secondary text-[18px]">inventory_2</span>
+</div>
+<div class="mt-2">
+<div class="font-data-metric text-data-metric text-text-primary font-mono">428</div>
+<div class="font-body-sm text-body-sm text-text-tertiary mt-0.5">SKUs da carteira</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="p-4 rounded-xl bg-surface-card flex flex-col justify-between shadow-sm relative overflow-hidden">
+<div class="absolute top-0 right-0 w-16 h-16 bg-semantic-compliance/10 rounded-full blur-xl pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-accent-emerald-bright uppercase tracking-wider">NCM Válido &amp; Vigente</span>
+<span class="w-2 h-2 rounded-full bg-semantic-compliance shadow-[0_0_8px_#10b981]"></span>
+</div>
+<div class="mt-2">
+<div class="font-data-metric text-data-metric text-accent-emerald-bright font-mono">389</div>
+<div class="font-body-sm text-body-sm text-semantic-compliance flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">verified</span> 90.9% em conformidade
+          </div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="p-4 rounded-xl bg-surface-card flex flex-col justify-between shadow-sm relative overflow-hidden">
+<div class="absolute top-0 right-0 w-16 h-16 bg-semantic-danger/10 rounded-full blur-xl pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-semantic-danger uppercase tracking-wider">NCM Revogado / Inexistente</span>
+<span class="material-symbols-outlined text-semantic-danger text-[18px]">error</span>
+</div>
+<div class="mt-2">
+<div class="font-data-metric text-data-metric text-semantic-danger font-mono">14</div>
+<div class="font-body-sm text-body-sm text-semantic-danger/90 flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">warning</span> 3.3% risco de bloqueio NF-e
+          </div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="p-4 rounded-xl bg-surface-card flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-semantic-warning uppercase tracking-wider">Alerta Nota Legal / RGI</span>
+<span class="material-symbols-outlined text-semantic-warning text-[18px]">rule</span>
+</div>
+<div class="mt-2">
+<div class="font-data-metric text-data-metric text-semantic-warning font-mono">25</div>
+<div class="font-body-sm text-body-sm text-semantic-warning/90 mt-0.5">5.8% conflito de posição Cap. 84/85</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="p-4 rounded-xl bg-surface-card flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-tertiary uppercase tracking-wider">Reforma RTC (LC 214/25)</span>
+<span class="material-symbols-outlined text-tertiary text-[18px]">account_tree</span>
+</div>
+<div class="mt-2">
+<div class="font-data-metric text-data-metric text-tertiary font-mono">414</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">96.7% cClassTrib mapeados</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="p-4 rounded-xl bg-surface-card flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase tracking-wider">Tempo Inferência</span>
+<span class="material-symbols-outlined text-accent-emerald-bright text-[18px]">timer</span>
+</div>
+<div class="mt-2">
+<div class="font-data-metric text-data-metric text-text-primary font-mono">1.84s</div>
+<div class="font-body-sm text-body-sm text-accent-emerald-bright mt-0.5">Cache quente (10.5k posições)</div>
+</div>
+</div>
+</div>
+<!-- Seção 3: Filter & Batch Actions Command Bar -->
+<div class="p-4 rounded-xl bg-surface-card flex flex-col gap-3 shadow-md">
+<div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+<!-- Input de Busca -->
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-text-tertiary text-[20px]">search</span>
+<input class="w-full h-10 pl-10 pr-4 rounded-lg bg-surface-canvas text-text-primary font-body-md text-body-md placeholder:text-text-tertiary focus:outline-none focus:ring-1 focus:ring-primary transition-all" placeholder="Filtrar por código interno, descrição, NCM declarado ou sugerido..." type="text" value="">
+</div>
+<!-- Ações Rápidas de Lote -->
+<div class="flex flex-wrap items-center gap-2">
+<button class="px-3.5 py-2 rounded-lg bg-primary text-surface-canvas font-headline-sm text-headline-sm font-semibold flex items-center gap-1.5 hover:bg-accent-emerald-bright transition-colors shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">done_all</span> Aprovar Sugestões (414)
+          </button>
+<button class="px-3 py-2 rounded-lg bg-surface-container text-text-primary hover:bg-surface-container-high font-headline-sm text-headline-sm flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">download</span> Exportar CSV Enriquecido
+          </button>
+<button class="px-3 py-2 rounded-lg bg-accent-forest-deep text-accent-emerald-bright hover:bg-accent-forest-medium font-headline-sm text-headline-sm flex items-center gap-1.5 transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">forward_to_inbox</span> Enviar ao ERP (Mód. 4)
+          </button>
+<button class="px-3 py-2 rounded-lg bg-surface-container text-text-secondary hover:text-text-primary font-headline-sm text-headline-sm flex items-center gap-1.5 transition-colors" title="Exportar Parecer Técnico Pericial Consolidado" type="button">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span> Laudo Técnico
+          </button>
+</div>
+</div>
+<!-- Filter Pills -->
+<div class="flex flex-wrap items-center gap-2 pt-2 bg-surface-card">
+<button class="px-3 py-1 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold flex items-center gap-1.5 transition-colors">
+          Todos os Itens <span class="px-1.5 py-0.2 rounded-full bg-surface-canvas/30 text-[10px]">428</span>
+</button>
+<button class="px-3 py-1 rounded-full bg-surface-canvas text-on-surface-variant hover:text-text-primary font-label-md text-label-md flex items-center gap-1.5 transition-colors">
+          Aptos para ERP <span class="px-1.5 py-0.2 rounded-full bg-semantic-compliance/20 text-accent-emerald-bright font-mono text-[10px]">389</span>
+</button>
+<button class="px-3 py-1 rounded-full bg-surface-canvas text-on-surface-variant hover:text-text-primary font-label-md text-label-md flex items-center gap-1.5 transition-colors">
+<span class="w-2 h-2 rounded-full bg-semantic-danger"></span> NCM Revogado / Inexistente <span class="px-1.5 py-0.2 rounded-full bg-semantic-danger/20 text-semantic-danger font-mono text-[10px]">14</span>
+</button>
+<button class="px-3 py-1 rounded-full bg-surface-canvas text-on-surface-variant hover:text-text-primary font-label-md text-label-md flex items-center gap-1.5 transition-colors">
+<span class="w-2 h-2 rounded-full bg-semantic-warning"></span> Alerta Reclassificação / RGI <span class="px-1.5 py-0.2 rounded-full bg-semantic-warning/20 text-semantic-warning font-mono text-[10px]">25</span>
+</button>
+<button class="px-3 py-1 rounded-full bg-surface-canvas text-on-surface-variant hover:text-text-primary font-label-md text-label-md flex items-center gap-1.5 transition-colors">
+          Pendente cClassTrib <span class="px-1.5 py-0.2 rounded-full bg-surface-container-high text-text-tertiary font-mono text-[10px]">14</span>
+</button>
+<button class="px-3 py-1 rounded-full bg-surface-canvas text-on-surface-variant hover:text-text-primary font-label-md text-label-md flex items-center gap-1.5 transition-colors">
+          Monofásicos PIS/COFINS <span class="px-1.5 py-0.2 rounded-full bg-surface-container-high text-accent-emerald-bright font-mono text-[10px]">32</span>
+</button>
+</div>
+</div>
+<!-- Seção 4: Tabela Pericial de Processamento em Lote com Inspeção Inline -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+<!-- Tabela de Auditoria (8 a 9 colunas) -->
+<div class="xl:col-span-8 rounded-xl bg-surface-card overflow-hidden shadow-lg flex flex-col">
+<div class="px-5 py-3.5 bg-surface-canvas flex items-center justify-between"><div class="flex items-center gap-2.5"><span class="font-headline-sm text-headline-sm text-text-primary font-semibold">Itens do Lote</span><span class="px-2 py-0.5 rounded bg-surface-container font-label-sm text-label-sm text-accent-emerald-bright font-mono font-semibold">428 SKUs</span><span class="px-2 py-0.5 rounded bg-surface-container-high font-label-sm text-label-sm text-text-tertiary">Todos os Itens</span></div><div class="flex items-center gap-2"><span class="font-label-sm text-label-sm text-text-tertiary">Selecionados: <strong class="text-accent-emerald-bright font-mono">1 de 428</strong></span></div></div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-md text-body-md">
+<thead>
+<tr class="bg-surface-canvas font-label-sm text-label-sm text-text-tertiary uppercase tracking-wider">
+<th class="p-3 pl-4 w-10 text-center">
+<input class="rounded bg-surface-container text-primary focus:ring-0 cursor-pointer" type="checkbox">
+</th>
+<th class="p-3 w-16">Cód.</th>
+<th class="p-3">Descrição Original Cadastral</th>
+<th class="p-3 font-mono">NCM Planilha</th>
+<th class="p-3 font-mono">NCM Sugerido / RGI</th>
+<th class="p-3">Diagnóstico Siscomex</th>
+<th class="p-3 font-mono text-center">cClassTrib</th>
+<th class="p-3 font-mono text-center">CST</th>
+<th class="p-3 pr-4 text-right">Ação</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-lowest font-body-sm text-body-sm">
+<!-- Linha 1: Item Normal Conforme -->
+<tr class="hover:bg-surface-container/60 transition-colors">
+<td class="p-3 pl-4 text-center">
+<input class="rounded bg-surface-container text-primary focus:ring-0 cursor-pointer" type="checkbox">
+</td>
+<td class="p-3 font-mono text-text-tertiary">00104</td>
+<td class="p-3 font-medium text-text-primary">
+                  FILTRO DE OLEO MOTOR DIESEL PESADO
+                  <div class="font-label-sm text-label-sm text-text-tertiary">MVA Original: 40% · Alíq. ICMS: 18%</div>
+</td>
+<td class="p-3 font-mono text-text-primary font-semibold">8421.23.00</td>
+<td class="p-3">
+<div class="font-mono text-accent-emerald-bright font-semibold">8421.23.00</div>
+<span class="font-label-sm text-label-sm text-text-tertiary">Aderência 99.4% (RGI 1)</span>
+</td>
+<td class="p-3">
+<span class="px-2 py-0.5 rounded bg-semantic-compliance/10 text-semantic-compliance font-label-sm text-label-sm font-semibold flex items-center gap-1 w-max">
+<span class="material-symbols-outlined text-[13px]">check_circle</span> Conforme
+                  </span>
+</td>
+<td class="p-3 font-mono text-center text-text-primary">000001</td>
+<td class="p-3 font-mono text-center text-accent-emerald-bright font-semibold">01</td>
+<td class="p-3 pr-4 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="p-1.5 rounded hover:bg-surface-container text-text-tertiary hover:text-text-primary" title="Inspecionar" type="button">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</button>
+<button class="px-2 py-1 rounded bg-surface-container text-accent-emerald-bright hover:bg-accent-forest-deep font-label-sm text-label-sm" type="button">
+                      Validado
+                    </button>
+</div>
+</td>
+</tr>
+<!-- Linha 2: Item SELECIONADO com ALERTA DE RECLASSIFICAÇÃO / RGI (Mostra Drawer na Direita) -->
+<tr class="bg-surface-container/80 shadow-[inset_2px_0_0_0_#F59E0B]">
+<td class="p-3 pl-4 text-center">
+<input checked="" class="rounded bg-surface-container text-primary focus:ring-0 cursor-pointer" type="checkbox">
+</td>
+<td class="p-3 font-mono text-semantic-warning font-semibold">00248</td>
+<td class="p-3 font-medium text-text-primary">
+                  ENGRENAGEM HELICOIDAL P/ TRANSMISSAO COLHEITADEIRA
+                  <div class="font-label-sm text-label-sm text-semantic-warning flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[13px]">info</span> Reclassificação sugerida: Destinação Agrícola
+                  </div>
+</td>
+<td class="p-3 font-mono text-semantic-danger font-semibold">8483.40.10</td>
+<td class="p-3">
+<div class="font-mono text-accent-emerald-bright font-bold">8433.90.90</div>
+<span class="font-label-sm text-label-sm text-semantic-warning">Nota 1(f) Cap. 84 / RGI 6</span>
+</td>
+<td class="p-3">
+<span class="px-2 py-0.5 rounded bg-semantic-warning/15 text-semantic-warning font-label-sm text-label-sm font-semibold flex items-center gap-1 w-max">
+<span class="material-symbols-outlined text-[13px]">warning</span> Risco Reclassificação
+                  </span>
+</td>
+<td class="p-3 font-mono text-center text-semantic-warning">050001</td>
+<td class="p-3 font-mono text-center text-semantic-warning font-semibold">05</td>
+<td class="p-3 pr-4 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="p-1.5 rounded bg-surface-container-high text-semantic-warning hover:text-text-primary" title="Inspecionado agora" type="button">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+</button>
+<button class="px-2 py-1 rounded bg-primary text-surface-canvas font-label-sm text-label-sm font-bold hover:bg-accent-emerald-bright" type="button">
+                      Aceitar
+                    </button>
+</div>
+</td>
+</tr>
+<!-- Linha 3: Item com NCM REVOGADO por Gecex 926/26 (Crítico) -->
+<tr class="hover:bg-surface-container/60 transition-colors">
+<td class="p-3 pl-4 text-center">
+<input class="rounded bg-surface-container text-primary focus:ring-0 cursor-pointer" type="checkbox">
+</td>
+<td class="p-3 font-mono text-semantic-danger font-semibold">00312</td>
+<td class="p-3 font-medium text-text-primary">
+                  SENSOR DE PRESSAO PNEUMATICA ABS DIGITAL
+                  <div class="font-label-sm text-label-sm text-semantic-danger">Código NCM descontinuado pela RFB</div>
+</td>
+<td class="p-3 font-mono text-semantic-danger line-through font-semibold">9026.20.10</td>
+<td class="p-3">
+<div class="font-mono text-accent-emerald-bright font-semibold">9026.20.00</div>
+<span class="font-label-sm text-label-sm text-text-tertiary">Novo código Gecex 926</span>
+</td>
+<td class="p-3">
+<span class="px-2 py-0.5 rounded bg-semantic-danger/15 text-semantic-danger font-label-sm text-label-sm font-semibold flex items-center gap-1 w-max">
+<span class="material-symbols-outlined text-[13px]">block</span> NCM Revogado (Gecex)
+                  </span>
+</td>
+<td class="p-3 font-mono text-center text-text-primary">000001</td>
+<td class="p-3 font-mono text-center text-accent-emerald-bright font-semibold">01</td>
+<td class="p-3 pr-4 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="p-1.5 rounded hover:bg-surface-container text-text-tertiary hover:text-text-primary" type="button">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</button>
+<button class="px-2 py-1 rounded bg-semantic-danger/20 text-semantic-danger hover:bg-semantic-danger/30 font-label-sm text-label-sm font-semibold" type="button">
+                      Substituir
+                    </button>
+</div>
+</td>
+</tr>
+<!-- Linha 4: Conforme -->
+<tr class="hover:bg-surface-container/60 transition-colors">
+<td class="p-3 pl-4 text-center">
+<input class="rounded bg-surface-container text-primary focus:ring-0 cursor-pointer" type="checkbox">
+</td>
+<td class="p-3 font-mono text-text-tertiary">00455</td>
+<td class="p-3 font-medium text-text-primary">
+                  AMORTECEDOR DE SUSPENSAO PRESSURIZADO A GAS
+                  <div class="font-label-sm text-label-sm text-text-tertiary">Substituição Tributária (ST) Aplicável</div>
+</td>
+<td class="p-3 font-mono text-text-primary font-semibold">8708.80.00</td>
+<td class="p-3">
+<div class="font-mono text-accent-emerald-bright font-semibold">8708.80.00</div>
+<span class="font-label-sm text-label-sm text-text-tertiary">Aderência 98.7% (RGI 1)</span>
+</td>
+<td class="p-3">
+<span class="px-2 py-0.5 rounded bg-semantic-compliance/10 text-semantic-compliance font-label-sm text-label-sm font-semibold flex items-center gap-1 w-max">
+<span class="material-symbols-outlined text-[13px]">check_circle</span> Conforme
+                  </span>
+</td>
+<td class="p-3 font-mono text-center text-text-primary">000001</td>
+<td class="p-3 font-mono text-center text-accent-emerald-bright font-semibold">01</td>
+<td class="p-3 pr-4 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="p-1.5 rounded hover:bg-surface-container text-text-tertiary hover:text-text-primary" type="button">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</button>
+<button class="px-2 py-1 rounded bg-surface-container text-accent-emerald-bright hover:bg-accent-forest-deep font-label-sm text-label-sm" type="button">
+                      Validado
+                    </button>
+</div>
+</td>
+</tr>
+<!-- Linha 5: Óleo Lubrificante Monofásico -->
+<tr class="hover:bg-surface-container/60 transition-colors">
+<td class="p-3 pl-4 text-center">
+<input class="rounded bg-surface-container text-primary focus:ring-0 cursor-pointer" type="checkbox">
+</td>
+<td class="p-3 font-mono text-text-tertiary">00512</td>
+<td class="p-3 font-medium text-text-primary">
+                  OLEO LUBRIFICANTE MINERAL MOTOR 15W40 CI-4
+                  <div class="font-label-sm text-label-sm text-accent-emerald-bright">Regime Monofásico PIS/COFINS (Lei 10.865)</div>
+</td>
+<td class="p-3 font-mono text-text-primary font-semibold">2710.19.32</td>
+<td class="p-3">
+<div class="font-mono text-accent-emerald-bright font-semibold">2710.19.32</div>
+<span class="font-label-sm text-label-sm text-text-tertiary">Aderência 100% (RGI 1)</span>
+</td>
+<td class="p-3">
+<span class="px-2 py-0.5 rounded bg-semantic-compliance/10 text-semantic-compliance font-label-sm text-label-sm font-semibold flex items-center gap-1 w-max">
+<span class="material-symbols-outlined text-[13px]">check_circle</span> Conforme Monofásico
+                  </span>
+</td>
+<td class="p-3 font-mono text-center text-text-primary">020001</td>
+<td class="p-3 font-mono text-center text-semantic-warning font-semibold">04</td>
+<td class="p-3 pr-4 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="p-1.5 rounded hover:bg-surface-container text-text-tertiary hover:text-text-primary" type="button">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</button>
+<button class="px-2 py-1 rounded bg-surface-container text-accent-emerald-bright hover:bg-accent-forest-deep font-label-sm text-label-sm" type="button">
+                      Validado
+                    </button>
+</div>
+</td>
+</tr>
+<!-- Linha 6: Parafuso genérico de uso geral -->
+<tr class="hover:bg-surface-container/60 transition-colors">
+<td class="p-3 pl-4 text-center">
+<input class="rounded bg-surface-container text-primary focus:ring-0 cursor-pointer" type="checkbox">
+</td>
+<td class="p-3 font-mono text-text-tertiary">00670</td>
+<td class="p-3 font-medium text-text-primary">
+                  PARAFUSO SEXTAVADO ACO CARBONO M12 X 45MM
+                  <div class="font-label-sm text-label-sm text-text-tertiary">Obra de metal comum (Capítulo 73)</div>
+</td>
+<td class="p-3 font-mono text-text-primary font-semibold">7318.15.00</td>
+<td class="p-3">
+<div class="font-mono text-accent-emerald-bright font-semibold">7318.15.00</div>
+<span class="font-label-sm text-label-sm text-text-tertiary">Aderência 97.2% (RGI 1)</span>
+</td>
+<td class="p-3">
+<span class="px-2 py-0.5 rounded bg-semantic-compliance/10 text-semantic-compliance font-label-sm text-label-sm font-semibold flex items-center gap-1 w-max">
+<span class="material-symbols-outlined text-[13px]">check_circle</span> Conforme
+                  </span>
+</td>
+<td class="p-3 font-mono text-center text-text-primary">000001</td>
+<td class="p-3 font-mono text-center text-accent-emerald-bright font-semibold">01</td>
+<td class="p-3 pr-4 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="p-1.5 rounded hover:bg-surface-container text-text-tertiary hover:text-text-primary" type="button">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</button>
+<button class="px-2 py-1 rounded bg-surface-container text-accent-emerald-bright hover:bg-accent-forest-deep font-label-sm text-label-sm" type="button">
+                      Validado
+                    </button>
+</div>
+</td>
+</tr>
+<!-- Linha 7: Rolamento com risco de NCM Genérico -->
+<tr class="hover:bg-surface-container/60 transition-colors">
+<td class="p-3 pl-4 text-center">
+<input class="rounded bg-surface-container text-primary focus:ring-0 cursor-pointer" type="checkbox">
+</td>
+<td class="p-3 font-mono text-text-tertiary">00719</td>
+<td class="p-3 font-medium text-text-primary">
+                  ROLAMENTO DE ESFERAS BLINDADO EIXO DIANTEIRO
+                  <div class="font-label-sm text-label-sm text-text-tertiary">Peça de reposição automotiva</div>
+</td>
+<td class="p-3 font-mono text-text-primary font-semibold">8482.10.10</td>
+<td class="p-3">
+<div class="font-mono text-accent-emerald-bright font-semibold">8482.10.10</div>
+<span class="font-label-sm text-label-sm text-text-tertiary">Aderência 98.9% (RGI 1 e 6)</span>
+</td>
+<td class="p-3">
+<span class="px-2 py-0.5 rounded bg-semantic-compliance/10 text-semantic-compliance font-label-sm text-label-sm font-semibold flex items-center gap-1 w-max">
+<span class="material-symbols-outlined text-[13px]">check_circle</span> Conforme
+                  </span>
+</td>
+<td class="p-3 font-mono text-center text-text-primary">000001</td>
+<td class="p-3 font-mono text-center text-accent-emerald-bright font-semibold">01</td>
+<td class="p-3 pr-4 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="p-1.5 rounded hover:bg-surface-container text-text-tertiary hover:text-text-primary" type="button">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</button>
+<button class="px-2 py-1 rounded bg-surface-container text-accent-emerald-bright hover:bg-accent-forest-deep font-label-sm text-label-sm" type="button">
+                      Validado
+                    </button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Paginação e Métricas do Ledger -->
+<div class="px-5 py-3 bg-surface-canvas flex items-center justify-between text-text-tertiary font-label-sm text-label-sm">
+<span>Página 1 de 62 (428 registros)</span>
+<div class="flex items-center gap-1.5">
+<button class="px-2.5 py-1 rounded bg-surface-container text-text-secondary hover:text-text-primary disabled:opacity-40" disabled="" type="button">Anterior</button>
+<span class="px-2 py-1 rounded bg-primary-container text-on-primary-container font-bold">1</span>
+<button class="px-2 py-1 rounded hover:bg-surface-container text-text-secondary" type="button">2</button>
+<button class="px-2 py-1 rounded hover:bg-surface-container text-text-secondary" type="button">3</button>
+<span class="px-1 text-text-tertiary">...</span>
+<button class="px-2 py-1 rounded hover:bg-surface-container text-text-secondary" type="button">62</button>
+<button class="px-2.5 py-1 rounded bg-surface-container text-text-secondary hover:text-text-primary" type="button">Próxima</button>
+</div>
+</div>
+</div>
+<!-- Card Lateral de Inspeção Pericial Detalhada (Item Selecionado: 00248) -->
+<div class="xl:col-span-4 rounded-xl bg-surface-card flex flex-col shadow-lg overflow-hidden relative">
+<div class="p-4 bg-surface-canvas flex items-center justify-between"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-semantic-warning text-[20px]">troubleshoot</span><span class="font-headline-sm text-headline-sm text-text-primary font-semibold">Inspeção Pericial</span></div><span class="px-2 py-0.5 rounded bg-surface-container font-mono text-semantic-warning font-semibold font-label-md text-label-md">SKU: 00248</span></div>
+<div class="p-5 flex flex-col gap-4">
+<!-- Item Header & Conflito -->
+<div>
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase tracking-wider">Descrição Original na Planilha</span>
+<p class="font-headline-sm text-headline-sm text-text-primary mt-1">ENGRENAGEM HELICOIDAL P/ TRANSMISSAO COLHEITADEIRA</p>
+</div>
+<!-- Duelo de Posições NCM: Declarado vs Sugerido -->
+<div class="grid grid-cols-2 gap-3 p-3.5 rounded-lg bg-surface-canvas">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase">Declarado (Cliente)</span>
+<span class="font-mono text-semantic-danger font-bold text-headline-md mt-0.5">8483.40.10</span>
+<span class="font-body-sm text-body-sm text-text-tertiary">Engrenagens de ferro/aço</span>
+<span class="font-label-sm text-label-sm text-semantic-danger mt-1 font-semibold">ICMS 18% · PIS/COFINS 9.25%</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-accent-emerald-bright uppercase font-semibold">Sugerido (Auditoria)</span>
+<span class="font-mono text-accent-emerald-bright font-bold text-headline-md mt-0.5">8433.90.90</span>
+<span class="font-body-sm text-body-sm text-text-secondary">Partes de colheitadeiras</span>
+<span class="font-label-sm text-label-sm text-accent-emerald-bright mt-1 font-semibold">Desoneração Bens Capital</span>
+</div>
+</div>
+<!-- Parecer Técnico Pericial Determinístico -->
+<div class="p-3.5 rounded-lg bg-surface-container-low flex flex-col gap-2.5"><div class="flex items-center justify-between text-semantic-warning"><div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px]">gavel</span><span class="font-label-md text-label-md font-semibold">Fundamentação Técnico-Jurídica</span></div><button class="px-2 py-0.5 rounded bg-surface-canvas hover:bg-surface-container text-accent-emerald-bright font-label-sm text-label-sm flex items-center gap-1 transition-colors" title="Copiar parecer formal" type="button"><span class="material-symbols-outlined text-[14px]">content_copy</span> Copiar Parecer</button></div><p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">Síntese executiva: Prevalência de partes de colheitadeiras (<strong class="text-accent-emerald-bright font-mono">8433.90.90</strong>) sobre engrenagens genéricas por destinação exclusiva agrícola.</p><details class="group rounded bg-surface-canvas p-2.5"><summary class="cursor-pointer font-label-sm text-label-sm text-accent-emerald-bright font-semibold flex items-center justify-between list-none"><span>Ver Parecer Pericial Completo ▾</span><span class="text-text-tertiary font-mono text-[10px]">RGI 1 e 6 · NESH</span></summary><p class="font-body-sm text-body-sm text-text-secondary leading-relaxed mt-2 pt-2 border-t border-surface-container-high">O código declarado <strong class="text-text-primary font-mono">8483.40.10</strong> abrange engrenagens genéricas. Contudo, a aplicação estrita da <span class="text-accent-emerald-bright font-medium">Nota Legal 1(f) do Capítulo 84</span> cumulada com a <span class="text-accent-emerald-bright font-medium">RGI 6</span> determina que partes reconhecíveis como exclusiva ou principalmente destinadas a máquinas agrícolas da posição 84.33 devem ser classificadas em sua posição específica (<strong class="text-accent-emerald-bright font-mono">8433.90.90</strong>).</p></details><div class="p-2.5 rounded bg-surface-canvas flex flex-col gap-1 font-label-sm text-label-sm"><span class="text-text-secondary flex items-center gap-1.5"><span class="material-symbols-outlined text-primary text-[14px]">fact_check</span><strong>Efeito Financeiro:</strong> Alíquota Zero PIS/COFINS (Safra) + Red. ICMS Conv. 52/91.</span><span class="text-text-secondary flex items-center gap-1.5"><span class="material-symbols-outlined text-primary text-[14px]">balance</span><strong>Reforma LC 214/25:</strong> cClassTrib 050001 (Alíquota Reduzida de 60%).</span></div></div>
+<!-- Doutrina e Normas Vinculadas -->
+<div class="flex flex-col gap-1.5">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase">Dispositivos Normativos Aplicáveis</span>
+<div class="flex flex-col gap-1">
+<div class="p-2 rounded bg-surface-canvas flex items-center justify-between text-body-sm">
+<span class="font-mono text-accent-emerald-bright text-label-sm">NESH RFB nº 2.169/2023</span>
+<span class="text-text-tertiary text-label-sm">Notas Explicativas Cap. 84</span>
+</div>
+<div class="p-2 rounded bg-surface-canvas flex items-center justify-between text-body-sm">
+<span class="font-mono text-accent-emerald-bright text-label-sm">Solução de Consulta COSIT nº 148/2022</span>
+<span class="text-text-tertiary text-label-sm">Prevalência de Especificidade</span>
+</div>
+</div>
+</div>
+<!-- Ações do Inspetor -->
+<div class="flex items-center gap-2 pt-2">
+<button class="flex-1 py-2 px-3 rounded-lg bg-primary text-surface-canvas font-headline-sm text-headline-sm font-bold hover:bg-accent-emerald-bright transition-colors flex items-center justify-center gap-1.5 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">check</span> Aplicar Sugestão Pericial
+            </button>
+<button class="py-2 px-3 rounded-lg bg-surface-container text-text-secondary hover:text-text-primary font-headline-sm text-headline-sm transition-colors" title="Manter código original sob responsabilidade do cliente" type="button">
+              Manter Atual
+            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Seção 5: Painel de Citações Normativas Vigentes no Lote -->
+
+</div>
+</div></main><aside id="normativo-drawer" class="relative flex flex-col w-80 bg-surface-container-lowest pt-16 shrink-0 shadow-[0_1px_8px_rgba(0,0,0,0.5)] border-l border-surface-container/60 transition-all duration-300 z-30"><div class="p-4 border-b border-surface-container/60 flex items-center justify-between bg-surface-card/40"><div class="flex items-center gap-2"><div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[18px]">library_books</span></div><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-headline-sm text-headline-sm text-text-primary font-semibold">Catálogo Normativo</span><span class="px-1.5 py-0.2 rounded bg-surface-container font-label-sm text-label-sm text-accent-emerald-bright font-mono text-[10px]">Lote</span></div><span class="font-label-sm text-label-sm text-text-tertiary">Base Jurídico-Fiscal</span></div></div><button class="p-1.5 rounded-lg hover:bg-surface-container text-text-tertiary hover:text-text-primary transition-colors" title="Recolher painel normativo" type="button" onclick="document.getElementById('normativo-drawer').classList.add('hidden'); document.getElementById('normativo-rail-trigger').classList.remove('hidden');"><span class="material-symbols-outlined text-[18px]">chevron_right</span></button></div><div class="p-3 bg-surface-canvas/60 border-b border-surface-container/60 flex flex-col gap-2"><div class="flex flex-wrap items-center gap-1.5"><span class="px-2 py-0.5 rounded bg-surface-container text-accent-emerald-bright font-label-sm text-label-sm font-mono">IN RFB 2.169</span><span class="px-2 py-0.5 rounded bg-surface-container text-accent-emerald-bright font-label-sm text-label-sm font-mono">Gecex 926/26</span><span class="px-2 py-0.5 rounded bg-surface-container text-accent-emerald-bright font-label-sm text-label-sm font-mono">LC 214/25</span></div><button class="w-full py-1.5 px-3 rounded-lg bg-surface-container hover:bg-surface-container-high text-accent-emerald-bright font-label-sm text-label-sm flex items-center justify-center gap-1.5 transition-colors border border-surface-container-high" type="button"><span class="material-symbols-outlined text-[15px]">content_copy</span> Copiar Citações do Lote</button></div><div class="p-3.5 flex-1 flex flex-col gap-3 overflow-y-auto"><div class="p-3 rounded-lg bg-surface-card border border-surface-container/60 flex flex-col gap-2 shadow-sm"><div class="flex items-center justify-between"><span class="font-label-sm text-label-sm font-semibold text-accent-emerald-bright">IN RFB nº 2.169/2023</span><span class="px-1.5 py-0.5 rounded bg-surface-container font-label-sm text-label-sm text-text-tertiary">Vigente</span></div><p class="font-body-sm text-body-sm text-text-secondary leading-relaxed">Notas Explicativas do Sistema Harmonizado (NESH) para partes e peças industriais.</p><div class="flex items-center justify-between font-label-sm text-label-sm pt-2 border-t border-surface-container/60"><span class="text-text-tertiary">389 itens afetados</span><div class="flex items-center gap-2"><button class="text-text-secondary hover:text-text-primary text-[12px] flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">content_copy</span> Copiar</button><button class="text-primary hover:underline flex items-center text-[12px]">Ver Norma ▾</button></div></div></div><div class="p-3 rounded-lg bg-surface-card border border-surface-container/60 flex flex-col gap-2 shadow-sm"><div class="flex items-center justify-between"><span class="font-label-sm text-label-sm font-semibold text-accent-emerald-bright">Resolução Gecex nº 926/2026</span><span class="px-1.5 py-0.5 rounded bg-semantic-compliance/10 text-semantic-compliance font-label-sm text-label-sm">Nov/26</span></div><p class="font-body-sm text-body-sm text-text-secondary leading-relaxed">Consolidação da NCM e bloqueio imediato dos 14 códigos revogados da carteira.</p><div class="flex items-center justify-between font-label-sm text-label-sm pt-2 border-t border-surface-container/60"><span class="text-semantic-danger font-semibold">14 bloqueios</span><div class="flex items-center gap-2"><button class="text-text-secondary hover:text-text-primary text-[12px] flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">content_copy</span> Copiar</button><button class="text-primary hover:underline flex items-center text-[12px]">Ver Norma ▾</button></div></div></div><div class="p-3 rounded-lg bg-surface-card border border-surface-container/60 flex flex-col gap-2 shadow-sm"><div class="flex items-center justify-between"><span class="font-label-sm text-label-sm font-semibold text-accent-emerald-bright">Lei Complementar nº 214/2025</span><span class="px-1.5 py-0.5 rounded bg-surface-container font-label-sm text-label-sm text-tertiary">IBS / CBS</span></div><p class="font-body-sm text-body-sm text-text-secondary leading-relaxed">Regulamentação do cClassTrib e CST para emissão de documentos fiscais da Reforma.</p><div class="flex items-center justify-between font-label-sm text-label-sm pt-2 border-t border-surface-container/60"><span class="text-tertiary font-semibold">414 cClassTrib</span><div class="flex items-center gap-2"><button class="text-text-secondary hover:text-text-primary text-[12px] flex items-center gap-0.5"><span class="material-symbols-outlined text-[14px]">content_copy</span> Copiar</button><button class="text-primary hover:underline flex items-center text-[12px]">Ver Norma ▾</button></div></div></div><div class="p-3 rounded-lg bg-surface-canvas/80 border border-surface-container/40 flex flex-col gap-1.5"><div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-text-tertiary uppercase">Doutrina Subsidiária</span><span class="material-symbols-outlined text-text-tertiary text-[14px]">gavel</span></div><div class="font-body-sm text-body-sm text-text-secondary flex flex-col gap-1"><span class="hover:text-primary cursor-pointer transition-colors">• CPC 16 (R1) · Valoração e Custos</span><span class="hover:text-primary cursor-pointer transition-colors">• RICMS/PR Dec. 7871 · ST e MVA</span><span class="hover:text-primary cursor-pointer transition-colors">• RGI 1 e 6 / NESH 2024 · Subposições</span></div></div></div></aside><button id="normativo-rail-trigger" class="hidden fixed right-0 top-24 z-40 bg-surface-card border-l border-t border-b border-surface-container-high rounded-l-lg py-3 px-2 shadow-lg flex flex-col items-center gap-2 hover:bg-surface-container transition-colors" title="Expandir Catálogo Normativo" type="button" onclick="document.getElementById('normativo-drawer').classList.remove('hidden'); document.getElementById('normativo-rail-trigger').classList.add('hidden');"><span class="material-symbols-outlined text-accent-emerald-bright text-[18px]">library_books</span><span class="[writing-mode:vertical-rl] font-label-sm text-label-sm text-text-secondary rotate-180 tracking-wider uppercase font-semibold text-[11px]">Catálogo Normativo</span><span class="material-symbols-outlined text-text-tertiary text-[16px]">chevron_left</span></button></div></div>
+
+
+
+</body></html>

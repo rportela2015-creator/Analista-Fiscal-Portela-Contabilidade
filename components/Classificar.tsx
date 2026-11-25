@@ -368,6 +368,20 @@ export default function Classificar() {
 
   return (
     <>
+      <div className="st-page-header">
+        <div>
+          <div className="st-page-title-row">
+            <h2 className="st-page-title">Classificação Fiscal</h2>
+            <span className="st-badge-norma">RGI 1–6</span>
+            <span className="st-badge-norma">NESH</span>
+            <span className="st-badge-norma">Siscomex</span>
+          </div>
+          <p className="hint" style={{ margin: '4px 0 0' }}>
+            Enquadramento NCM determinístico e assistido por IA com parametrização de IPI, CEST e Reforma Tributária.
+          </p>
+        </div>
+      </div>
+
       <div style={{ marginBottom: 16 }}>
         <KpiStrip
           items={kpiItems}
@@ -492,13 +506,13 @@ export default function Classificar() {
       )}
 
       {aiResult && (
-        <div className="card" style={{ border: '2px solid #2563eb', background: '#f8fafc', margin: '14px 0' }}>
+        <div className="card" style={{ border: '2px solid #2563eb', background: 'var(--bg-card-subtle)', margin: '14px 0' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h3 style={{ margin: 0, color: '#1e40af' }}>Parecer Técnico Tributário (IA Especialista)</h3>
+              <h3 style={{ margin: 0, color: 'var(--accent-blue)' }}>Parecer Técnico Tributário (IA Especialista)</h3>
               {aiResult.motor && (
                 <span className="small muted" style={{ display: 'block', marginTop: 2 }}>
-                  Motor: <b style={{ color: '#1e40af' }}>{aiResult.motor}</b>
+                  Motor: <b style={{ color: 'var(--accent-blue)' }}>{aiResult.motor}</b>
                 </span>
               )}
             </div>
@@ -724,7 +738,7 @@ export default function Classificar() {
           >
             <div
               style={{
-                background: 'white',
+                background: 'var(--bg-card)',
                 borderRadius: 8,
                 maxWidth: 950,
                 width: '100%',
@@ -742,11 +756,11 @@ export default function Classificar() {
                   alignItems: 'center',
                   padding: '16px 20px',
                   borderBottom: '1px solid #e2e8f0',
-                  background: '#f8fafc',
+                  background: 'var(--bg-card-subtle)',
                 }}
               >
                 <div>
-                  <h3 style={{ margin: 0, color: '#1a202c', fontSize: '1.15rem' }}>
+                  <h3 style={{ margin: 0, color: 'var(--ink)', fontSize: '1.15rem' }}>
                     Relatório de Parametrização Fiscal para ERP — Modo {modalRelatorio.modo === 'resumido' ? 'Resumido' : 'Detalhado'}
                   </h3>
                   <span className="small muted">
@@ -758,7 +772,7 @@ export default function Classificar() {
                 <button
                   type="button"
                   onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido', payload: null })}
-                  style={{ background: 'transparent', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#718096' }}
+                  style={{ background: 'transparent', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--ink-2)' }}
                 >
                   ✕
                 </button>
@@ -767,7 +781,7 @@ export default function Classificar() {
               <div
                 style={{
                   padding: '10px 20px',
-                  background: '#edf2f7',
+                  background: 'var(--bg-card-subtle)',
                   borderBottom: '1px solid #e2e8f0',
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -837,17 +851,17 @@ export default function Classificar() {
                 </div>
               </div>
 
-              <div style={{ flex: 1, overflow: 'auto', padding: 20, background: '#f7fafc' }}>
+              <div style={{ flex: 1, overflow: 'auto', padding: 20, background: 'var(--bg-app)' }}>
                 {formatoModal === 'html' ? (
                   <iframe
                     title="Pré-visualização do Relatório ERP"
                     srcDoc={relatorioHtml}
-                    style={{ width: '100%', height: '550px', border: 'none', background: 'white', borderRadius: 4 }}
+                    style={{ width: '100%', height: '550px', border: 'none', background: 'var(--bg-card)', borderRadius: 4 }}
                   />
                 ) : (
                   <pre
                     style={{
-                      background: 'white',
+                      background: 'var(--bg-card)',
                       padding: 16,
                       borderRadius: 4,
                       border: '1px solid #cbd5e0',
@@ -863,7 +877,7 @@ export default function Classificar() {
                 )}
               </div>
 
-              <div style={{ padding: '10px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', textAlign: 'right' }}>
+              <div style={{ padding: '10px 20px', borderTop: '1px solid #e2e8f0', background: 'var(--bg-card-subtle)', textAlign: 'right' }}>
                 <button
                   type="button"
                   onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido', payload: null })}
@@ -997,8 +1011,8 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
           type="button"
           onClick={onOpen}
           style={{
-            background: '#FEF9C3',
-            color: '#713F12',
+            background: 'var(--accent-amber-subtle)',
+            color: 'var(--warn)',
             border: '1px solid #FDE047',
             fontWeight: 700,
             cursor: 'pointer',

@@ -300,9 +300,9 @@ export default function TabelaItensExtracao({
   }
 
   return (
-    <div className="card" style={{ marginTop: 16 }}>
+    <div className="st-table-card" style={{ marginTop: 16 }}>
       {/* ---------------- CABEÇALHO DA TABELA E ESTATÍSTICAS ---------------- */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ padding: '16px 18px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h3 style={{ margin: 0, textTransform: 'none', fontSize: 16, color: 'var(--ink)' }}>
             Itens da Nota Fiscal ({itens.length} {itens.length === 1 ? 'item' : 'itens'})
@@ -314,24 +314,14 @@ export default function TabelaItensExtracao({
 
         {/* Resumo de Badges no Cabeçalho */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span
-            className="badge"
-            style={{
-              background: resumoSelecionados.quantidade > 0 ? '#e8f0fd' : '#f1f5f9',
-              color: resumoSelecionados.quantidade > 0 ? 'var(--brand)' : 'var(--ink-2)',
-              border: '1px solid #c9d3e6',
-              padding: '4px 10px',
-              fontSize: 12,
-              fontWeight: 600,
-            }}
-          >
+          <span className={`badge ${resumoSelecionados.quantidade > 0 ? 'blue' : 'grey'}`} style={{ padding: '4px 10px', fontSize: 12 }}>
             {resumoSelecionados.quantidade} de {itens.length} selecionados
           </span>
 
           {contagemSensiveis > 0 && (
             <span
               className="badge media"
-              style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600 }}
+              style={{ padding: '4px 10px', fontSize: 12 }}
               title="Itens com risco tributário detectado deterministicamente"
             >
               ⚠️ {contagemSensiveis} {contagemSensiveis === 1 ? 'sensível' : 'sensíveis'}
@@ -341,7 +331,7 @@ export default function TabelaItensExtracao({
           {contagemInconsistentes > 0 && (
             <span
               className="badge baixa"
-              style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600 }}
+              style={{ padding: '4px 10px', fontSize: 12 }}
               title="Itens com NCM não localizado no Siscomex oficial"
             >
               ⛔ {contagemInconsistentes} NCM {contagemInconsistentes === 1 ? 'inválido' : 'inválidos'}
@@ -351,21 +341,7 @@ export default function TabelaItensExtracao({
       </div>
 
       {/* ---------------- BARRA DE FERRAMENTAS E FILTROS RÁPIDOS ---------------- */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 10,
-          margin: '14px 0',
-          padding: '10px 14px',
-          background: '#f8fafc',
-          borderRadius: 8,
-          border: '1px solid var(--line)',
-        }}
-      >
-        {/* Ações em Lote de Seleção */}
+      <div className="st-table-toolbar" style={{ margin: '14px 16px', borderRadius: 10, border: '1px solid var(--border-muted)' }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             type="button"
@@ -373,7 +349,7 @@ export default function TabelaItensExtracao({
             onClick={onSelectAll}
             disabled={readOnly || disabled}
             title="Selecionar Todos"
-            style={{ minHeight: '36px' }}
+            style={{ minHeight: '44px' }}
           >
             Selecionar Todos ({itens.length})
           </button>
@@ -383,7 +359,7 @@ export default function TabelaItensExtracao({
             onClick={onDeselectAll}
             disabled={readOnly || disabled}
             title="Desmarcar Todos"
-            style={{ minHeight: '36px' }}
+            style={{ minHeight: '44px' }}
           >
             Desmarcar Todos
           </button>
@@ -393,11 +369,11 @@ export default function TabelaItensExtracao({
             onClick={handleSelectSensitives}
             disabled={readOnly || disabled || contagemSensiveis === 0}
             style={{
-              borderColor: contagemSensiveis > 0 ? '#e0a32b' : undefined,
-              background: contagemSensiveis > 0 ? '#fffdf5' : undefined,
-              color: contagemSensiveis > 0 ? '#92400e' : undefined,
-              fontWeight: contagemSensiveis > 0 ? 600 : undefined,
-              minHeight: '36px',
+              borderColor: contagemSensiveis > 0 ? 'var(--accent-amber)' : undefined,
+              background: contagemSensiveis > 0 ? 'var(--accent-amber-subtle)' : undefined,
+              color: contagemSensiveis > 0 ? 'var(--warn)' : undefined,
+              fontWeight: contagemSensiveis > 0 ? 700 : undefined,
+              minHeight: '44px',
             }}
             title="Selecionar Apenas Sensíveis"
           >
@@ -415,11 +391,11 @@ export default function TabelaItensExtracao({
               }}
               disabled={readOnly || disabled || selectedCount === 0}
               style={{
-                borderColor: '#0284c7',
-                background: '#f0f9ff',
-                color: '#0369a1',
-                fontWeight: 600,
-                minHeight: '36px',
+                borderColor: 'var(--accent-blue)',
+                background: 'var(--accent-blue-subtle)',
+                color: 'var(--accent-blue)',
+                fontWeight: 700,
+                minHeight: '44px',
               }}
               title="Enviar itens selecionados para a tela de parametrização de ERP"
             >
@@ -433,12 +409,13 @@ export default function TabelaItensExtracao({
           <div style={{ display: 'flex', gap: 4 }}>
             <button
               type="button"
-              className={`mini ${filtro === 'todos' ? 'active' : ''}`}
+              className="mini"
               style={{
-                background: filtro === 'todos' ? 'var(--brand)' : '#fff',
-                color: filtro === 'todos' ? '#fff' : 'var(--ink-2)',
-                fontWeight: filtro === 'todos' ? 650 : 400,
-                minHeight: '36px',
+                background: filtro === 'todos' ? 'var(--accent-forest-deep)' : 'var(--bg-card)',
+                color: filtro === 'todos' ? '#34d399' : 'var(--ink-2)',
+                borderColor: filtro === 'todos' ? 'var(--accent-emerald)' : undefined,
+                fontWeight: filtro === 'todos' ? 700 : 500,
+                minHeight: '44px',
               }}
               onClick={() => setFiltro('todos')}
             >
@@ -446,12 +423,13 @@ export default function TabelaItensExtracao({
             </button>
             <button
               type="button"
-              className={`mini ${filtro === 'sensiveis' ? 'active' : ''}`}
+              className="mini"
               style={{
-                background: filtro === 'sensiveis' ? 'var(--warn)' : '#fff',
-                color: filtro === 'sensiveis' ? '#fff' : 'var(--ink-2)',
-                fontWeight: filtro === 'sensiveis' ? 650 : 400,
-                minHeight: '36px',
+                background: filtro === 'sensiveis' ? 'var(--accent-amber-subtle)' : 'var(--bg-card)',
+                color: filtro === 'sensiveis' ? 'var(--warn)' : 'var(--ink-2)',
+                borderColor: filtro === 'sensiveis' ? 'var(--accent-amber)' : undefined,
+                fontWeight: filtro === 'sensiveis' ? 700 : 500,
+                minHeight: '44px',
               }}
               onClick={() => setFiltro('sensiveis')}
             >
@@ -459,12 +437,13 @@ export default function TabelaItensExtracao({
             </button>
             <button
               type="button"
-              className={`mini ${filtro === 'selecionados' ? 'active' : ''}`}
+              className="mini"
               style={{
-                background: filtro === 'selecionados' ? 'var(--ok)' : '#fff',
-                color: filtro === 'selecionados' ? '#fff' : 'var(--ink-2)',
-                fontWeight: filtro === 'selecionados' ? 650 : 400,
-                minHeight: '36px',
+                background: filtro === 'selecionados' ? 'var(--accent-emerald-glow)' : 'var(--bg-card)',
+                color: filtro === 'selecionados' ? 'var(--ok)' : 'var(--ink-2)',
+                borderColor: filtro === 'selecionados' ? 'var(--accent-emerald)' : undefined,
+                fontWeight: filtro === 'selecionados' ? 700 : 500,
+                minHeight: '44px',
               }}
               onClick={() => setFiltro('selecionados')}
             >
@@ -477,44 +456,24 @@ export default function TabelaItensExtracao({
             placeholder="Buscar por código, produto ou NCM..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            style={{
-              width: 210,
-              fontSize: 12,
-              padding: '6px 10px',
-              borderRadius: 6,
-              border: '1px solid #c9d3e6',
-              minHeight: '36px',
-            }}
+            style={{ width: 220, fontSize: 12, minHeight: '44px' }}
           />
         </div>
       </div>
 
       {/* Alerta de nenhum item selecionado */}
       {selectedCount === 0 && (
-        <div
-          role="status"
-          style={{
-            margin: '0 0 12px',
-            padding: '8px 14px',
-            background: '#fffbeb',
-            border: '1px solid #fde68a',
-            borderRadius: 6,
-            color: '#92400e',
-            fontSize: 12.5,
-            fontWeight: 500,
-          }}
-        >
+        <div role="status" className="note atencao" style={{ margin: '0 16px 12px' }}>
           ⚠️ Nenhum item selecionado para auditoria. Marque ao menos um item para prosseguir com a análise fiscal.
         </div>
       )}
 
       {/* ---------------- TABELA ENXUTA DE 7 COLUNAS COM TABULAR-NUMS ---------------- */}
-      <div className="scroll" style={{ maxHeight: '60vh' }}>
-        <table className="tb" aria-label="Tabela enxuta de itens da nota fiscal">
+      <div className="st-table-scroll" style={{ maxHeight: '60vh' }}>
+        <table className="st-data-table" aria-label="Tabela enxuta de itens da nota fiscal">
           <thead>
             <tr>
-              {/* Coluna 1: Item / Cód. */}
-              <th style={{ width: 110, textAlign: 'left' }}>
+              <th style={{ width: 110 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input
                     ref={masterCheckboxRef}
@@ -529,24 +488,12 @@ export default function TabelaItensExtracao({
                   <span>Item / Cód. / EAN</span>
                 </div>
               </th>
-
-              {/* Coluna 2: Descrição / NCM */}
               <th>Descrição / NCM (Siscomex) <span className="sr-only">Descrição do Produto</span></th>
-
-              {/* Coluna 3: CFOP / Destinação */}
-              <th style={{ width: 150 }}>CFOP / Destinação <span className="sr-only">CST / CSOSN</span></th>
-
-              {/* Coluna 4: Vlr. Operação */}
-              <th style={{ width: 115, textAlign: 'right' }}>Vlr. Operação <span className="sr-only">V. Total</span></th>
-
-              {/* Coluna 5: ICMS / ST / DIFAL */}
-              <th style={{ width: 160 }}>ICMS / ST / DIFAL <span className="sr-only">Tributos Destacados</span></th>
-
-              {/* Coluna 6: Crédito Efetivo */}
-              <th style={{ width: 130 }}>Crédito Efetivo <span className="sr-only">Sensibilidade</span></th>
-
-              {/* Coluna 7: Ações */}
-              <th style={{ width: 100, textAlign: 'center' }}>Ações</th>
+              <th style={{ width: 155 }}>CFOP / Destinação <span className="sr-only">CST / CSOSN</span></th>
+              <th className="is-right" style={{ width: 125 }}>Vlr. Operação <span className="sr-only">V. Total</span></th>
+              <th style={{ width: 165 }}>ICMS / ST / DIFAL <span className="sr-only">Tributos Destacados</span></th>
+              <th style={{ width: 135 }}>Crédito Efetivo <span className="sr-only">Sensibilidade</span></th>
+              <th className="is-center" style={{ width: 110 }}>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -569,14 +516,10 @@ export default function TabelaItensExtracao({
                   <tr
                     key={item.index}
                     onClick={() => !readOnly && !disabled && onToggleSelect(item.index)}
-                    style={{
-                      backgroundColor: isSelected ? '#f0f7ff' : undefined,
-                      cursor: 'pointer',
-                      transition: 'background-color 0.15s ease',
-                    }}
+                    className={isSelected ? 'is-selected' : ''}
+                    style={{ cursor: 'pointer' }}
                   >
-                    {/* 1. Item / Cód. */}
-                    <td style={{ verticalAlign: 'middle' }}>
+                    <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <input
                           type="checkbox"
@@ -589,62 +532,49 @@ export default function TabelaItensExtracao({
                         />
                         <div>
                           <strong className="mono" style={{ fontSize: 12 }}>#{item.index}</strong>
-                          <div className="mono text-slate-500" style={{ fontSize: 11 }}>
+                          <div className="mono muted" style={{ fontSize: 11 }}>
                             {item.cProd || 'S/ CÓD'}
                           </div>
                         </div>
                       </div>
                     </td>
 
-                    {/* 2. Descrição / NCM */}
                     <td>
                       <div style={{ fontWeight: 600, color: 'var(--ink)', lineHeight: 1.3 }}>
                         {item.xProd || 'Descrição ausente'}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
-                        <span className="mono tabular-nums text-slate-700" style={{ fontSize: 11.5, fontWeight: 650 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                        <span className="mono tabular-nums" style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--ok)' }}>
                           {formatarNcm(item.ncm)}
                         </span>
                         {item.ncmValidoSiscomex ? (
-                          <span className="badge alta" style={{ fontSize: 9.5, padding: '1px 5px' }}>
-                            ✓ Siscomex
-                          </span>
+                          <span className="badge alta" style={{ fontSize: 10 }}>✓ Siscomex</span>
                         ) : (
-                          <span className="badge baixa" style={{ fontSize: 9.5, padding: '1px 5px' }} title="NCM não encontrado no catálogo oficial Siscomex">
+                          <span className="badge baixa" style={{ fontSize: 10 }} title="NCM não encontrado no catálogo oficial Siscomex">
                             ⚠️ Inválido
                           </span>
                         )}
                         {item.sensivelParaAuditoria && (
-                          <span className="badge media" style={{ fontSize: 9.5, padding: '1px 5px' }}>
-                            ⚠️ Sensível
-                          </span>
+                          <span className="badge media" style={{ fontSize: 10 }}>⚠️ Sensível</span>
                         )}
                       </div>
                     </td>
 
-                    {/* 3. CFOP / Destinação */}
                     <td onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                        <span className="mono font-bold text-slate-800" style={{ fontSize: 11.5 }}>
+                        <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink)' }}>
                           {item.cfop || '----'}
                         </span>
                         {item.cfop && (item.cfop.startsWith('6') || item.cfop.startsWith('2')) && (
-                          <span className="badge media" style={{ fontSize: 9, padding: '1px 4px' }} title="Operação Interestadual">
-                            Inter
-                          </span>
+                          <span className="badge media" style={{ fontSize: 9.5 }} title="Operação Interestadual">Inter</span>
                         )}
                         {item.tributos?.csosn ? (
-                          <span className="badge grey" style={{ fontSize: 9.5, padding: '1px 4px' }}>
-                            CSOSN {item.tributos.csosn}
-                          </span>
+                          <span className="badge grey" style={{ fontSize: 9.5 }}>CSOSN {item.tributos.csosn}</span>
                         ) : item.tributos?.cstIcms ? (
-                          <span className="badge blue" style={{ fontSize: 9.5, padding: '1px 4px' }}>
-                            CST {item.tributos.cstIcms}
-                          </span>
+                          <span className="badge blue" style={{ fontSize: 9.5 }}>CST {item.tributos.cstIcms}</span>
                         ) : null}
                       </div>
 
-                      {/* Seletor Rápido de Destinação */}
                       <select
                         value={destinacaoItem}
                         onChange={(e) =>
@@ -653,14 +583,12 @@ export default function TabelaItensExtracao({
                         }
                         disabled={readOnly || disabled}
                         style={{
-                          fontSize: 10.5,
-                          padding: '2px 4px',
-                          borderRadius: 4,
-                          border: '1px solid #cbd5e1',
-                          background: '#ffffff',
-                          marginTop: 3,
+                          fontSize: 11,
+                          padding: '4px 6px',
+                          minHeight: '32px',
+                          marginTop: 4,
                           width: '100%',
-                          maxWidth: 120,
+                          maxWidth: 132,
                         }}
                         title="Destinação para apuração de DIFAL / ST"
                       >
@@ -671,67 +599,57 @@ export default function TabelaItensExtracao({
                       </select>
                     </td>
 
-                    {/* 4. Vlr. Operação (tabular-nums alinhado à direita) */}
-                    <td className="num tabular-nums" style={{ verticalAlign: 'middle' }}>
+                    <td className="is-right tabular-nums">
                       <strong style={{ fontSize: 13 }}>{formatarBrl(item.vProd)}</strong>
-                      <div className="text-slate-500" style={{ fontSize: 10.5 }}>
+                      <div className="muted" style={{ fontSize: 11 }}>
                         {formatarQtd(item.qCom)} {item.uCom || 'UN'}
                       </div>
                     </td>
 
-                    {/* 5. ICMS / ST / DIFAL */}
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         {item.tributos?.vICMS !== undefined && item.tributos.vICMS > 0 ? (
-                          <span className="text-[11px] text-blue-700 font-mono font-semibold">
+                          <span className="mono tabular-nums" style={{ fontSize: 11, color: 'var(--accent-blue)', fontWeight: 600 }}>
                             ICMS: {formatarBrl(item.tributos.vICMS)} ({formatarPct(item.tributos.pICMS)})
                           </span>
                         ) : (
-                          <span className="text-[11px] text-slate-400 font-mono">ICMS: R$ 0,00</span>
+                          <span className="mono muted" style={{ fontSize: 11 }}>ICMS: R$ 0,00</span>
                         )}
 
                         {item.tributos?.vICMSST !== undefined && item.tributos.vICMSST > 0 && (
-                          <span className="text-[10.5px] text-amber-700 font-mono font-semibold">
+                          <span className="mono tabular-nums" style={{ fontSize: 11, color: 'var(--warn)', fontWeight: 600 }}>
                             ST: {formatarBrl(item.tributos.vICMSST)}
                           </span>
                         )}
 
                         {diag?.exigeRecolhimento && (
-                          <span className="text-[10.5px] text-red-700 font-mono font-bold">
+                          <span className="mono tabular-nums" style={{ fontSize: 11, color: 'var(--bad)', fontWeight: 700 }}>
                             DIFAL PR: {formatarBrl(diag.valorDebitoDifal)}
                           </span>
                         )}
                       </div>
                     </td>
 
-                    {/* 6. Crédito Efetivo */}
                     <td>
                       {item.sensivelParaAuditoria ? (
-                        <div className="inline-flex items-center gap-1 text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                          <span>⚠️</span>
-                          <span>Requer Perícia</span>
-                        </div>
+                        <span className="badge amber">⚠️ Requer Perícia</span>
                       ) : (
-                        <div className="inline-flex items-center gap-1 text-[11px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                          <span>✓</span>
-                          <span>Crédito Válido</span>
-                        </div>
+                        <span className="badge green">✓ Crédito Válido</span>
                       )}
-                      <div className="text-[10px] text-slate-500 mt-1">
+                      <div className="mono muted tabular-nums" style={{ fontSize: 10.5, marginTop: 4 }}>
                         PIS/COF: {formatarBrl((item.tributos?.vPIS || 0) + (item.tributos?.vCOFINS || 0))}
                       </div>
                     </td>
 
-                    {/* 7. Ações / Inspeção */}
-                    <td style={{ textAlign: 'center', verticalAlign: 'middle' }} onClick={(e) => e.stopPropagation()}>
+                    <td className="is-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
                         onClick={(e) => handleAbrirInspecao(item, e)}
                         aria-expanded={drawerAberto && itemInspecionado?.index === item.index}
                         aria-controls="drawer-item-detalhes"
                         title={`Inspecionar detalhes periciais do item #${item.index}`}
-                        className="btn-inspect inline-flex items-center justify-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-md border border-slate-300 hover:border-blue-600 hover:text-blue-700 bg-white transition-colors"
-                        style={{ minHeight: '44px', minWidth: '78px' }}
+                        className="btn-inspect"
+                        style={{ minHeight: '44px', minWidth: '88px' }}
                       >
                         <span>Inspecionar</span>
                       </button>
@@ -760,7 +678,7 @@ export default function TabelaItensExtracao({
         onTabChange={setDrawerTab}
         width="500px"
         footerActions={
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             {onPrecificarItem && itemInspecionado && (
               <button
                 type="button"
@@ -768,8 +686,8 @@ export default function TabelaItensExtracao({
                   onPrecificarItem(itemInspecionado);
                   handleFecharDrawer();
                 }}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700"
-                style={{ minHeight: '40px' }}
+                className="st-btn-secondary"
+                style={{ minHeight: '44px' }}
               >
                 Precificar Item
               </button>
@@ -781,8 +699,8 @@ export default function TabelaItensExtracao({
                   onParametrizarItem(itemInspecionado);
                   handleFecharDrawer();
                 }}
-                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-700 hover:bg-blue-800 text-white"
-                style={{ minHeight: '40px' }}
+                className="st-btn-primary"
+                style={{ minHeight: '44px' }}
               >
                 Parametrizar no ERP
               </button>
@@ -790,8 +708,8 @@ export default function TabelaItensExtracao({
             <button
               type="button"
               onClick={handleFecharDrawer}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800"
-              style={{ minHeight: '40px' }}
+              className="st-btn-secondary"
+              style={{ minHeight: '44px' }}
             >
               Fechar
             </button>
@@ -799,57 +717,53 @@ export default function TabelaItensExtracao({
         }
       >
         {itemInspecionado && (
-          <div className="space-y-4">
-            {/* Aba 1: Tributos XML */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {drawerTab === 'tributos' && (
-              <div className="space-y-3">
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="st-subcard">
+                  <h4 style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink)' }}>
                     Tributos Destacados na NF-e
                   </h4>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 12 }}>
                     <div>
-                      <span className="text-slate-500 block">Valor Mercadoria:</span>
+                      <span className="muted" style={{ display: 'block' }}>Valor Mercadoria:</span>
                       <strong className="mono tabular-nums">{formatarBrl(itemInspecionado.vProd)}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">Qtd / UN:</span>
+                      <span className="muted" style={{ display: 'block' }}>Qtd / UN:</span>
                       <strong className="mono">{formatarQtd(itemInspecionado.qCom)} {itemInspecionado.uCom || 'UN'}</strong>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">Base de Cálculo ICMS:</span>
+                      <span className="muted" style={{ display: 'block' }}>Base de Cálculo ICMS:</span>
                       <span className="mono tabular-nums">{formatarBrl(itemInspecionado.tributos?.vBC)}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">ICMS Próprio ({formatarPct(itemInspecionado.tributos?.pICMS)}):</span>
-                      <span className="mono tabular-nums font-bold text-blue-700">{formatarBrl(itemInspecionado.tributos?.vICMS)}</span>
+                      <span className="muted" style={{ display: 'block' }}>ICMS Próprio ({formatarPct(itemInspecionado.tributos?.pICMS)}):</span>
+                      <span className="mono tabular-nums" style={{ fontWeight: 700, color: 'var(--accent-blue)' }}>{formatarBrl(itemInspecionado.tributos?.vICMS)}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">PIS ({formatarPct(itemInspecionado.tributos?.pPIS)}):</span>
+                      <span className="muted" style={{ display: 'block' }}>PIS ({formatarPct(itemInspecionado.tributos?.pPIS)}):</span>
                       <span className="mono tabular-nums">{formatarBrl(itemInspecionado.tributos?.vPIS)}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">COFINS ({formatarPct(itemInspecionado.tributos?.pCOFINS)}):</span>
+                      <span className="muted" style={{ display: 'block' }}>COFINS ({formatarPct(itemInspecionado.tributos?.pCOFINS)}):</span>
                       <span className="mono tabular-nums">{formatarBrl(itemInspecionado.tributos?.vCOFINS)}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">IPI ({formatarPct(itemInspecionado.tributos?.pIPI)}):</span>
+                      <span className="muted" style={{ display: 'block' }}>IPI ({formatarPct(itemInspecionado.tributos?.pIPI)}):</span>
                       <span className="mono tabular-nums">{formatarBrl(itemInspecionado.tributos?.vIPI)}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">ICMS ST:</span>
-                      <span className="mono tabular-nums text-amber-700 font-bold">{formatarBrl(itemInspecionado.tributos?.vICMSST)}</span>
+                      <span className="muted" style={{ display: 'block' }}>ICMS ST:</span>
+                      <span className="mono tabular-nums" style={{ color: 'var(--warn)', fontWeight: 700 }}>{formatarBrl(itemInspecionado.tributos?.vICMSST)}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Motivos de Sensibilidade */}
                 {itemInspecionado.motivosSensibilidade && itemInspecionado.motivosSensibilidade.length > 0 && (
-                  <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
-                    <strong className="text-xs text-amber-900 block mb-1">
-                      ⚠️ Alertas e Sensibilidades Identificadas:
-                    </strong>
-                    <ul className="list-disc pl-4 text-xs text-amber-800 space-y-1">
+                  <div className="note atencao">
+                    <div className="t">⚠️ Alertas e Sensibilidades Identificadas:</div>
+                    <ul style={{ margin: '6px 0 0', paddingLeft: 18, fontSize: 12 }}>
                       {itemInspecionado.motivosSensibilidade.map((motivo, i) => (
                         <li key={i}>
                           <strong>{MOTIVOS_SENSIBILIDADE_MAP[motivo]?.rotulo || motivo}:</strong>{' '}
@@ -862,89 +776,80 @@ export default function TabelaItensExtracao({
               </div>
             )}
 
-            {/* Aba 2: DIFAL & Base Dupla PR */}
             {drawerTab === 'difal-st' && (
-              <div className="space-y-3">
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="st-subcard">
+                  <h4 style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink)' }}>
                     Apuração de DIFAL Paraná (RICMS/PR Dec. 7.871/17)
                   </h4>
                   {diagnosticosDifal?.[itemInspecionado.index] ? (
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between py-1 border-b border-slate-200">
-                        <span className="text-slate-600">Alíquota de Origem:</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border-muted)' }}>
+                        <span className="muted">Alíquota de Origem:</span>
                         <strong className="mono">{diagnosticosDifal[itemInspecionado.index].aliquotaOrigem}%</strong>
                       </div>
-                      <div className="flex justify-between py-1 border-b border-slate-200">
-                        <span className="text-slate-600">Alíquota Interna PR:</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border-muted)' }}>
+                        <span className="muted">Alíquota Interna PR:</span>
                         <strong className="mono">{diagnosticosDifal[itemInspecionado.index].aliquotaDestino}%</strong>
                       </div>
-                      <div className="flex justify-between py-1 border-b border-slate-200">
-                        <span className="text-slate-600">Base Dupla Calculada:</span>
-                        <strong className="mono tabular-nums">
-                          {formatarBrl(diagnosticosDifal[itemInspecionado.index].baseCalculoDifal)}
-                        </strong>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border-muted)' }}>
+                        <span className="muted">Base Dupla Calculada:</span>
+                        <strong className="mono tabular-nums">{formatarBrl(diagnosticosDifal[itemInspecionado.index].baseCalculoDifal)}</strong>
                       </div>
-                      <div className="flex justify-between py-1 border-b border-slate-200">
-                        <span className="text-slate-600">DIFAL a Recolher:</span>
-                        <strong className="mono tabular-nums text-red-700">
-                          {formatarBrl(diagnosticosDifal[itemInspecionado.index].valorDebitoDifal)}
-                        </strong>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border-muted)' }}>
+                        <span className="muted">DIFAL a Recolher:</span>
+                        <strong className="mono tabular-nums" style={{ color: 'var(--bad)' }}>{formatarBrl(diagnosticosDifal[itemInspecionado.index].valorDebitoDifal)}</strong>
                       </div>
                       {diagnosticosDifal[itemInspecionado.index].valorDebitoFecop > 0 && (
-                        <div className="flex justify-between py-1 border-b border-slate-200">
-                          <span className="text-slate-600">FECOP Paraná:</span>
-                          <strong className="mono tabular-nums text-red-700">
-                            {formatarBrl(diagnosticosDifal[itemInspecionado.index].valorDebitoFecop)}
-                          </strong>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                          <span className="muted">FECOP Paraná:</span>
+                          <strong className="mono tabular-nums" style={{ color: 'var(--bad)' }}>{formatarBrl(diagnosticosDifal[itemInspecionado.index].valorDebitoFecop)}</strong>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-500">
+                    <p className="muted" style={{ fontSize: 12, margin: 0 }}>
                       Operação interna ou adquirente sem débito de DIFAL apurado para este item.
                     </p>
                   )}
                 </div>
 
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900">
-                  <strong>Trava Decreto 6.048/2024 e 12.828/2026:</strong><br />
-                  Vedada a apropriação cumulativa sem retenção de ICMS-ST para mercadorias sujeitas à substituição tributária interna no Paraná.
+                <div className="note info">
+                  <div className="t">Trava Decreto 6.048/2024 e 12.828/2026:</div>
+                  <div className="x">
+                    Vedada a apropriação cumulativa sem retenção de ICMS-ST para mercadorias sujeitas à substituição tributária interna no Paraná.
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Aba 3: Créditos LC 214 */}
             {drawerTab === 'creditos' && (
-              <div className="space-y-3">
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-2">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2">
-                    Classificação em 3 Camadas de Crédito
-                  </h4>
-                  <div className="flex justify-between py-1 border-b border-slate-200">
-                    <span className="text-slate-600">1. Destacado no XML:</span>
-                    <strong className="mono tabular-nums">{formatarBrl(itemInspecionado.tributos?.vICMS)}</strong>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-200">
-                    <span className="text-slate-600">2. Admitido pela Regra PR:</span>
-                    <strong className="mono tabular-nums text-blue-700">
-                      {formatarBrl(itemInspecionado.sensivelParaAuditoria ? 0 : itemInspecionado.tributos?.vICMS)}
-                    </strong>
-                  </div>
-                  <div className="flex justify-between py-1 border-b border-slate-200">
-                    <span className="text-slate-600">3. Efetivado no Custo (CPC 16):</span>
-                    <strong className="mono tabular-nums text-emerald-700">
-                      {formatarBrl(itemInspecionado.sensivelParaAuditoria ? 0 : itemInspecionado.tributos?.vICMS)}
-                    </strong>
-                  </div>
-                  <p className="text-[11px] text-slate-500 pt-2">
-                    Regra Art. 47 da LC nº 214/2025: Apropriação financeira de créditos de IBS/CBS condicionada à liquidação do fornecedor.
-                  </p>
+              <div className="st-subcard" style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <h4 style={{ margin: 0, fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink)' }}>
+                  Classificação em 3 Camadas de Crédito
+                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border-muted)' }}>
+                  <span className="muted">1. Destacado no XML:</span>
+                  <strong className="mono tabular-nums">{formatarBrl(itemInspecionado.tributos?.vICMS)}</strong>
                 </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border-muted)' }}>
+                  <span className="muted">2. Admitido pela Regra PR:</span>
+                  <strong className="mono tabular-nums" style={{ color: 'var(--accent-blue)' }}>
+                    {formatarBrl(itemInspecionado.sensivelParaAuditoria ? 0 : itemInspecionado.tributos?.vICMS)}
+                  </strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border-muted)' }}>
+                  <span className="muted">3. Efetivado no Custo (CPC 16):</span>
+                  <strong className="mono tabular-nums" style={{ color: 'var(--ok)' }}>
+                    {formatarBrl(itemInspecionado.sensivelParaAuditoria ? 0 : itemInspecionado.tributos?.vICMS)}
+                  </strong>
+                </div>
+                <p className="muted" style={{ fontSize: 11, margin: '4px 0 0' }}>
+                  Regra Art. 47 da LC nº 214/2025: Apropriação financeira de créditos de IBS/CBS condicionada à liquidação do fornecedor.
+                </p>
               </div>
             )}
 
-            {/* Aba 4: Fundamentação Legal */}
             {drawerTab === 'base-legal' && (
               <LegalCitationBlock
                 citations={citacoesItem}

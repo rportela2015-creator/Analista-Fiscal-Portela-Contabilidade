@@ -5,6 +5,24 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ---
 
+## [7.2.0] - 2026-11-25 — Sincronização Direta com Projeto Stitch `10027389379931821169` (MargemReal Portela)
+- **Extração & Documentação Stitch (`docs/ux-audit/stitch-sync/`):**
+  - Materialização dos artefatos oficiais do projeto `10027389379931821169` (metadados, catálogo de telas, Design Systems, Guia de Integração Técnica Antigravity v3.0.0, Relatório de Conformidade Visual v2.6 e telas revisadas) em `docs/ux-audit/stitch-sync/10027389379931821169/`;
+  - Diagnóstico estrutural em `docs/ux-audit/stitch-sync/DIFF-PROJETO-STITCH.md` e homologação final em navegador real em `docs/ux-audit/stitch-sync/RELATORIO-SINCRONIZACAO-STITCH.md`.
+- **Design System Real Sem Dependência de Tailwind (`app/layout.tsx` & `app/globals.css`):**
+  - Carregamento das famílias tipográficas Stitch (`Space Grotesk`, `Plus Jakarta Sans`, `JetBrains Mono` e `Playfair Display`);
+  - Implementação completa dos tokens **Fiscal Intelligence & Pricing** (Dark Analytical Cockpit, padrão `#0B0F17` / `#10B981`) e **Heritage Fiscal** (Light/Print `#F8F9FA` / `#1B4332`) via variáveis CSS e classes `.st-*` reais, eliminando classes utilitárias não compiladas.
+- **App Shell & Componentes Base (`app/page.tsx` & `components/ui/*.tsx`):**
+  - Sidebar lateral esquerda recolhível (`64px` / `248px`, `#appSidebar` e `#headerSidebarToggleBtn`), topbar compacta (`56px`), barra de abas em linha única (`44px`), alternador de tema (`Cockpit` / `Heritage`) e preservação integral do `NivelOperacionalSwitcher` e regiões `aria-live="polite"`;
+  - Atualização de `KpiStrip`, `StickyActionBar`, `ProgressiveSection`, `ItemDetailDrawer`, `LegalCitationBlock` e `NivelOperacionalSwitcher` com CSS real, grid 4 colunas responsivo, `tabular-nums`, dimensões explícitas de ícones SVG e sincronização automática de expansão no nível `Sênior`.
+- **Sincronização das Abas & Preservação dos 4 Marcos:**
+  - Alinhamento visual e remoção de fundos claros hardcoded em `CadastroEmpresas.tsx`, `AuditoriaEntrada.tsx`, `TabelaItensExtracao.tsx`, `PainelNfseDanfse.tsx`, `Precificar.tsx`, `Classificar.tsx`, `Lote.tsx`, `Reforma.tsx` e `Parametrizar.tsx` seguindo a Governança Visual v2.6;
+  - 100% de preservação das entregas dos Marcos 1–4 (`fontes-normativas.ts`, `difal-pr.ts`, `useParametrosPrecificacao.ts`, `/api/cnpj/[cnpj]` e `data/db/empresas-store.json`) e de `rules/rules.json`.
+- **Validação Visual em Chrome Headless CDP (`scripts/audit_stitch_sync.mjs`):**
+  - Inspeção automatizada e visual em `1920x1080` e `1366x768` (`docs/ux-audit/screenshots/stitch-sync/`): `0` erros de console/runtime, `0` overflow horizontal, cabeçalho `103px` em linha única mesmo em `1366x768`, `0` alvos interativos `< 36px` e paridade confirmada nos 3 níveis operacionais e nos 2 temas.
+
+---
+
 ## [7.1.0] - 2026-11-25 — Fontes Normativas, Demonstrativo DIFAL PR, Precificação Persistente e Cadastro CNPJ RFB
 - **Marco 1 — Catálogo Oficial de Fontes Legais (`lib/fiscal/fontes-normativas.ts`):**
   - Consolidação estruturada das normas oficiais: RICMS/PR (Decreto nº 7.871/2017 Arts. 3º, 8º § 12, 28, 74, 542 e 545), NPF 052/2018 (registros E310/E316 e códigos PR239999/PR259999), Decretos PR 6.048/2024 e 12.828/2026, Consulta SEFA/PR nº 48/2026, LC nº 214/2025, LC nº 227/2026 (CG-IBS), NT 2026.008 v1.01 (Ato Conjunto RFB/CGIBS nº 10/2026), Resoluções CGSN nº 186/2026 e nº 194/2026 e Convênios ICMS nº 127/2026 e nº 128/2026;

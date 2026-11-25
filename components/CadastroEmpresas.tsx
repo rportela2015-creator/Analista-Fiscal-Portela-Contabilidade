@@ -431,7 +431,21 @@ export default function CadastroEmpresas() {
   const hoje = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="cadastro-empresas-container" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="cadastro-empresas-container" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="st-page-header" style={{ marginBottom: 0 }}>
+        <div>
+          <div className="st-page-title-row">
+            <h2 className="st-page-title">Clientes &amp; Perfis Tributários</h2>
+            <span className="st-badge-norma">Multi-Tenant</span>
+            <span className="st-badge-norma">Bitemporal PR</span>
+            <span className="st-badge-norma">RFB CNPJ</span>
+          </div>
+          <p className="hint" style={{ margin: '4px 0 0' }}>
+            Carteira de contribuintes, consulta oficial na Receita Federal e vigências fiscais segmentadas.
+          </p>
+        </div>
+      </div>
+
       {/* BARRA DE STATUS DA INFRAESTRUTURA & MULTI-TENANT (PROGRESSIVE SECTION) */}
       <ProgressiveSection
         id="sec-infra-sidecars-db"
@@ -448,7 +462,7 @@ export default function CadastroEmpresas() {
               fontWeight: 600,
               padding: '3px 8px',
               borderRadius: 4,
-              background: dbStatus.conectado ? '#1e3a1e' : '#3a2a1e',
+              background: dbStatus.conectado ? 'var(--accent-emerald-glow)' : 'var(--accent-amber-subtle)',
               color: dbStatus.conectado ? '#6ee7b7' : '#fcd34d',
               border: `1px solid ${dbStatus.conectado ? '#059669' : '#d97706'}`,
             }}
@@ -477,7 +491,7 @@ export default function CadastroEmpresas() {
             <span style={{ fontSize: 20 }}>🏢</span>
             <div>
               <div style={{ fontWeight: 600, fontSize: 14 }}>Portela Contabilidade · Gestão Multi-Tenant</div>
-              <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+              <div style={{ fontSize: 12, color: 'var(--ink-2)' }}>
                 Armazenamento relacional PostgreSQL 17 com fallback in-memory automático
               </div>
             </div>
@@ -490,7 +504,7 @@ export default function CadastroEmpresas() {
                 fontWeight: 600,
                 padding: '3px 8px',
                 borderRadius: 4,
-                background: dbStatus.conectado ? '#1e3a1e' : '#3a2a1e',
+                background: dbStatus.conectado ? 'var(--accent-emerald-glow)' : 'var(--accent-amber-subtle)',
                 color: dbStatus.conectado ? '#6ee7b7' : '#fcd34d',
                 border: `1px solid ${dbStatus.conectado ? '#059669' : '#d97706'}`,
               }}
@@ -504,7 +518,7 @@ export default function CadastroEmpresas() {
                 fontWeight: 600,
                 padding: '3px 8px',
                 borderRadius: 4,
-                background: sidecarsStatus.simples ? '#1e3a1e' : '#3a1e1e',
+                background: sidecarsStatus.simples ? 'var(--accent-emerald-glow)' : 'var(--accent-crimson-subtle)',
                 color: sidecarsStatus.simples ? '#6ee7b7' : '#fca5a5',
                 border: `1px solid ${sidecarsStatus.simples ? '#059669' : '#dc2626'}`,
               }}
@@ -518,7 +532,7 @@ export default function CadastroEmpresas() {
                 fontWeight: 600,
                 padding: '3px 8px',
                 borderRadius: 4,
-                background: sidecarsStatus.regular ? '#1e3a1e' : '#3a1e1e',
+                background: sidecarsStatus.regular ? 'var(--accent-emerald-glow)' : 'var(--accent-crimson-subtle)',
                 color: sidecarsStatus.regular ? '#6ee7b7' : '#fca5a5',
                 border: `1px solid ${sidecarsStatus.regular ? '#059669' : '#dc2626'}`,
               }}
@@ -537,7 +551,7 @@ export default function CadastroEmpresas() {
                 minHeight: '44px',
                 borderRadius: 4,
                 background: 'var(--panel-alt, #2a2a2a)',
-                color: 'var(--text, #fff)',
+                color: 'var(--ink)',
                 border: '1px solid var(--line, #444)',
                 cursor: verificandoSidecars ? 'wait' : 'pointer',
               }}
@@ -570,7 +584,7 @@ export default function CadastroEmpresas() {
       )}
 
       {/* PAINEL PRINCIPAL: SELETOR DE CLIENTE ATIVO E VISUALIZAÇÃO */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(450px, 1.6fr)', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20 }}>
         {/* COLUNA ESQUERDA: LISTA DE EMPRESAS & CADASTRO */}
         <section
           style={{
@@ -592,7 +606,7 @@ export default function CadastroEmpresas() {
               style={{
                 background: 'transparent',
                 border: '1px solid var(--line)',
-                color: 'var(--text)',
+                color: 'var(--ink)',
                 padding: '8px 14px',
                 minHeight: '44px',
                 borderRadius: 4,
@@ -608,7 +622,7 @@ export default function CadastroEmpresas() {
           {/* LISTA DE EMPRESAS CADASTRADAS */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 320, overflowY: 'auto' }}>
             {empresas.length === 0 && !carregando && (
-              <div style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center', padding: 20 }}>
+              <div style={{ fontSize: 13, color: 'var(--ink-2)', textAlign: 'center', padding: 20 }}>
                 Nenhuma empresa cadastrada no momento. Use o formulário abaixo para adicionar a primeira.
               </div>
             )}
@@ -640,7 +654,7 @@ export default function CadastroEmpresas() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 600, fontSize: 13, color: ativa ? '#93c5fd' : 'var(--text)' }}>
+                    <span style={{ fontWeight: 600, fontSize: 13, color: ativa ? '#93c5fd' : 'var(--ink)' }}>
                       {emp.razaoSocial}
                     </span>
                     {ativa && (
@@ -658,7 +672,7 @@ export default function CadastroEmpresas() {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', display: 'flex', gap: 10 }}>
+                  <div style={{ fontSize: 11, color: 'var(--ink-2)', display: 'flex', gap: 10 }}>
                     <span>CNPJ: {formatarCnpj(emp.cnpj)}</span>
                     <span>UF: {emp.uf}</span>
                     <span>Perfis: {emp.perfis?.length || 0}</span>
@@ -675,7 +689,7 @@ export default function CadastroEmpresas() {
             <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>+ Cadastrar Nova Empresa</h4>
 
             <div>
-              <label htmlFor="formCnpj" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+              <label htmlFor="formCnpj" style={{ fontSize: 12, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                 CNPJ (14 dígitos) *
               </label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'stretch', flexWrap: 'wrap' }}>
@@ -694,7 +708,7 @@ export default function CadastroEmpresas() {
                     borderRadius: 4,
                     background: 'var(--bg)',
                     border: `1px solid ${!cnpjValido ? '#dc2626' : 'var(--line)'}`,
-                    color: 'var(--text)',
+                    color: 'var(--ink)',
                     fontSize: 13,
                   }}
                 />
@@ -751,7 +765,7 @@ export default function CadastroEmpresas() {
                   <strong style={{ color: '#93c5fd' }}>
                     Dados Oficiais Receita Federal ({dadosReceita.fonte.toUpperCase()})
                   </strong>
-                  <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: '#1e3a1e', color: '#6ee7b7', fontWeight: 700 }}>
+                  <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'var(--accent-emerald-glow)', color: '#6ee7b7', fontWeight: 700 }}>
                     {dadosReceita.situacaoCadastral}
                   </span>
                 </div>
@@ -759,7 +773,7 @@ export default function CadastroEmpresas() {
                   <b>CNAE Principal:</b> {dadosReceita.cnaePrincipal.codigo || '—'} — {dadosReceita.cnaePrincipal.descricao || 'Não informado'}
                 </div>
                 {dadosReceita.cnaesSecundarios.length > 0 && (
-                  <div style={{ color: 'var(--muted)' }}>
+                  <div style={{ color: 'var(--ink-2)' }}>
                     <b>CNAEs Secundários ({dadosReceita.cnaesSecundarios.length}):</b>{' '}
                     {dadosReceita.cnaesSecundarios.slice(0, 3).map((c) => `${c.codigo} (${c.descricao})`).join('; ')}
                     {dadosReceita.cnaesSecundarios.length > 3 ? ` +${dadosReceita.cnaesSecundarios.length - 3}` : ''}
@@ -774,7 +788,7 @@ export default function CadastroEmpresas() {
                     dadosReceita.endereco.cep ? `CEP ${dadosReceita.endereco.cep}` : '',
                   ].filter(Boolean).join(', ')}
                 </div>
-                <div style={{ color: 'var(--muted)' }}>
+                <div style={{ color: 'var(--ink-2)' }}>
                   <b>Natureza Jurídica:</b> {dadosReceita.naturezaJuridica || '—'} · <b>Porte:</b> {dadosReceita.porte || '—'} ·{' '}
                   <b>Regime Sugerido:</b> <span style={{ color: '#6ee7b7', fontWeight: 700 }}>{dadosReceita.regimeTributarioSugerido}</span>{' '}
                   ({dadosReceita.simplesNacional.optanteMei ? 'MEI' : dadosReceita.simplesNacional.optanteSimples ? 'Simples Nacional' : 'Não optante Simples'})
@@ -783,7 +797,7 @@ export default function CadastroEmpresas() {
             )}
 
             <div>
-              <label htmlFor="formRazaoSocial" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+              <label htmlFor="formRazaoSocial" style={{ fontSize: 12, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                 Razão Social *
               </label>
               <input
@@ -799,7 +813,7 @@ export default function CadastroEmpresas() {
                   borderRadius: 4,
                   background: 'var(--bg)',
                   border: '1px solid var(--line)',
-                  color: 'var(--text)',
+                  color: 'var(--ink)',
                   fontSize: 13,
                 }}
               />
@@ -807,7 +821,7 @@ export default function CadastroEmpresas() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <div>
-                <label htmlFor="formNomeFantasia" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+                <label htmlFor="formNomeFantasia" style={{ fontSize: 12, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                   Nome Fantasia
                 </label>
                 <input
@@ -822,14 +836,14 @@ export default function CadastroEmpresas() {
                     borderRadius: 4,
                     background: 'var(--bg)',
                     border: '1px solid var(--line)',
-                    color: 'var(--text)',
+                    color: 'var(--ink)',
                     fontSize: 13,
                   }}
                 />
               </div>
 
               <div>
-                <label htmlFor="formInscricaoEstadual" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+                <label htmlFor="formInscricaoEstadual" style={{ fontSize: 12, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                   Inscrição Estadual (IE)
                 </label>
                 <input
@@ -844,7 +858,7 @@ export default function CadastroEmpresas() {
                     borderRadius: 4,
                     background: 'var(--bg)',
                     border: '1px solid var(--line)',
-                    color: 'var(--text)',
+                    color: 'var(--ink)',
                     fontSize: 13,
                   }}
                 />
@@ -853,7 +867,7 @@ export default function CadastroEmpresas() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: 8 }}>
               <div>
-                <label htmlFor="formUf" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+                <label htmlFor="formUf" style={{ fontSize: 12, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                   UF
                 </label>
                 <input
@@ -868,14 +882,14 @@ export default function CadastroEmpresas() {
                     borderRadius: 4,
                     background: 'var(--bg)',
                     border: '1px solid var(--line)',
-                    color: 'var(--text)',
+                    color: 'var(--ink)',
                     fontSize: 13,
                   }}
                 />
               </div>
 
               <div>
-                <label htmlFor="formMunicipioIbge" style={{ fontSize: 12, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+                <label htmlFor="formMunicipioIbge" style={{ fontSize: 12, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                   Código IBGE Município
                 </label>
                 <input
@@ -891,7 +905,7 @@ export default function CadastroEmpresas() {
                     borderRadius: 4,
                     background: 'var(--bg)',
                     border: '1px solid var(--line)',
-                    color: 'var(--text)',
+                    color: 'var(--ink)',
                     fontSize: 13,
                   }}
                 />
@@ -936,12 +950,12 @@ export default function CadastroEmpresas() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{empresaAtiva.razaoSocial}</h3>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 2 }}>
                     CNPJ: <b>{formatarCnpj(empresaAtiva.cnpj)}</b> · UF: <b>{empresaAtiva.uf}</b> · IE:{' '}
                     <b>{empresaAtiva.inscricaoEstadual || 'Isento / Não inf.'}</b>
                   </div>
                   {Boolean((empresaAtiva.metadata as Record<string, any> | null)?.cnaePrincipal) && (
-                    <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>
+                    <div style={{ fontSize: 11.5, color: 'var(--ink-2)', marginTop: 4 }}>
                       CNAE: <b>{(empresaAtiva.metadata as any).cnaePrincipal.codigo}</b> — {(empresaAtiva.metadata as any).cnaePrincipal.descricao}
                       {(empresaAtiva.metadata as any).situacaoCadastral ? ` · Situação: ${(empresaAtiva.metadata as any).situacaoCadastral}` : ''}
                     </div>
@@ -987,7 +1001,7 @@ export default function CadastroEmpresas() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 8 }}>
                     <div>
-                      <label htmlFor="perfilRegime" style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+                      <label htmlFor="perfilRegime" style={{ fontSize: 11, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                         Regime Tributário *
                       </label>
                       <select
@@ -1000,7 +1014,7 @@ export default function CadastroEmpresas() {
                           borderRadius: 4,
                           background: 'var(--panel)',
                           border: '1px solid var(--line)',
-                          color: 'var(--text)',
+                          color: 'var(--ink)',
                           fontSize: 12,
                         }}
                       >
@@ -1013,7 +1027,7 @@ export default function CadastroEmpresas() {
                     </div>
 
                     <div>
-                      <label htmlFor="perfilVigenciaInicio" style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+                      <label htmlFor="perfilVigenciaInicio" style={{ fontSize: 11, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                         Início da Vigência *
                       </label>
                       <input
@@ -1028,14 +1042,14 @@ export default function CadastroEmpresas() {
                           borderRadius: 4,
                           background: 'var(--panel)',
                           border: '1px solid var(--line)',
-                          color: 'var(--text)',
+                          color: 'var(--ink)',
                           fontSize: 12,
                         }}
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="perfilVigenciaFim" style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+                      <label htmlFor="perfilVigenciaFim" style={{ fontSize: 11, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                         Fim (ou indeterminado)
                       </label>
                       <input
@@ -1049,7 +1063,7 @@ export default function CadastroEmpresas() {
                           borderRadius: 4,
                           background: 'var(--panel)',
                           border: '1px solid var(--line)',
-                          color: 'var(--text)',
+                          color: 'var(--ink)',
                           fontSize: 12,
                         }}
                       />
@@ -1070,7 +1084,7 @@ export default function CadastroEmpresas() {
                       <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 12 }}>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                           <div>
-                            <label htmlFor="perfilIcmsEfetivo" style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+                            <label htmlFor="perfilIcmsEfetivo" style={{ fontSize: 11, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                               ICMS Efetivo (%)
                             </label>
                             <input
@@ -1085,14 +1099,14 @@ export default function CadastroEmpresas() {
                                 borderRadius: 4,
                                 background: 'var(--panel)',
                                 border: '1px solid var(--line)',
-                                color: 'var(--text)',
+                                color: 'var(--ink)',
                                 fontSize: 12,
                               }}
                             />
                           </div>
 
                           <div>
-                            <label htmlFor="perfilPisEfetivo" style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+                            <label htmlFor="perfilPisEfetivo" style={{ fontSize: 11, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                               PIS Efetivo (%)
                             </label>
                             <input
@@ -1107,14 +1121,14 @@ export default function CadastroEmpresas() {
                                 borderRadius: 4,
                                 background: 'var(--panel)',
                                 border: '1px solid var(--line)',
-                                color: 'var(--text)',
+                                color: 'var(--ink)',
                                 fontSize: 12,
                               }}
                             />
                           </div>
 
                           <div>
-                            <label htmlFor="perfilCofinsEfetivo" style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+                            <label htmlFor="perfilCofinsEfetivo" style={{ fontSize: 11, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                               COFINS Efetivo (%)
                             </label>
                             <input
@@ -1129,14 +1143,14 @@ export default function CadastroEmpresas() {
                                 borderRadius: 4,
                                 background: 'var(--panel)',
                                 border: '1px solid var(--line)',
-                                color: 'var(--text)',
+                                color: 'var(--ink)',
                                 fontSize: 12,
                               }}
                             />
                           </div>
 
                           <div>
-                            <label htmlFor="perfilFaixaSimples" style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 2 }}>
+                            <label htmlFor="perfilFaixaSimples" style={{ fontSize: 11, color: 'var(--ink-2)', display: 'block', marginBottom: 2 }}>
                               Faixa Simples (1-6)
                             </label>
                             <input
@@ -1152,7 +1166,7 @@ export default function CadastroEmpresas() {
                                 borderRadius: 4,
                                 background: 'var(--panel)',
                                 border: '1px solid var(--line)',
-                                color: 'var(--text)',
+                                color: 'var(--ink)',
                                 fontSize: 12,
                               }}
                             />
@@ -1208,7 +1222,7 @@ export default function CadastroEmpresas() {
                       checked={perfilEncerrarAnterior}
                       onChange={(e) => setPerfilEncerrarAnterior(e.target.checked)}
                     />
-                    <label htmlFor="encerrarAnterior" style={{ fontSize: 12, color: 'var(--text)' }}>
+                    <label htmlFor="encerrarAnterior" style={{ fontSize: 12, color: 'var(--ink)' }}>
                       Encerrar vigência do perfil anterior automaticamente no dia anterior ao novo início
                     </label>
                   </div>
@@ -1240,7 +1254,7 @@ export default function CadastroEmpresas() {
                 </h4>
 
                 {(!empresaAtiva.perfis || empresaAtiva.perfis.length === 0) && (
-                  <div style={{ fontSize: 12, color: 'var(--muted)', padding: 10 }}>
+                  <div style={{ fontSize: 12, color: 'var(--ink-2)', padding: 10 }}>
                     Nenhum perfil cadastrado para esta empresa. Adicione um perfil acima.
                   </div>
                 )}
@@ -1250,7 +1264,7 @@ export default function CadastroEmpresas() {
                   const futuro = p.vigenciaInicio > hoje;
                   const expirado = Boolean(p.vigenciaFim && p.vigenciaFim < hoje);
 
-                  let statusBadge = { bg: '#1e3a1e', cor: '#6ee7b7', border: '#059669', texto: 'VIGENTE HOJE' };
+                  let statusBadge = { bg: 'var(--accent-emerald-glow)', cor: '#6ee7b7', border: '#059669', texto: 'VIGENTE HOJE' };
                   if (futuro) {
                     statusBadge = { bg: '#1e293b', cor: '#93c5fd', border: '#3b82f6', texto: 'FUTURO' };
                   } else if (expirado) {
@@ -1287,12 +1301,12 @@ export default function CadastroEmpresas() {
                             {statusBadge.texto}
                           </span>
                         </div>
-                        <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--muted)' }}>
+                        <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--ink-2)' }}>
                           Vigência: {p.vigenciaInicio} até {p.vigenciaFim || 'indeterminada'}
                         </span>
                       </div>
 
-                      <div style={{ display: 'flex', gap: 14, fontSize: 11, color: 'var(--muted)', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: 14, fontSize: 11, color: 'var(--ink-2)', flexWrap: 'wrap' }}>
                         <span>ICMS Efetivo: <b>{p.aliquotasEfetivas?.icmsEfetivo ?? 'N/A'}%</b></span>
                         <span>PIS Efetivo: <b>{p.aliquotasEfetivas?.pisEfetivo ?? 'N/A'}%</b></span>
                         <span>COFINS Efetivo: <b>{p.aliquotasEfetivas?.cofinsEfetivo ?? 'N/A'}%</b></span>
@@ -1306,7 +1320,7 @@ export default function CadastroEmpresas() {
                           </span>
                         )}
                         {p.beneficiosParana?.diferimentoParcialArt28 && (
-                          <span style={{ fontSize: 10, background: '#142f1f', color: '#86efac', padding: '1px 6px', borderRadius: 3 }}>
+                          <span style={{ fontSize: 10, background: 'var(--accent-emerald-glow)', color: '#86efac', padding: '1px 6px', borderRadius: 3 }}>
                             ✓ Art. 28 RICMS/PR
                           </span>
                         )}
@@ -1327,7 +1341,7 @@ export default function CadastroEmpresas() {
               </div>
             </>
           ) : (
-            <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)', fontSize: 14 }}>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-2)', fontSize: 14 }}>
               👈 Selecione uma empresa na lista ao lado para inspecionar seus perfis ou cadastrar um novo cliente.
             </div>
           )}

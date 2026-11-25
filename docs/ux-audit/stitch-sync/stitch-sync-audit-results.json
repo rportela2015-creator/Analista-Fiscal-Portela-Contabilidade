@@ -1,0 +1,230 @@
+{
+  "timestamp": "2026-11-25T14:38:58.153Z",
+  "consoleErrors": [],
+  "pageErrors": [],
+  "sidebarTest": {
+    "recolhidaWidth": 64,
+    "expandidaWidth": 248
+  },
+  "themeTest": {
+    "toggledTo": "heritage-light"
+  },
+  "resolutions": {
+    "1920x1080": {
+      "width": 1920,
+      "height": 1080,
+      "tabs": {
+        "empresas": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 0,
+            "kpiSameRow4Cols": null,
+            "stickyBarPresent": false,
+            "stickyBarTop": null,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 0,
+            "ariaLiveCount": 2,
+            "docWidth": 1905,
+            "winWidth": 1920,
+            "hasHorizontalOverflow": false
+          }
+        },
+        "classificar": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 4,
+            "kpiSameRow4Cols": true,
+            "stickyBarPresent": true,
+            "stickyBarTop": 1015,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 5,
+            "ariaLiveCount": 2,
+            "docWidth": 1905,
+            "winWidth": 1920,
+            "hasHorizontalOverflow": false
+          }
+        },
+        "lote": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 4,
+            "kpiSameRow4Cols": true,
+            "stickyBarPresent": true,
+            "stickyBarTop": 1015,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 5,
+            "ariaLiveCount": 2,
+            "docWidth": 1905,
+            "winWidth": 1920,
+            "hasHorizontalOverflow": false
+          }
+        },
+        "auditoria-entrada": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 0,
+            "kpiSameRow4Cols": null,
+            "stickyBarPresent": false,
+            "stickyBarTop": null,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 0,
+            "ariaLiveCount": 1,
+            "docWidth": 1905,
+            "winWidth": 1920,
+            "hasHorizontalOverflow": false
+          }
+        },
+        "precificar": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 4,
+            "kpiSameRow4Cols": true,
+            "stickyBarPresent": true,
+            "stickyBarTop": 1015,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 9,
+            "ariaLiveCount": 2,
+            "docWidth": 1905,
+            "winWidth": 1920,
+            "hasHorizontalOverflow": false
+          }
+        },
+        "reforma": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 4,
+            "kpiSameRow4Cols": true,
+            "stickyBarPresent": true,
+            "stickyBarTop": 1015,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 5,
+            "ariaLiveCount": 2,
+            "docWidth": 1905,
+            "winWidth": 1920,
+            "hasHorizontalOverflow": false
+          }
+        }
+      }
+    },
+    "1366x768": {
+      "width": 1366,
+      "height": 768,
+      "tabs": {
+        "empresas": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 0,
+            "kpiSameRow4Cols": null,
+            "stickyBarPresent": false,
+            "stickyBarTop": null,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 0,
+            "ariaLiveCount": 2,
+            "docWidth": 1351,
+            "winWidth": 1366,
+            "hasHorizontalOverflow": false
+          }
+        },
+        "classificar": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 4,
+            "kpiSameRow4Cols": true,
+            "stickyBarPresent": true,
+            "stickyBarTop": 703,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 5,
+            "ariaLiveCount": 2,
+            "docWidth": 1351,
+            "winWidth": 1366,
+            "hasHorizontalOverflow": false
+          }
+        },
+        "lote": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 4,
+            "kpiSameRow4Cols": true,
+            "stickyBarPresent": true,
+            "stickyBarTop": 703,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 5,
+            "ariaLiveCount": 2,
+            "docWidth": 1351,
+            "winWidth": 1366,
+            "hasHorizontalOverflow": false
+          }
+        },
+        "auditoria-entrada": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 0,
+            "kpiSameRow4Cols": null,
+            "stickyBarPresent": false,
+            "stickyBarTop": null,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 0,
+            "ariaLiveCount": 1,
+            "docWidth": 1351,
+            "winWidth": 1366,
+            "hasHorizontalOverflow": false
+          }
+        },
+        "precificar": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 4,
+            "kpiSameRow4Cols": true,
+            "stickyBarPresent": true,
+            "stickyBarTop": 703,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 9,
+            "ariaLiveCount": 2,
+            "docWidth": 1351,
+            "winWidth": 1366,
+            "hasHorizontalOverflow": false
+          }
+        },
+        "reforma": {
+          "operacional": {
+            "theme": "fiscal-dark",
+            "headerHeight": 103,
+            "sidebarWidth": 64,
+            "kpiCount": 4,
+            "kpiSameRow4Cols": true,
+            "stickyBarPresent": true,
+            "stickyBarTop": 703,
+            "below36pxTargets": 0,
+            "tabularNumsCount": 5,
+            "ariaLiveCount": 2,
+            "docWidth": 1351,
+            "winWidth": 1366,
+            "hasHorizontalOverflow": false
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,966 @@
+<!DOCTYPE html><html class="dark" lang="pt-BR"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><title>MargemReal Portela — Inteligência Fiscal</title><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = { darkMode: 'class', theme: { extend: { 'colors': { 'surface-dim': '#0e1511', 'accent-forest-deep': '#1B4332', 'on-secondary-fixed-variant': '#274e3d', 'surface-container-high': '#1F2937', 'on-primary-fixed': '#002113', 'on-primary': '#003824', 'text-secondary': '#9CA3AF', 'surface-tint': '#4edea3', 'tertiary-fixed': '#c9e6ff', 'on-tertiary-fixed-variant': '#004c6e', 'on-tertiary-container': '#003d59', 'text-tertiary': '#6B7280', 'surface-bright': '#343b36', 'primary-fixed-dim': '#4edea3', 'on-tertiary': '#00344d', 'outline': '#86948a', 'surface-variant': '#2f3632', 'error': '#ffb4ab', 'primary-fixed': '#6ffbbe', 'border-muted': '#1F2937', 'semantic-warning': '#F59E0B', 'inverse-surface': '#dde4dd', 'inverse-on-surface': '#2b322d', 'secondary': '#a5d0b9', 'on-secondary-container': '#97c2ab', 'on-secondary': '#0e3727', 'on-primary-fixed-variant': '#005236', 'surface-container-low': '#161d19', 'primary-container': '#10b981', 'semantic-danger': '#EF4444', 'accent-forest-medium': '#2D5A43', 'surface-card': '#111827', 'secondary-fixed-dim': '#a5d0b9', 'on-error': '#690005', 'primary': '#4edea3', 'on-surface': '#dde4dd', 'outline-variant': '#3c4a42', 'tertiary': '#89ceff', 'tertiary-fixed-dim': '#89ceff', 'error-container': '#93000a', 'on-error-container': '#ffdad6', 'semantic-info': '#0EA5E9', 'surface-container': '#1E293B', 'on-tertiary-fixed': '#001e2f', 'on-background': '#dde4dd', 'tertiary-container': '#23acf1', 'surface': '#0e1511', 'border-subtle': '#374151', 'secondary-fixed': '#c1ecd4', 'secondary-container': '#29513f', 'on-primary-container': '#00422b', 'on-secondary-fixed': '#002114', 'accent-emerald-bright': '#34D399', 'on-surface-variant': '#bbcabf', 'text-primary': '#F9FAFB', 'surface-container-highest': '#2f3632', 'semantic-compliance': '#10B981', 'surface-container-lowest': '#09100c', 'inverse-primary': '#006c49', 'surface-canvas': '#0B0F17', 'background': '#0e1511' }, 'borderRadius': { 'DEFAULT': '0.125rem', 'lg': '0.25rem', 'xl': '0.5rem', 'full': '0.75rem' }, 'spacing': { 'space-xl': '2rem', 'gutter': '1rem', 'space-lg': '1.25rem', 'margin': '1.5rem', 'space-sm': '0.5rem', 'space-xs': '0.25rem', 'gutter-mobile': '0.75rem', 'margin-mobile': '1rem', 'space-md': '0.875rem' }, 'fontFamily': { 'headline-lg-mobile': ['Space Grotesk'], 'headline-lg': ['Space Grotesk'], 'label-md': ['JetBrains Mono'], 'headline-md': ['Space Grotesk'], 'display-lg-mobile': ['Space Grotesk'], 'display-lg': ['Space Grotesk'], 'body-sm': ['Plus Jakarta Sans'], 'headline-sm': ['Plus Jakarta Sans'], 'body-md': ['Plus Jakarta Sans'], 'label-sm': ['JetBrains Mono'], 'data-metric': ['JetBrains Mono'], 'body-lg': ['Plus Jakarta Sans'] }, 'fontSize': { 'headline-lg-mobile': ['22px', { 'lineHeight': '30px', 'letterSpacing': '-0.01em', 'fontWeight': '600' }], 'headline-lg': ['26px', { 'lineHeight': '34px', 'letterSpacing': '-0.02em', 'fontWeight': '600' }], 'label-md': ['12px', { 'lineHeight': '16px', 'letterSpacing': '0.02em', 'fontWeight': '500' }], 'headline-md': ['18px', { 'lineHeight': '26px', 'fontWeight': '600' }], 'display-lg-mobile': ['28px', { 'lineHeight': '36px', 'letterSpacing': '-0.02em', 'fontWeight': '700' }], 'display-lg': ['36px', { 'lineHeight': '44px', 'letterSpacing': '-0.03em', 'fontWeight': '700' }], 'body-sm': ['12px', { 'lineHeight': '18px', 'fontWeight': '400' }], 'headline-sm': ['15px', { 'lineHeight': '22px', 'fontWeight': '600' }], 'body-md': ['13px', { 'lineHeight': '20px', 'fontWeight': '400' }], 'label-sm': ['10px', { 'lineHeight': '14px', 'letterSpacing': '0.04em', 'fontWeight': '500' }], 'data-metric': ['24px', { 'lineHeight': '30px', 'letterSpacing': '-0.02em', 'fontWeight': '600' }], 'body-lg': ['15px', { 'lineHeight': '24px', 'fontWeight': '400' }] } } } };</script></head><body class="bg-surface-canvas text-on-surface font-body-md text-body-md antialiased min-h-screen selection:bg-primary selection:text-on-primary"><header class="fixed top-0 left-0 right-0 h-20 bg-surface-canvas/95 backdrop-blur-xl z-50 shadow-[0_1px_8px_rgba(0,0,0,0.4)] border-b border-border-muted/60"><div class="h-20 w-full px-margin flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md xl:gap-space-lg flex-shrink-0"><button class="p-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-card border border-border-subtle/50 transition-all flex items-center justify-center" id="headerSidebarToggleBtn" title="Recolher / Expandir Menu Lateral" type="button"><span class="material-symbols-outlined text-[20px] transition-transform duration-300" id="headerToggleIcon">menu_open</span></button><div class="flex items-center gap-space-sm sm:gap-space-md"><img alt="Logo Escritório.jpg" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1Swz_9nruB24u9uPch2k6CCxBS4gpTmaP7mYZPrNmLi1592WvcjYgTlHYPX_4ZpXoa_ApFFKQ5-9QNLr_vNMTGwj2L8HGiWkmHFzoqm2nb3zqfGe07a6PVAgVwRsd85C1yYXEy-O-Yp9AAWSlxf4gH0QsHgCDmL4faOn_xtMRkGqOPgPBxz3tg7rAkKqvjOU2ATSbC7EitpbKrOmFKvuq7icseisfeRCnlwa39iihmRWC39bKBf-OXA"><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-md text-headline-md text-text-primary tracking-tight">MargemReal</span><span class="font-headline-md text-headline-md text-primary font-bold">Portela</span></div><span class="font-label-sm text-label-sm text-text-secondary tracking-wider uppercase hidden sm:inline">Inteligência Fiscal</span></div></div><div class="hidden 2xl:flex items-center bg-surface-card px-space-md py-space-xs rounded-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] cursor-pointer hover:bg-surface-container transition-colors"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-text-tertiary uppercase">Empresa Ativa</span><span class="font-headline-sm text-headline-sm text-text-primary truncate max-w-[220px]">Portela Agro &amp; Indústria S/A</span></div><span class="material-symbols-outlined text-text-secondary ml-space-xs text-[18px]">unfold_more</span></div></div><div class="flex-1 max-w-xl mx-2 xl:mx-space-md hidden md:block"><div class="relative flex items-center"><span class="material-symbols-outlined absolute left-3 text-text-secondary text-[18px]">search</span><input class="w-full bg-surface-card text-text-primary font-body-sm text-body-sm pl-10 pr-14 py-space-sm rounded-xl focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-text-tertiary transition-all" placeholder="Busca rápida por NCM, Regime ou CFOP..." type="text"><kbd class="absolute right-3 px-1.5 py-0.5 rounded bg-surface-container text-text-secondary font-label-sm text-label-sm">⌘K</kbd></div></div><div class="flex items-center gap-space-sm xl:gap-space-md flex-shrink-0"><div class="hidden 2xl:flex items-center gap-space-md px-space-md py-space-xs rounded-xl bg-surface-card"><div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-semantic-compliance animate-pulse"></span><span class="font-label-sm text-label-sm text-text-secondary">SEFAZ-SP: Ativo</span></div><div class="w-px h-3 bg-surface-container-high"></div><div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-semantic-compliance"></span><span class="font-label-sm text-label-sm text-text-secondary">Receita Fed.: Sinc</span></div></div><div class="flex items-center gap-space-xs"><button class="relative p-2 rounded-xl text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" title="Alertas de Risco Fiscal" type="button"><span class="material-symbols-outlined text-[20px]">warning</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-semantic-warning"></span></button><button class="p-2 rounded-xl text-text-secondary hover:bg-surface-card hover:text-text-primary transition-colors" title="Ações Rápidas de Cálculo" type="button"><span class="material-symbols-outlined text-[20px]">bolt</span></button></div><div class="h-8 w-px bg-surface-container-high hidden sm:block"></div><div class="flex items-center gap-space-sm pl-space-xs"><div class="text-right hidden lg:flex flex-col"><div class="flex items-center justify-end gap-space-xs"><span class="font-headline-sm text-headline-sm text-text-primary">Desenvolvido por </span><span class="font-label-sm text-label-sm text-accent-emerald-bright bg-accent-forest-deep px-1.5 py-0.5 rounded hidden xl:inline font-semibold">Contabilidade Portela</span></div><span class="font-label-sm text-label-sm text-primary uppercase font-medium tracking-wider">TODOS OS DIREITOS RESERVADOS</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 cursor-pointer shadow-sm" title="Dr. Ricardo Portela (Auditor Fiscal Sênior)"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><aside class="fixed left-0 top-20 bottom-0 w-16 bg-surface-dim z-40 flex flex-col justify-between p-2 shadow-[1px_0_12px_rgba(0,0,0,0.5)] overflow-y-auto border-r border-border-muted/60 transition-all duration-300" id="appSidebar"><div class="flex flex-col gap-space-md"><div class="flex items-center justify-center pt-space-xs pb-space-xs"><button class="p-1.5 rounded-lg text-text-secondary hover:text-primary hover:bg-surface-card transition-colors flex items-center justify-center" id="sidebarInternalToggleBtn" title="Expandir menu" type="button"><span class="material-symbols-outlined text-[18px] transition-transform duration-300" id="sidebarToggleIcon">chevron_right</span></button></div><nav class="flex flex-col gap-space-xs"><a class="flex items-center justify-center p-2 rounded-xl bg-accent-forest-deep text-accent-emerald-bright font-semibold transition-all group" data-path="painel-e-regimes" href="#" title="Painel &amp; Regimes"><span class="material-symbols-outlined text-[20px] text-accent-emerald-bright flex-shrink-0">dashboard</span></a><a class="flex items-center justify-center p-2 rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="simulador-de-precificacao-e-margem-real" href="#" title="Simulador Margem Real"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">calculate</span></a><a class="flex items-center justify-center p-2 rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="auditoria-ncm-e-aliquotas" href="#" title="Auditoria NCM &amp; Alíquotas"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">rule</span></a><a class="flex items-center justify-center p-2 rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="reforma-tributaria-ibs-cbs-dual" href="#" title="Reforma (IBS / CBS)"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">balance</span></a><a class="flex items-center justify-center p-2 rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="planejamento-tributario-comparativo" href="#" title="Planejamento Comparativo"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">query_stats</span></a><a class="flex items-center justify-center p-2 rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="relatorios-e-exportacao-sped" href="#" title="Relatórios &amp; SPED"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">file_download</span></a><a class="flex items-center justify-center p-2 rounded-xl text-on-surface-variant hover:bg-surface-card hover:text-text-primary transition-all group" data-path="configuracoes-de-acesso-e-parametros" href="#" title="Parâmetros &amp; Acesso"><span class="material-symbols-outlined text-[20px] text-text-secondary group-hover:text-primary transition-colors flex-shrink-0">settings</span></a></nav></div><div class="pt-space-md flex flex-col gap-space-xs items-center"><div class="sidebar-card bg-surface-card p-2 rounded-xl shadow-[inset_0_1px_0_0_rgba(16,185,129,0.1)] border border-border-muted flex flex-col items-center justify-center" title="Ambiente Ativo: Produção (Base Fiscal Portela 2024/2025)"><span class="w-2.5 h-2.5 rounded-full bg-semantic-compliance animate-pulse"></span></div><button class="w-full flex items-center justify-center py-2 px-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-surface-card border border-border-subtle/40 transition-all group" id="sidebarFooterToggleBtn" title="Expandir menu lateral" type="button"><span class="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors" id="sidebarFooterToggleIcon">keyboard_double_arrow_right</span></button></div></aside><div class="transition-all duration-300" id="mainLayoutWrapper" style="padding-left: 4rem;"><main class="relative pt-20 w-full min-h-screen px-margin py-margin bg-surface-canvas overflow-x-hidden"><div class="flex flex-col w-full text-on-surface">
+<!-- AVISO INSTITUCIONAL / BANNER REGULATÓRIO -->
+
+<!-- CABEÇALHO DO MOTOR & SELEÇÃO DE ITEM (Fiel a IMAGE_3) -->
+<div class="w-full bg-surface-card rounded-xl p-space-md border border-border-muted mb-space-lg shadow-md flex flex-col gap-space-md">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<div class="flex items-start sm:items-center gap-space-md"><div class="flex items-center gap-2"><h3 class="font-headline-md text-headline-md text-text-primary font-bold">Resumo Executivo</h3><span class="font-label-sm text-[10px] px-2 py-0.5 rounded bg-surface-container text-accent-emerald-bright border border-border-subtle">Tríade Decisória</span></div><p class="font-body-sm text-body-sm text-text-secondary mt-0.5">Custo Efetivo de Entrada, Retorno Líquido Real e Preço Final ao Consumidor.</p></div>
+<!-- BOTÕES DE AÇÃO / EXPORTAÇÃO -->
+<div class="flex items-center flex-wrap gap-space-xs">
+<span class="font-label-sm text-label-sm px-2.5 py-1.5 rounded-lg bg-surface-container text-text-secondary border border-border-subtle flex items-center gap-1.5 mr-space-xs">
+<span class="material-symbols-outlined text-[16px] text-semantic-warning">inventory_2</span>
+          11 itens da NF-e
+        </span>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-bright text-text-secondary hover:text-text-primary text-body-sm font-medium transition-all flex items-center gap-1.5 border border-border-subtle" type="button">
+<span class="material-symbols-outlined text-[16px]">description</span>
+          Exportar Resumido
+        </button>
+<button class="px-3.5 py-1.5 rounded-lg bg-primary hover:bg-accent-emerald-bright text-on-primary text-body-sm font-semibold transition-all flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.3)]" type="button">
+<span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+          Exportar Detalhado
+        </button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container hover:bg-surface-bright text-text-secondary hover:text-text-primary text-body-sm font-medium transition-all flex items-center gap-1.5 border border-border-subtle" type="button">
+<span class="material-symbols-outlined text-[16px]">table_view</span>
+          Exportar CSV
+        </button>
+</div>
+</div>
+<!-- SELETOR PRINCIPAL DE PRODUTO DA NOTA -->
+<div class="bg-surface-container/70 p-space-sm rounded-xl border border-border-subtle flex flex-col md:flex-row items-stretch md:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm min-w-0 flex-1"><div class="flex items-center gap-2"><h3 class="font-headline-md text-headline-md text-text-primary font-bold">Resumo Executivo</h3><span class="font-label-sm text-[10px] px-2 py-0.5 rounded bg-surface-container text-accent-emerald-bright border border-border-subtle">Tríade Decisória</span></div><p class="font-body-sm text-body-sm text-text-secondary mt-0.5">Custo Efetivo de Entrada, Retorno Líquido Real e Preço Final ao Consumidor.</p></div>
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-text-secondary justify-end">
+<span>NCM: <strong class="text-text-primary font-data-metric">2710.19.32</strong></span>
+<span class="text-border-subtle">|</span>
+<span>CEST: <strong class="text-text-primary font-data-metric">06.001.00</strong></span>
+<span class="text-border-subtle">|</span>
+<span class="text-semantic-compliance flex items-center gap-1 font-semibold"><span class="w-1.5 h-1.5 rounded-full bg-semantic-compliance"></span> Homologado</span>
+</div>
+</div>
+</div>
+<!-- ======================================================== -->
+<!-- HERO MASTER: FORMAÇÃO DO PREÇO & DEMONSTRAÇÃO VISUAL     -->
+<!-- ======================================================== -->
+<div class="w-full bg-accent-forest-deep/60 border border-primary/40 rounded-xl px-space-md py-2.5 mb-space-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-sm shadow-md animate-in fade-in duration-300"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-primary text-[20px] flex-shrink-0">check_circle</span><p class="font-body-sm text-body-sm text-text-primary leading-snug"><strong class="text-accent-emerald-bright font-semibold">Override de Alíquotas aplicado com sucesso:</strong> Projeção recalculada com base nos parâmetros customizados pelo auditor (CBS 8,80% / IBS 0,10% / ICMS 0,00%).</p></div><div class="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto"><span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-primary/20 text-accent-emerald-bright border border-primary/40 flex items-center gap-1 font-semibold"><span class="w-1.5 h-1.5 rounded-full bg-semantic-compliance animate-pulse"></span>Override Ativo</span><button class="text-text-secondary hover:text-text-primary text-xs flex items-center p-1" onclick="this.parentElement.parentElement.remove()" title="Dispensar aviso" type="button"><span class="material-symbols-outlined text-[16px]">close</span></button></div></div><div class="grid grid-cols-1 xl:grid-cols-12 gap-space-md mb-space-lg">
+<!-- COLUNA DA ESQUERDA: PARÂMETROS RÁPIDOS & ALÍQUOTAS (4 COLUNAS) -->
+<div class="xl:col-span-4 flex flex-col gap-space-md">
+<!-- CENÁRIO FISCAL DA EMPRESA (Inputs essenciais) -->
+<div class="bg-surface-card rounded-xl p-space-md border border-border-muted shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between border-b border-border-muted pb-space-xs">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-primary font-bold tracking-wider uppercase">1. CENÁRIO FISCAL DA EMPRESA</span>
+</div>
+<span class="material-symbols-outlined text-text-tertiary text-[18px]">tune</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm pt-space-xs">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-text-secondary">Regime Tributário Adquirente:</label>
+<select class="w-full bg-surface-container text-text-primary font-body-sm text-body-sm py-1.5 px-2.5 rounded-lg border border-border-subtle focus:border-primary">
+<option selected="">Lucro Presumido</option>
+<option>Lucro Real (Não-Cumulativo)</option>
+<option>Simples Nacional (Geral)</option>
+<option>Simples Nacional Híbrido</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-text-secondary">Ano Vigência / Calendário:</label>
+<select class="w-full bg-surface-container text-text-primary font-body-sm text-body-sm py-1.5 px-2.5 rounded-lg border border-border-subtle focus:border-primary">
+<option selected="">2027 (CBS 8,8% / IBS 0,1%)</option>
+<option>2026 (CBS 0,9% / IBS 0,1% Teste)</option>
+<option>2028 (CBS 8,8% / IBS 0,2%)</option>
+<option>2033 (Regime Definitivo Pleno)</option>
+</select>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-text-secondary">UF Origem (Compra):</label>
+<input class="w-full bg-surface-container text-text-primary font-label-md text-label-md py-1.5 px-2.5 rounded-lg border border-border-subtle uppercase" readonly="" type="text" value="PR">
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-text-secondary">UF Destino (Venda):</label>
+<input class="w-full bg-surface-container text-text-primary font-label-md text-label-md py-1.5 px-2.5 rounded-lg border border-border-subtle uppercase" readonly="" type="text" value="PR">
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-text-secondary">Margem Líquida Pretendida (%):</label>
+<input class="w-full bg-surface-container text-accent-emerald-bright font-data-metric text-headline-sm py-1 px-2.5 rounded-lg border border-border-subtle focus:border-primary" id="inputMargem" type="number" value="20">
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-text-secondary">Desp. Comerciais / Var. (%):</label>
+<input class="w-full bg-surface-container text-text-primary font-data-metric text-headline-sm py-1 px-2.5 rounded-lg border border-border-subtle focus:border-primary" id="inputDespVar" type="number" value="5">
+</div>
+</div>
+<div class="mt-space-xs pt-space-xs border-t border-border-muted/70">
+<label class="flex items-start gap-2 cursor-pointer group">
+<input class="mt-0.5 rounded border-border-subtle text-semantic-danger focus:ring-semantic-danger bg-surface-container" id="checkInidoneo" type="checkbox">
+<span class="font-body-sm text-body-sm text-text-secondary group-hover:text-text-primary leading-tight">
+              ⚠️ <strong class="text-semantic-warning">Simular documento fiscal inidôneo</strong> (glosar 100% dos créditos fiscais - art. 41 LC 214)
+            </span>
+</label>
+</div>
+</div>
+<!-- ALÍQUOTAS APLICADAS & EDIÇÃO OVERRIDE -->
+<div class="bg-surface-card rounded-xl p-space-md border border-border-muted shadow-sm flex flex-col gap-space-sm"><div class="flex items-center justify-between"><div class="flex items-center gap-1.5"><span class="font-label-sm text-label-sm text-text-tertiary uppercase font-semibold">Alíquotas Aplicadas</span><span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-accent-forest-deep text-accent-emerald-bright border border-primary/40 font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-semantic-compliance animate-pulse"></span>Customizado pelo Auditor</span></div><button class="px-2 py-0.5 rounded text-xs text-primary bg-primary/10 border border-primary/30 hover:bg-primary hover:text-on-primary transition-all flex items-center gap-1 font-label-sm" type="button"><span class="material-symbols-outlined text-[14px]">tune</span>Editar Override</button></div><div class="grid grid-cols-4 gap-2 text-center pt-1"><div class="bg-surface-container/60 p-2 rounded-lg border border-primary/30"><span class="font-label-sm text-label-sm text-text-tertiary block">CBS Saída</span><span class="font-label-md text-label-md font-semibold text-semantic-info">8.80%</span><span class="text-[9px] text-accent-emerald-bright font-mono block">Override</span></div><div class="bg-surface-container/60 p-2 rounded-lg border border-primary/30"><span class="font-label-sm text-label-sm text-text-tertiary block">IBS Saída</span><span class="font-label-md text-label-md font-semibold text-semantic-info">0.10%</span><span class="text-[9px] text-accent-emerald-bright font-mono block">Override</span></div><div class="bg-surface-container/60 p-2 rounded-lg border border-border-subtle/50"><span class="font-label-sm text-label-sm text-text-tertiary block">ICMS Saída</span><span class="font-label-md text-label-md font-semibold text-text-secondary">0.00%</span><span class="text-[9px] text-text-tertiary font-mono block">Monofásico</span></div><div class="bg-surface-container/60 p-2 rounded-lg border border-border-subtle/50"><span class="font-label-sm text-label-sm text-text-tertiary block">Redução IVA</span><span class="font-label-md text-label-md font-semibold text-semantic-compliance">0.00%</span><span class="text-[9px] text-text-tertiary font-mono block">Integral</span></div></div></div>
+</div>
+<!-- COLUNA DA DIREITA: BLOCO B - FORMAÇÃO DE PREÇO & DRE VISUAL (8 COLUNAS) -->
+<div class="xl:col-span-8 flex flex-col gap-space-md">
+<div class="bg-surface-card rounded-xl p-space-md border border-border-muted shadow-lg relative overflow-hidden">
+<!-- GLOW SUTIL SUPERIOR -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent-emerald-bright to-semantic-info"></div>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm mb-space-md">
+<div class="flex items-center gap-2"><h2 class="font-headline-md text-headline-md text-text-primary font-bold">Formação de Preço &amp; Resultados</h2><span class="font-label-sm text-[10px] px-2 py-0.5 rounded bg-surface-container text-text-secondary border border-border-subtle">LC 214/25 · Art. 28</span></div>
+<span class="font-label-sm text-label-sm text-accent-emerald-bright bg-accent-forest-deep px-2.5 py-1 rounded-full flex items-center gap-1 self-start sm:self-auto">
+<span class="w-1.5 h-1.5 rounded-full bg-semantic-compliance animate-pulse"></span>
+            Precificação Ótima B2B
+          </span>
+</div>
+<!-- CARDS DE PREÇO RESULTANTE EM DESTAQUE -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md mb-space-lg"><div class="bg-surface-container/80 p-space-md rounded-xl border border-border-subtle flex flex-col justify-between"><div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-text-tertiary uppercase tracking-wider">Preço Venda Líquido (vProdLiq)</span><span class="font-label-sm text-label-sm text-text-secondary font-mono">Carga Est.: <strong class="text-semantic-info font-bold">10.3%</strong></span></div><div class="mt-2 flex items-baseline gap-2"><span class="font-data-metric text-display-lg text-text-primary tracking-tight" id="displayVProdLiq">R$ 73,30</span><span class="font-label-sm text-label-sm text-text-secondary">Base sem IVA Dual</span></div><p class="font-body-sm text-body-sm text-text-secondary mt-1">Custo recuperável e margem líquida livre de tributos não-cumulativos.</p></div><div class="bg-accent-forest-deep/60 p-space-md rounded-xl border-2 border-primary flex flex-col justify-between shadow-[0_0_20px_rgba(16,185,129,0.15)] relative"><div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-accent-emerald-bright font-bold uppercase tracking-wider">Preço de Venda Final na Nota (vNF)</span><span class="font-label-sm text-label-sm bg-primary text-on-primary px-2 py-0.5 rounded font-bold uppercase flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-on-primary animate-pulse"></span>Recalculado via Override</span></div><div class="mt-2 flex items-baseline gap-2"><span class="font-data-metric text-display-lg text-primary font-bold tracking-tight" id="displayVNF">R$ 79,82</span><span class="font-label-sm text-label-sm text-accent-emerald-bright/80 font-mono">vProdLiq + IVA Dual (8,9%)</span></div><div class="mt-2 p-2 rounded-lg bg-surface-card/90 border border-semantic-warning/40 flex items-start gap-2 shadow-sm"><span class="material-symbols-outlined text-semantic-warning text-[18px] flex-shrink-0 mt-0.5">account_balance</span><div class="flex flex-col"><div class="flex items-center gap-1.5"><span class="font-label-sm text-label-sm text-semantic-warning font-bold uppercase tracking-wide">Split Payment Retido</span><span class="font-label-sm text-[10px] px-1.5 py-0.2 rounded bg-semantic-warning/20 text-semantic-warning font-mono font-semibold">Art. 28 LC 214</span></div><p class="font-body-sm text-[11px] text-text-secondary leading-snug mt-0.5">R$ 6,52 retidos na liquidação financeira bancária. Fornecedor recebe o valor líquido do vProd (R$ 73,30).</p></div></div></div></div>
+<!-- STACKED PROGRESS BAR (DECOMPOSIÇÃO VISUAL DO PREÇO 100% VNF) -->
+<div class="bg-surface-canvas/90 p-space-md rounded-xl border border-border-subtle mb-space-md">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-text-primary uppercase font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[16px]">bar_chart</span>
+              DECOMPOSIÇÃO VISUAL DO PREÇO DE VENDA (100% VNF)
+            </span>
+<span class="font-label-sm text-label-sm text-text-secondary font-mono">Total Nota: <strong class="text-text-primary">R$ 79,82</strong></span>
+</div>
+<!-- A BARRA EMPILHADA -->
+<div class="w-full h-8 rounded-lg overflow-hidden flex bg-surface-container shadow-inner">
+<div class="bg-[#1E293B] hover:opacity-90 transition-opacity flex items-center justify-center text-text-primary font-label-sm text-[11px] font-bold" style="width: 66.4%;" title="Custo Real: 66.4% (R$ 52.98)">
+              66.4%
+            </div>
+<div class="bg-[#F97316] hover:opacity-90 transition-opacity flex items-center justify-center text-on-primary font-label-sm text-[10px] font-bold" style="width: 5.0%;" title="Despesas Variáveis: 5.0% (R$ 3.99)">
+              5%
+            </div>
+<div class="bg-[#EF4444] hover:opacity-90 transition-opacity flex items-center justify-center text-on-primary font-label-sm text-[9px]" style="width: 2.1%;" title="IRPJ/CSLL: 2.1% (R$ 1.67)">
+</div>
+<div class="bg-[#0284C7] hover:opacity-90 transition-opacity flex items-center justify-center text-text-primary font-label-sm text-[11px] font-bold" style="width: 8.2%;" title="IVA Dual (Split CBS/IBS): 8.2% (R$ 6.52)">
+              8.2%
+            </div>
+<div class="bg-[#10B981] hover:opacity-90 transition-opacity flex items-center justify-center text-on-primary font-label-sm text-[11px] font-bold" style="width: 18.4%;" title="Margem Líq.: 18.4% (R$ 14.66)">
+              18.4%
+            </div>
+</div>
+<!-- LEGENDA DA DECOMPOSIÇÃO -->
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mt-3 pt-2 border-t border-border-muted/60">
+<div class="flex items-center gap-1.5 font-label-sm text-[11px]">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#1E293B] flex-shrink-0"></span>
+<span class="text-text-secondary truncate">Custo Real: <strong class="text-text-primary font-mono">R$ 52.98</strong> (66.4%)</span>
+</div>
+<div class="flex items-center gap-1.5 font-label-sm text-[11px]">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#F97316] flex-shrink-0"></span>
+<span class="text-text-secondary truncate">Desp. Var.: <strong class="text-text-primary font-mono">R$ 3.99</strong> (5%)</span>
+</div>
+<div class="flex items-center gap-1.5 font-label-sm text-[11px]">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#8B5CF6] flex-shrink-0"></span>
+<span class="text-text-secondary truncate">Trib. Dentro: <strong class="text-text-primary font-mono">R$ 0.00</strong> (0%)</span>
+</div>
+<div class="flex items-center gap-1.5 font-label-sm text-[11px]">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#EF4444] flex-shrink-0"></span>
+<span class="text-text-secondary truncate">IRPJ/CSLL: <strong class="text-text-primary font-mono">R$ 1.67</strong> (2.1%)</span>
+</div>
+<div class="flex items-center gap-1.5 font-label-sm text-[11px]">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#0284C7] flex-shrink-0"></span>
+<span class="text-text-secondary truncate">IVA Dual: <strong class="text-text-primary font-mono">R$ 6.52</strong> (8.2%)</span>
+</div>
+<div class="flex items-center gap-1.5 font-label-sm text-[11px]">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#10B981] flex-shrink-0"></span>
+<span class="text-text-secondary truncate">Margem Líq.: <strong class="text-accent-emerald-bright font-mono">R$ 14.66</strong> (18.4%)</span>
+</div>
+</div>
+</div>
+<!-- TABELA ANALÍTICA RÁPIDA DE FECHAMENTO FISCAL UNITÁRIO -->
+<div class="w-full bg-surface-container/60 border border-primary/30 rounded-xl p-space-sm mb-space-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-lg bg-accent-forest-deep flex items-center justify-center text-primary flex-shrink-0 border border-primary/40"><span class="material-symbols-outlined text-[18px]">sync_alt</span></div><div><div class="flex items-center gap-2"><span class="font-label-sm text-label-sm text-text-primary font-bold uppercase tracking-wide">Mecânica do Split Payment na Liquidação Bancária</span><span class="font-label-sm text-[10px] px-2 py-0.5 rounded bg-primary/20 text-accent-emerald-bright border border-primary/30 font-semibold">IBS R$ 0,07 + CBS R$ 6,45</span></div><p class="font-body-sm text-[12px] text-text-secondary mt-0.5">Ao liquidar a duplicata/PIX de <strong class="text-text-primary font-mono">R$ 79,82</strong>, o arranjo de pagamento retém automaticamente <strong class="text-semantic-warning font-mono">R$ 6,52</strong> aos cofres públicos e repassa <strong class="text-accent-emerald-bright font-mono">R$ 73,30</strong> ao vendedor.</p></div></div><div class="flex items-center gap-1.5 flex-shrink-0 self-end md:self-auto"><span class="font-label-sm text-label-sm px-2.5 py-1 rounded-lg bg-surface-card text-semantic-compliance border border-semantic-compliance/30 flex items-center gap-1 font-mono font-semibold"><span class="w-1.5 h-1.5 rounded-full bg-semantic-compliance animate-pulse"></span>100% Split Auditado</span></div></div><div class="grid grid-cols-1 md:grid-cols-2 gap-space-md text-body-sm pt-space-xs">
+<div class="space-y-1.5 bg-surface-container/40 p-space-sm rounded-lg border border-border-subtle/50">
+<div class="flex justify-between py-0.5 border-b border-border-muted/40">
+<span class="text-text-secondary">Tributos de Saída por Dentro (ICMS / DAS):</span>
+<span class="font-label-md text-text-primary font-mono">R$ 0,00</span>
+</div>
+<div class="flex justify-between py-0.5 border-b border-border-muted/40">
+<span class="text-text-secondary">IVA Dual por Fora (CBS: R$ 6.45 + IBS: R$ 0.07):</span>
+<span class="font-label-md text-semantic-info font-mono font-semibold">R$ 6,52</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded-lg bg-semantic-warning/10 border border-semantic-warning/50 shadow-sm"><div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-semantic-warning text-[18px]">payments</span><div><span class="text-semantic-warning font-semibold text-body-sm block">Split Payment Retido (Bancos):</span><span class="font-label-sm text-[10px] text-text-secondary block font-mono">Liquidação automática na conta gráfica (Art. 28 LC 214)</span></div></div><div class="text-right"><span class="font-data-metric text-headline-sm text-semantic-warning font-bold">R$ 6,52</span><span class="text-[9px] text-semantic-warning font-mono block uppercase font-bold tracking-wider">Retenção Direta</span></div></div>
+</div>
+<div class="space-y-1.5 bg-surface-container/40 p-space-sm rounded-lg border border-border-subtle/50">
+<div class="flex justify-between py-0.5 border-b border-border-muted/40">
+<span class="text-text-secondary">Crédito Transferido para Cliente B2B:</span>
+<span class="font-label-md text-semantic-compliance font-mono font-semibold">R$ 6,52</span>
+</div>
+<div class="flex justify-between py-0.5 border-b border-border-muted/40">
+<span class="text-text-secondary">Margem de Contribuição Unitária:</span>
+<span class="font-label-md text-text-primary font-mono font-semibold">R$ 22,85 (20.0%)</span>
+</div>
+<div class="flex justify-between py-0.5 border-b border-border-muted/40">
+<span class="text-text-secondary">Provisão de IRPJ e CSLL (Presumido):</span>
+<span class="font-label-md text-semantic-danger font-mono">R$ 1,67</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- ======================================================== -->
+<!-- BLOCO C: RESUMO EXECUTIVO GERENCIAL (Fiel a IMAGE_4)    -->
+<!-- ======================================================== -->
+<div class="w-full bg-surface-card rounded-xl p-space-md border border-border-muted shadow-md mb-space-lg">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs mb-space-md">
+<div><div class="flex items-center gap-2"><h3 class="font-headline-md text-headline-md text-text-primary font-bold">Resumo Executivo</h3><span class="font-label-sm text-[10px] px-2 py-0.5 rounded bg-surface-container text-accent-emerald-bright border border-border-subtle">Tríade Decisória</span></div><p class="font-body-sm text-body-sm text-text-secondary mt-0.5">Custo Efetivo de Entrada, Retorno Líquido Real e Preço Final ao Consumidor.</p></div>
+<span class="font-label-sm text-label-sm text-text-tertiary flex items-center gap-1 font-mono">
+<span class="material-symbols-outlined text-[16px] text-primary">verified</span>
+        NBC TG 16 (R1) Auditado
+      </span>
+</div>
+<!-- 3 CARDS DA TRÍADE DECISÓRIA -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- CARD 1: CUSTO EFETIVO DE ENTRADA -->
+<div class="bg-surface-container/60 p-space-md rounded-xl border border-semantic-danger/30 hover:border-semantic-danger/60 transition-all flex flex-col justify-between"><div class="flex items-center gap-2"><h3 class="font-headline-md text-headline-md text-text-primary font-bold">Resumo Executivo</h3><span class="font-label-sm text-[10px] px-2 py-0.5 rounded bg-surface-container text-accent-emerald-bright border border-border-subtle">Tríade Decisória</span></div><p class="font-body-sm text-body-sm text-text-secondary mt-0.5">Custo Efetivo de Entrada, Retorno Líquido Real e Preço Final ao Consumidor.</p></div>
+<!-- CARD 2: MARGEM LÍQUIDA REALIZADA -->
+<div class="bg-surface-container/60 p-space-md rounded-xl border border-semantic-compliance/30 hover:border-semantic-compliance/60 transition-all flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-semantic-compliance font-bold uppercase tracking-wider">MARGEM LÍQUIDA REALIZADA (%)</span>
+<span class="material-symbols-outlined text-semantic-compliance text-[18px]">trending_up</span>
+</div>
+<div class="my-space-sm flex items-baseline gap-2">
+<span class="font-data-metric text-display-lg text-semantic-compliance font-bold tracking-tight">20.0%</span>
+</div>
+<span class="font-body-sm text-body-sm text-text-secondary"><strong class="text-text-primary font-mono">R$ 14,66</strong> por unidade vendida</span>
+</div>
+<!-- CARD 3: PREÇO DE VENDA SUGERIDO -->
+<div class="bg-surface-container/60 p-space-md rounded-xl border border-semantic-info/30 hover:border-semantic-info/60 transition-all flex flex-col justify-between"><div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-semantic-info font-bold uppercase tracking-wider">PREÇO FINAL SUGERIDO (vNF)</span><span class="font-label-sm text-[10px] px-1.5 py-0.5 rounded bg-semantic-info/10 text-semantic-info font-semibold border border-semantic-info/30">IVA Dual Incluso</span></div><div class="my-space-sm"><span class="font-data-metric text-display-lg text-semantic-info font-bold tracking-tight">R$ 79,82</span></div><span class="font-body-sm text-body-sm text-text-secondary">vProd Líquido: <strong class="text-text-primary font-mono">R$ 73,30</strong> + Tributos</span></div>
+</div>
+</div>
+<!-- ======================================================== -->
+<!-- NÍVEIS INFORMACIONAIS EXPANSÍVEIS (PROGRESSIVE DRILL-DOWNS) -->
+<!-- ======================================================== -->
+<div class="w-full flex flex-col gap-space-md mb-space-lg">
+<!-- ACCORDION 1: RASTREABILIDADE DE ENTRADA, DE-PARA CFOP E FRETE -->
+<div class="bg-surface-card rounded-xl border border-border-muted overflow-hidden shadow-sm transition-all" id="accordionRastreabilidade">
+<button class="w-full p-space-md flex items-center justify-between bg-surface-container/40 hover:bg-surface-container/80 transition-colors text-left" onclick="toggleAccordion('contentRastreabilidade', 'iconRastreabilidade')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">alt_route</span>
+<div><div class="flex items-center gap-2"><span class="font-headline-sm text-headline-sm text-text-primary font-bold">Rastreabilidade e CFOP</span><span class="font-label-sm text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-text-tertiary border border-border-subtle">RICMS/PR</span></div><p class="font-body-sm text-body-sm text-text-secondary">Mapeamento de CFOP, destinação de mercadoria e frete CT-e</p></div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-card text-semantic-info border border-border-subtle">Operacional / Sênior</span>
+<span class="material-symbols-outlined text-text-secondary transition-transform duration-200" id="iconRastreabilidade">expand_more</span>
+</div>
+</button>
+<div class="p-space-md border-t border-border-muted space-y-space-md" id="contentRastreabilidade">
+<!-- ROTA DE CFOP EM DESTAQUE -->
+<div class="bg-surface-canvas p-space-md rounded-xl border border-border-subtle flex flex-col md:flex-row items-start md:items-center justify-between gap-space-sm">
+<div>
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase">Rastreabilidade e Mapeamento de CFOP (Origem → Entrada → Venda)</span>
+<div class="mt-1 flex items-center gap-2 font-headline-sm text-text-primary font-mono">
+<span class="text-text-primary font-bold">CFOP Origem: <span class="text-semantic-info">5656</span></span>
+<span class="text-text-tertiary">➔</span>
+<span class="text-text-primary font-bold">Entrada: <span class="text-semantic-warning">1102</span></span>
+<span class="text-text-tertiary">➔</span>
+<span class="text-text-primary font-bold">Venda (Destinatário): <span class="text-semantic-compliance">5405</span></span>
+</div>
+</div>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="font-label-sm text-label-sm px-2 py-1 rounded bg-semantic-compliance/10 text-semantic-compliance border border-semantic-compliance/30">Crédito ICMS Permitido</span>
+<span class="font-label-sm text-label-sm px-2 py-1 rounded bg-surface-card text-text-secondary border border-border-subtle">Sem ST</span>
+<span class="font-label-sm text-label-sm px-2 py-1 rounded bg-surface-card text-text-secondary border border-border-subtle">DIFAL Disp.</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-space-sm text-body-sm">
+<div class="bg-surface-container/50 p-space-sm rounded-lg border border-border-subtle/50">
+<span class="font-label-sm text-label-sm text-text-tertiary block">Destinação da Mercadoria:</span>
+<strong class="text-text-primary font-medium">Revenda / Comercialização</strong>
+</div>
+<div class="bg-surface-container/50 p-space-sm rounded-lg border border-border-subtle/50">
+<span class="font-label-sm text-label-sm text-text-tertiary block">CRT do Emitente:</span>
+<strong class="text-text-primary font-medium">3 - Regime Normal (L. Real)</strong>
+</div>
+<div class="bg-surface-container/50 p-space-sm rounded-lg border border-border-subtle/50">
+<span class="font-label-sm text-label-sm text-text-tertiary block">Origem da Mercadoria:</span>
+<strong class="text-text-primary font-medium">0 - Nacional</strong>
+</div>
+<div class="bg-surface-container/50 p-space-sm rounded-lg border border-border-subtle/50">
+<span class="font-label-sm text-label-sm text-text-tertiary block">Frete FOB / CT-e:</span>
+<strong class="text-text-primary font-medium">R$ 0,00 (Rateio nulo)</strong>
+</div>
+</div>
+</div>
+</div>
+<!-- ACCORDION 2: BLOCO A - CUSTO DE AQUISIÇÃO REAL (NBC TG 16 / CPC 16) -->
+<div class="bg-surface-card rounded-xl border border-border-muted overflow-hidden shadow-sm transition-all" id="accordionBlocoA">
+<button class="w-full p-space-md flex items-center justify-between bg-surface-container/40 hover:bg-surface-container/80 transition-colors text-left" onclick="toggleAccordion('contentBlocoA', 'iconBlocoA')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">account_balance_wallet</span>
+<div><div class="flex items-center gap-2"><span class="font-headline-sm text-headline-sm text-text-primary font-bold">Custo Real de Aquisição</span><span class="font-label-sm text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-text-tertiary border border-border-subtle">NBC TG 16</span></div><p class="font-body-sm text-body-sm text-text-secondary">Depuração patrimonial do estoque e memória auditada de crédito fiscal</p></div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-accent-forest-deep text-accent-emerald-bright border border-primary/30">Custo Total: R$ 635,81</span>
+<span class="material-symbols-outlined text-text-secondary transition-transform duration-200" id="iconBlocoA">expand_more</span>
+</div>
+</button>
+<div class="p-space-md border-t border-border-muted space-y-space-md hidden" id="contentBlocoA">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<!-- TABELA DE DECOMPOSIÇÃO DO CUSTO DE AQUISIÇÃO -->
+<div class="bg-surface-canvas p-space-md rounded-xl border border-border-subtle space-y-2 text-body-sm">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase tracking-wider block mb-2">Composição da NF-e (Item #1)</span>
+<div class="flex justify-between py-1 border-b border-border-muted/60">
+<span class="text-text-secondary">Valor dos Produtos (vProd - 12 un):</span>
+<span class="font-label-md text-text-primary font-mono">R$ 707,17</span>
+</div>
+<div class="flex justify-between py-1 border-b border-border-muted/60">
+<span class="text-text-secondary">(-) Desconto Incondicional:</span>
+<span class="font-label-md text-semantic-compliance font-mono">- R$ 71,36</span>
+</div>
+<div class="flex justify-between py-1 border-b border-border-muted/60">
+<span class="text-text-secondary">(+) Frete Rateado / Despesas Acessórias:</span>
+<span class="font-label-md text-text-primary font-mono">+ R$ 0,00</span>
+</div>
+<div class="flex justify-between py-1 border-b border-border-muted/60">
+<span class="text-text-secondary">(+) IPI Não Recuperável:</span>
+<span class="font-label-md text-text-primary font-mono">+ R$ 0,00</span>
+</div>
+<div class="flex justify-between py-1 border-b border-border-muted/60">
+<span class="text-text-secondary">(-) Créditos Recuperáveis (ICMS/PIS/COFINS):</span>
+<span class="font-label-md text-text-secondary font-mono">- R$ 0,00</span>
+</div>
+<div class="flex justify-between pt-2">
+<span class="text-accent-emerald-bright font-semibold">Custo Real Contábil do Lote:</span>
+<span class="font-data-metric text-headline-sm text-accent-emerald-bright font-bold">R$ 635,81</span>
+</div>
+</div>
+<!-- DETALHAMENTO UNITÁRIO & RATIO -->
+<div class="bg-surface-container/40 p-space-md rounded-xl border border-border-subtle flex flex-col justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase tracking-wider block">Auditoria Unitária (Base de Estoque)</span>
+<div class="mt-space-sm flex items-baseline gap-2">
+<span class="font-data-metric text-display-lg text-text-primary font-bold">R$ 52,98</span>
+<span class="font-label-sm text-label-sm text-text-secondary font-mono">/ unidade (12 un)</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-secondary mt-2">
+                O custo atende rigorosamente ao item 10 do Pronunciamento Técnico CPC 16 (R1), deduzindo os abatimentos comerciais e não retendo créditos não-compensáveis na saída monofásica/ST.
+              </p>
+</div>
+<div class="p-space-xs rounded bg-surface-card border border-border-subtle flex items-center justify-between text-xs text-text-secondary font-mono">
+<span>Status Contábil: <strong class="text-semantic-compliance">Totalmente Ativado</strong></span>
+<span>Conta: 1.1.4.01 - Mercadorias</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- ACCORDION 3: DETECÇÃO AUTOMÁTICA DE BENEFÍCIOS FISCAIS (REFORMA LC 214/2025 & RICMS/PR) -->
+<div class="bg-surface-card rounded-xl border border-border-muted overflow-hidden shadow-sm transition-all" id="accordionBeneficios">
+<button class="w-full p-space-md flex items-center justify-between bg-surface-container/40 hover:bg-surface-container/80 transition-colors text-left" onclick="toggleAccordion('contentBeneficios', 'iconBeneficios')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">verified_user</span>
+<div><div class="flex items-center gap-2"><span class="font-headline-sm text-headline-sm text-text-primary font-bold">Benefícios Fiscais</span><span class="font-label-sm text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-text-tertiary border border-border-subtle">LC 214/25</span><span class="font-label-sm text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-text-tertiary border border-border-subtle">RICMS/PR</span></div><p class="font-body-sm text-body-sm text-text-secondary">Classificação tributária IBS/CBS e diferimento/redução no Paraná</p></div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-semantic-info/10 text-semantic-info border border-semantic-info/30">2 Regras Aplicadas</span>
+<span class="material-symbols-outlined text-text-secondary transition-transform duration-200" id="iconBeneficios">expand_more</span>
+</div>
+</button>
+<div class="p-space-md border-t border-border-muted space-y-space-md hidden" id="contentBeneficios">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="bg-surface-container/50 p-space-md rounded-xl border border-border-subtle space-y-2">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-semantic-info font-bold uppercase">Reforma Tributária (IBS / CBS)</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-card text-text-secondary border border-border-subtle">LC 214/2025</span>
+</div>
+<div class="space-y-1.5 text-body-sm pt-1">
+<div class="flex justify-between"><span class="text-text-secondary">cClassTrib Sugerido:</span><span class="font-mono text-text-primary font-semibold">000001 (Padrão Geral)</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">CST IBS/CBS:</span><span class="font-mono text-text-primary font-semibold">CST 01 (Operação Tributada)</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">Redução de Alíquota:</span><span class="font-mono text-semantic-compliance font-semibold">0% (Regime Pleno)</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">Direito a Crédito B2B:</span><span class="font-mono text-semantic-compliance font-semibold">Sim (100% split compensável)</span></div>
+</div>
+</div>
+<div class="bg-surface-container/50 p-space-md rounded-xl border border-border-subtle space-y-2">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-semantic-compliance font-bold uppercase">ICMS Paraná (RICMS/PR Dec. 7.871/17)</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-card text-text-secondary border border-border-subtle">NCM 2710.19.32</span>
+</div>
+<div class="space-y-1.5 text-body-sm pt-1">
+<div class="flex justify-between"><span class="text-text-secondary">Regime Especial NCM:</span><span class="font-mono text-text-primary font-semibold">Substituição Tributária / Retenção</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">Alíquota Nominal vs Efetiva:</span><span class="font-mono text-text-primary font-semibold">19.5% ➔ 19.5%</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">CST ICMS Sugerido:</span><span class="font-mono text-text-primary font-semibold">CST 60 (Cobrado Anteriormente)</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">Fundo de Combate à Pobreza:</span><span class="font-mono text-text-secondary font-semibold">+ 2% (Incluso na retenção)</span></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- ACCORDION 4: BLOCO C - COMPARATIVO ESTRATÉGICO NOS 4 REGIMES TRIBUTÁRIOS (TABELA COMPLETA) -->
+<div class="bg-surface-card rounded-xl border border-border-muted overflow-hidden shadow-sm transition-all" id="accordionComparativoRegimes">
+<button class="w-full p-space-md flex items-center justify-between bg-surface-container/40 hover:bg-surface-container/80 transition-colors text-left" onclick="toggleAccordion('contentComparativoRegimes', 'iconComparativoRegimes')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">table_chart</span>
+<div><div class="flex items-center gap-2"><span class="font-headline-sm text-headline-sm text-text-primary font-bold">Comparativo de Regimes</span><span class="font-label-sm text-[10px] px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/30">4 Cenários</span></div><p class="font-body-sm text-body-sm text-text-secondary">Simulação simultânea de margem líquida, crédito B2B e impacto no adquirente</p></div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/30">Visão Comparada</span>
+<span class="material-symbols-outlined text-text-secondary transition-transform duration-200" id="iconComparativoRegimes">expand_more</span>
+</div>
+</button>
+<div class="p-space-md border-t border-border-muted overflow-x-auto" id="contentComparativoRegimes">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-canvas border-b border-border-subtle font-label-sm text-label-sm text-text-tertiary uppercase">
+<th class="py-space-sm px-space-md">Variável Decisória</th>
+<th class="py-space-sm px-space-md text-right">Simples Nacional</th>
+<th class="py-space-sm px-space-md text-right">Simples Híbrido</th>
+<th class="py-space-sm px-space-md text-right bg-primary/5 text-primary">Lucro Presumido (Ativo)</th>
+<th class="py-space-sm px-space-md text-right">Lucro Real</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-muted/50 text-body-sm">
+<tr class="hover:bg-surface-container/50">
+<td class="py-2.5 px-space-md text-text-secondary font-medium">Custo Aquisição Real Lote (CPC 16)</td>
+<td class="py-2.5 px-space-md text-right font-mono">R$ 635,81</td>
+<td class="py-2.5 px-space-md text-right font-mono">R$ 635,81</td>
+<td class="py-2.5 px-space-md text-right font-mono font-semibold bg-primary/5 text-text-primary">R$ 635,81</td>
+<td class="py-2.5 px-space-md text-right font-mono">R$ 635,81</td>
+</tr>
+<tr class="hover:bg-surface-container/50">
+<td class="py-2.5 px-space-md text-text-secondary font-medium">Preço Venda Unitário Sugerido (vNF)</td>
+<td class="py-2.5 px-space-md text-right font-mono">R$ 79,82</td>
+<td class="py-2.5 px-space-md text-right font-mono">R$ 79,82</td>
+<td class="py-2.5 px-space-md text-right font-mono font-bold bg-primary/5 text-primary">R$ 79,82</td>
+<td class="py-2.5 px-space-md text-right font-mono">R$ 79,82</td>
+</tr>
+<tr class="hover:bg-surface-container/50">
+<td class="py-2.5 px-space-md text-text-secondary font-medium">Crédito Gerado p/ Cliente B2B (IBS/CBS)</td>
+<td class="py-2.5 px-space-md text-right font-mono text-text-tertiary">R$ 0,00</td>
+<td class="py-2.5 px-space-md text-right font-mono text-semantic-info">R$ 6,52</td>
+<td class="py-2.5 px-space-md text-right font-mono font-bold bg-primary/5 text-semantic-compliance">R$ 6,52</td>
+<td class="py-2.5 px-space-md text-right font-mono text-semantic-compliance">R$ 6,52</td>
+</tr>
+<tr class="hover:bg-surface-container/50">
+<td class="py-2.5 px-space-md text-text-secondary font-medium">Custo Efetivo p/ Adquirente Corporativo</td>
+<td class="py-2.5 px-space-md text-right font-mono text-semantic-danger">R$ 79,82</td>
+<td class="py-2.5 px-space-md text-right font-mono text-accent-emerald-bright">R$ 73,30</td>
+<td class="py-2.5 px-space-md text-right font-mono font-bold bg-primary/5 text-accent-emerald-bright">R$ 73,30</td>
+<td class="py-2.5 px-space-md text-right font-mono text-accent-emerald-bright">R$ 73,30</td>
+</tr>
+<tr class="hover:bg-surface-container/50 bg-surface-container/20">
+<td class="py-2.5 px-space-md text-text-primary font-bold">Margem Líquida Real Unitária (R$)</td>
+<td class="py-2.5 px-space-md text-right font-mono font-bold text-semantic-compliance">R$ 15,22 (20.8%)</td>
+<td class="py-2.5 px-space-md text-right font-mono font-bold text-text-primary">R$ 14,10 (19.2%)</td>
+<td class="py-2.5 px-space-md text-right font-mono font-bold bg-primary/10 text-primary">R$ 14,66 (20.0%)</td>
+<td class="py-2.5 px-space-md text-right font-mono font-bold text-semantic-info">R$ 14,80 (20.2%)</td>
+</tr>
+<tr class="hover:bg-surface-container/50">
+<td class="py-2.5 px-space-md text-text-secondary font-medium">Atratividade Comercial de Mercado</td>
+<td class="py-2.5 px-space-md text-right font-label-sm text-semantic-warning">Foco em B2C</td>
+<td class="py-2.5 px-space-md text-right font-label-sm text-text-secondary">Neutro B2B</td>
+<td class="py-2.5 px-space-md text-right font-label-sm font-bold bg-primary/5 text-semantic-compliance">Alta Competitividade B2B</td>
+<td class="py-2.5 px-space-md text-right font-label-sm text-semantic-compliance">Alta Competitividade B2B</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- ACCORDION 5: SIMULADOR DUAL-STACK 2027 (CONSULTA SEFA/PR Nº 48/2026 VS TESE JUDICIAL) (Fiel a IMAGE_5) -->
+<div class="bg-surface-card rounded-xl border border-border-muted overflow-hidden shadow-sm transition-all" id="accordionDualStack">
+<button class="w-full p-space-md flex items-center justify-between bg-surface-container/40 hover:bg-surface-container/80 transition-colors text-left" onclick="toggleAccordion('contentDualStack', 'iconDualStack')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-semantic-warning text-[20px]">bolt</span>
+<div><div class="flex items-center gap-2"><span class="font-headline-sm text-headline-sm text-text-primary font-bold">Transição 2027 &amp; Split Payment</span><span class="font-label-sm text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-text-tertiary border border-border-subtle">SEFA/PR 48/26</span></div><p class="font-body-sm text-body-sm text-text-secondary">Projeção de impacto no preço final da inclusão do IBS/CBS na Base de Cálculo do ICMS</p></div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-semantic-info/10 text-semantic-info border border-semantic-info/30">Transição 2026–2027</span>
+<span class="material-symbols-outlined text-text-secondary transition-transform duration-200" id="iconDualStack">expand_more</span>
+</div>
+</button>
+<div class="p-space-md border-t border-border-muted space-y-space-md" id="contentDualStack">
+<!-- BARRA DE CONTROLE JURÍDICO -->
+<div class="bg-surface-canvas p-space-sm rounded-lg border border-border-subtle flex items-center justify-between">
+<label class="flex items-center gap-2 cursor-pointer font-body-sm">
+<span class="text-text-secondary font-medium">Posicionamento Jurídico:</span>
+<input checked="" class="rounded border-border-subtle text-primary focus:ring-primary bg-surface-container" type="checkbox">
+<span class="text-text-primary font-semibold flex items-center gap-1">📜 Aplicar Consulta SEFA/PR nº 48/2026</span>
+</label>
+<span class="font-label-sm text-label-sm text-text-tertiary">STF Tema 69 (Exclusão ICMS/PIS-COFINS)</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- MODO 1: ADMINISTRATIVO SEFA/PR -->
+<div class="bg-surface-container/60 p-space-md rounded-xl border-2 border-semantic-compliance flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-semantic-compliance font-bold uppercase">MODO 1: ADMINISTRATIVO SEFA/PR</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-semantic-compliance/20 text-semantic-compliance font-bold">Ativo</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-secondary mb-3 leading-snug">Consulta SEFA/PR nº 48/2026 (IBS e CBS compõem a BC do ICMS)</p>
+<div class="space-y-1 text-body-sm">
+<div class="flex justify-between"><span class="text-text-secondary">Base de Cálculo ICMS:</span><span class="font-mono text-text-primary font-semibold">R$ 57,69</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">ICMS Efetivo:</span><span class="font-mono text-semantic-danger font-semibold">R$ 0,00</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">IBS + CBS (por fora):</span><span class="font-mono text-text-primary font-semibold">R$ 4,71</span></div>
+</div>
+</div>
+<div class="mt-4 pt-2 border-t border-border-muted/50 flex justify-between items-baseline">
+<span class="font-body-sm text-text-primary font-bold">Preço Final Consumidor:</span>
+<span class="font-data-metric text-headline-md text-text-primary font-bold">R$ 57,69</span>
+</div>
+</div>
+<!-- MODO 2: TESE JUDICIAL -->
+<div class="bg-surface-container/40 p-space-md rounded-xl border border-border-subtle flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-semantic-info font-bold uppercase">MODO 2: TESE JUDICIAL (TEMA 69 STF)</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded bg-surface-card text-text-secondary">Estratégico</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-secondary mb-3 leading-snug">Exclusão do IBS e CBS da Base de Cálculo do ICMS</p>
+<div class="space-y-1 text-body-sm">
+<div class="flex justify-between"><span class="text-text-secondary">Base de Cálculo ICMS:</span><span class="font-mono text-text-primary font-semibold">R$ 52,98</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">ICMS Efetivo:</span><span class="font-mono text-semantic-info font-semibold">R$ 0,00</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">IBS + CBS (por fora):</span><span class="font-mono text-text-primary font-semibold">R$ 4,71</span></div>
+</div>
+</div>
+<div class="mt-4 pt-2 border-t border-border-muted/50 flex justify-between items-baseline">
+<span class="font-body-sm text-text-primary font-bold">Preço Final Consumidor:</span>
+<span class="font-data-metric text-headline-md text-semantic-info font-bold">R$ 57,69</span>
+</div>
+</div>
+<!-- CHOQUE COMERCIAL & EFEITO CASCATA -->
+<div class="bg-surface-container/40 p-space-md rounded-xl border border-semantic-danger/30 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-semantic-danger font-bold uppercase">CHOQUE COMERCIAL &amp; EFEITO CASCATA</span>
+<span class="material-symbols-outlined text-semantic-danger text-[18px]">waterfall_chart</span>
+</div>
+<div class="space-y-1 text-body-sm mb-3">
+<div class="flex justify-between"><span class="text-text-secondary">Efeito Cascata (ICMS s/ IBS-CBS):</span><span class="font-mono text-text-primary font-semibold">+ R$ 0,00</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">Aumento Efetivo no ICMS:</span><span class="font-mono text-text-secondary font-semibold">+-100.00%</span></div>
+</div>
+<div class="p-2 rounded bg-semantic-danger/10 border border-semantic-danger/20">
+<span class="font-label-sm text-label-sm text-semantic-danger font-bold block uppercase">RISCO DE EROSÃO DE MARGEM</span>
+<span class="font-data-metric text-headline-sm text-semantic-danger font-bold block">-0.00 p.p. de margem</span>
+<p class="font-body-sm text-[11px] text-text-secondary leading-snug mt-1">Caso o preço de venda seja mantido inalterado frente ao mercado em 2027.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- ACCORDION 6: GOVERNANÇA CONTÁBIL, PONTO DE EQUILÍBRIO & ARBITRAMENTO (Fiel a IMAGE_4) -->
+<div class="bg-surface-card rounded-xl border border-border-muted overflow-hidden shadow-sm transition-all" id="accordionGovernanca">
+<button class="w-full p-space-md flex items-center justify-between bg-surface-container/40 hover:bg-surface-container/80 transition-colors text-left" onclick="toggleAccordion('contentGovernanca', 'iconGovernanca')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">account_balance</span>
+<div><div class="flex items-center gap-2"><span class="font-headline-sm text-headline-sm text-text-primary font-bold">Governança &amp; Ponto de Equilíbrio</span><span class="font-label-sm text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-text-tertiary border border-border-subtle">CPC 16</span><span class="font-label-sm text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-text-tertiary border border-border-subtle">RIR 2018</span></div><p class="font-body-sm text-body-sm text-text-secondary">Auditoria de integridade patrimonial, teste de impairment e limites fiscais</p></div>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="hidden sm:flex items-center gap-2" onclick="event.stopPropagation()">
+<label class="font-label-sm text-label-sm text-text-secondary">Custos Fixos do Período (R$):</label>
+<input class="w-24 bg-surface-canvas text-text-primary font-mono text-label-md py-1 px-2 rounded border border-border-subtle" type="number" value="5000">
+</div>
+<span class="material-symbols-outlined text-text-secondary transition-transform duration-200" id="iconGovernanca">expand_more</span>
+</div>
+</button>
+<div class="p-space-md border-t border-border-muted space-y-space-md" id="contentGovernanca">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- 1. TESTE VRL -->
+<div class="bg-surface-canvas p-space-md rounded-xl border border-border-subtle flex flex-col justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase font-bold">1. TESTE DE VALOR REALIZÁVEL LÍQUIDO (CPC 16)</span>
+<div class="space-y-1 text-body-sm my-2">
+<div class="flex justify-between"><span class="text-text-secondary">Custo Real Unitário:</span><span class="font-mono text-text-primary font-semibold">R$ 52,98</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">VRL (Preço - Desp. Venda):</span><span class="font-mono text-accent-emerald-bright font-semibold">R$ 75,83</span></div>
+</div>
+</div>
+<div class="p-2 rounded bg-semantic-compliance/10 border border-semantic-compliance/20">
+<span class="font-body-sm text-body-sm text-semantic-compliance font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+                Em Conformidade: VRL supera o custo contábil.
+              </span>
+<p class="font-body-sm text-[11px] text-text-secondary mt-0.5">Dispensa provisão para perdas.</p>
+</div>
+</div>
+<!-- 2. PONTO DE EQUILÍBRIO CONTÁBIL -->
+<div class="bg-surface-canvas p-space-md rounded-xl border border-border-subtle flex flex-col justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase font-bold">2. PONTO DE EQUILÍBRIO CONTÁBIL (PEC)</span>
+<div class="space-y-1 text-body-sm my-2">
+<div class="flex justify-between"><span class="text-text-secondary">Margem Contribuição Unitária:</span><span class="font-mono text-text-primary font-semibold">R$ 22,85 (20.0%)</span></div>
+<div class="flex justify-between"><span class="text-text-secondary">PEC em Volume:</span><span class="font-mono text-primary font-bold">219 un</span></div>
+</div>
+</div>
+<div class="p-2 rounded bg-surface-container border border-border-subtle">
+<span class="font-label-sm text-label-sm text-text-secondary">PEC em Faturamento Mínimo:</span>
+<span class="font-data-metric text-headline-sm text-primary font-bold block">R$ 17.466,21</span>
+</div>
+</div>
+<!-- 3. LIMITE ARBITRAMENTO FISCAL -->
+<div class="bg-surface-canvas p-space-md rounded-xl border border-border-subtle flex flex-col justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase font-bold">3. LIMITE ARBITRAMENTO FISCAL (ART. 309 RIR)</span>
+<div class="space-y-1 text-body-sm my-2">
+<div class="flex justify-between"><span class="text-text-secondary">Custo Arbitrado Fiscal:</span><span class="font-mono text-semantic-warning font-bold">R$ 55,87</span></div>
+<div class="text-xs text-text-secondary">Referência: 70% (Comércio) sobre o preço de venda.</div>
+</div>
+</div>
+<p class="font-body-sm text-[11px] text-text-secondary leading-snug p-2 rounded bg-surface-container/50 border border-border-subtle/50">
+              Parâmetro de glosa fiscal da RFB caso os registros de inventário sejam desclassificados.
+            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- ACCORDION 7: MESA DE COMPRAS PR (COMPARADOR DE CUSTO EFETIVO ATERRISSADO) (Fiel a IMAGE_5) -->
+<div class="bg-surface-card rounded-xl border border-border-muted overflow-hidden shadow-sm transition-all" id="accordionMesaCompras">
+<button class="w-full p-space-md flex items-center justify-between bg-surface-container/40 hover:bg-surface-container/80 transition-colors text-left" onclick="toggleAccordion('contentMesaCompras', 'iconMesaCompras')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">shopping_cart</span>
+<div><div class="flex items-center gap-2"><span class="font-headline-sm text-headline-sm text-text-primary font-bold">Mesa de Compras PR</span><span class="font-label-sm text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-text-tertiary border border-border-subtle">Sourcing</span></div><p class="font-body-sm text-body-sm text-text-secondary">Simulação de sourcing interestadual vs. interno com ICMS-ST e frete</p></div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-lg bg-surface-card text-text-secondary border border-border-subtle flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">expand_more</span>
+            Expandir Mesa de Compras (3 Cotações)
+          </span>
+<span class="material-symbols-outlined text-text-secondary transition-transform duration-200" id="iconMesaCompras">expand_more</span>
+</div>
+</button>
+<div class="p-space-md border-t border-border-muted space-y-space-md hidden" id="contentMesaCompras">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<div class="bg-surface-container/50 p-space-md rounded-xl border border-border-subtle">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-text-primary font-bold">Fornecedor A (Paraná Interno)</span>
+<span class="font-label-sm text-label-sm text-semantic-compliance font-bold">Recomendado</span>
+</div>
+<div class="space-y-1 text-body-sm font-mono">
+<div class="flex justify-between text-text-secondary"><span>Preço Bruto:</span><span>R$ 58,93</span></div>
+<div class="flex justify-between text-text-secondary"><span>ICMS-ST / Retenção:</span><span>R$ 0,00</span></div>
+<div class="flex justify-between text-text-secondary"><span>Frete CIF:</span><span>R$ 0,00</span></div>
+<div class="flex justify-between pt-2 border-t border-border-muted text-accent-emerald-bright font-bold"><span>Custo Aterrissado:</span><span>R$ 52,98</span></div>
+</div>
+</div>
+<div class="bg-surface-container/30 p-space-md rounded-xl border border-border-subtle opacity-80">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-text-secondary font-bold">Fornecedor B (São Paulo - Interestadual)</span>
+<span class="font-label-sm text-label-sm text-semantic-warning">Alíq. 12%</span>
+</div>
+<div class="space-y-1 text-body-sm font-mono">
+<div class="flex justify-between text-text-secondary"><span>Preço Bruto:</span><span>R$ 54,00</span></div>
+<div class="flex justify-between text-text-secondary"><span>DIFAL / ST PR:</span><span>+ R$ 4,10</span></div>
+<div class="flex justify-between text-text-secondary"><span>Frete FOB:</span><span>+ R$ 2,50</span></div>
+<div class="flex justify-between pt-2 border-t border-border-muted text-text-primary font-bold"><span>Custo Aterrissado:</span><span>R$ 60,60</span></div>
+</div>
+</div>
+<div class="bg-surface-container/30 p-space-md rounded-xl border border-border-subtle opacity-80">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-sm text-label-sm text-text-secondary font-bold">Fornecedor C (Santa Catarina)</span>
+<span class="font-label-sm text-label-sm text-semantic-danger">Desfavorável</span>
+</div>
+<div class="space-y-1 text-body-sm font-mono">
+<div class="flex justify-between text-text-secondary"><span>Preço Bruto:</span><span>R$ 56,20</span></div>
+<div class="flex justify-between text-text-secondary"><span>DIFAL / ST PR:</span><span>+ R$ 3,85</span></div>
+<div class="flex justify-between text-text-secondary"><span>Frete FOB:</span><span>+ R$ 1,90</span></div>
+<div class="flex justify-between pt-2 border-t border-border-muted text-text-primary font-bold"><span>Custo Aterrissado:</span><span>R$ 61,95</span></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- ACCORDION 8: FUNDAMENTAÇÃO NORMATIVA & MEMÓRIA PERICIAL -->
+<div class="bg-surface-card rounded-xl border border-border-muted overflow-hidden shadow-sm transition-all" id="accordionNormativa">
+<button class="w-full p-space-md flex items-center justify-between bg-surface-container/40 hover:bg-surface-container/80 transition-colors text-left" onclick="toggleAccordion('contentNormativa', 'iconNormativa')" type="button">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">menu_book</span>
+<div><div class="flex items-center gap-2"><span class="font-headline-sm text-headline-sm text-text-primary font-bold">Fundamentação Normativa</span><span class="font-label-sm text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-accent-emerald-bright border border-border-subtle">Base Legal</span></div><p class="font-body-sm text-body-sm text-text-secondary">Memória algorítmica auditada para impugnação ou laudo pericial</p></div>
+</div>
+<div class="flex items-center gap-2">
+</div></button><button class="px-2.5 py-1 rounded bg-surface-card text-xs text-primary border border-primary/30 hover:bg-primary hover:text-on-primary transition-all flex items-center gap-1 font-label-sm" onclick="event.stopPropagation(); copiarFundamentacao()" type="button">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+            Copiar Citação
+          </button>
+<span class="material-symbols-outlined text-text-secondary transition-transform duration-200" id="iconNormativa">expand_more</span>
+</div>
+<div class="p-space-md border-t border-border-muted space-y-space-md hidden" id="contentNormativa">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md font-mono text-xs text-text-secondary bg-surface-canvas p-space-md rounded-xl border border-border-subtle leading-relaxed">
+<div class="space-y-2">
+<div class="text-text-primary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-semantic-compliance text-[16px]">verified</span>
+              1. Base Conceitual Contábil (CPC 16 R1 / NBC TG 16):
+            </div>
+<p>O custo de aquisição dos estoques compreende o preço de compra, os impostos de importação e outros tributos (exceto os que forem recuperáveis perante o fisco), bem como os custos de transporte, seguro, manuseio e outros diretamente atribuíveis à aquisição de produtos acabados, materiais e serviços. Descontos comerciais e abatimentos são deduzidos.</p>
+</div>
+<div class="space-y-2">
+<div class="text-text-primary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-semantic-info text-[16px]">verified</span>
+              2. Reforma Tributária (LC 214/2025):
+            </div>
+<p>Art. 28 c/c Art. 47: O IBS e a CBS são calculados "por fora", não integrando suas próprias bases de cálculo nem a base de cálculo um do outro. Na transição 2027, o crédito financeiro pleno condiciona-se à efetiva liquidação via Split Payment bancário na liquidação da fatura.</p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs text-body-sm">
+<span class="text-text-tertiary">Responsável Técnico: <strong class="text-text-primary">Dr. Ricardo Portela (CRC-SP 184920/O)</strong></span>
+<button class="text-xs text-primary hover:underline flex items-center gap-1 font-label-sm" type="button">
+            Ver Catálogo de 28 Normas Oficiais Vinculadas
+            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<div class="w-full bg-surface-card/60 border border-border-subtle/60 rounded-xl px-space-md py-space-sm mt-space-md mb-space-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-sm shadow-sm backdrop-blur-sm"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-semantic-warning text-[20px] flex-shrink-0">gavel</span><p class="font-body-sm text-body-sm text-text-secondary leading-snug"><strong class="text-text-primary font-semibold">Apoio à decisão técnica, não parecer fiscal vinculante.</strong> Classificação de mercadorias exige conferência com as Notas da NESH, Resoluções Gecex, RICMS/PR (Dec. 7.871/17) e legislação da Reforma (<span class="font-label-sm text-primary">LC 214/2025</span>).</p></div><div class="flex items-center gap-space-xs self-end md:self-auto flex-shrink-0"><span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container text-accent-emerald-bright border border-primary/30 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-semantic-compliance"></span>Base Paraná 2026/2027</span></div></div></div>
+</main></div>
+<!-- SCRIPT DE MICRO-INTERAÇÕES DOS ACCORDIONS E SIMULAÇÃO DINÂMICA -->
+<script>
+  function toggleAccordion(contentId, iconId) {
+    const content = document.getElementById(contentId);
+    const icon = document.getElementById(iconId);
+    if (!content) return;
+
+    if (content.classList.contains('hidden')) {
+      content.classList.remove('hidden');
+      if (icon) icon.classList.add('rotate-180');
+    } else {
+      content.classList.add('hidden');
+      if (icon) icon.classList.remove('rotate-180');
+    }
+  }
+
+  // Micro-interatividade de cópia de citação pericial
+  function copiarFundamentacao() {
+    const texto = "Memória de Cálculo NBC TG 16 / CPC 16 (R1) e LC 214/2025 - MargemReal Portela. Preço Sugerido: R$ 79,82 | Custo Real: R$ 52,98 | Margem Líquida: 20,0%.";
+    navigator.clipboard.writeText(texto).then(() => {
+      alert("Citação técnica copiada para a área de transferência!");
+    });
+  }
+
+  // Interação básica com inputs de margem e despesas
+  (function initPricingEngine() {
+    const inputMargem = document.getElementById('inputMargem');
+    const inputDesp = document.getElementById('inputDespVar');
+    const checkInidoneo = document.getElementById('checkInidoneo');
+    const displayVNF = document.getElementById('displayVNF');
+    const displayVProdLiq = document.getElementById('displayVProdLiq');
+
+    function recalcular() {
+      const margem = parseFloat(inputMargem?.value || 20) / 100;
+      const desp = parseFloat(inputDesp?.value || 5) / 100;
+      let custoReal = 52.98;
+
+      if (checkInidoneo?.checked) {
+        custoReal = 58.93; // Custo majorado sem crédito fiscal
+      }
+
+      // Fórmula mark-up simplificada
+      const precoLiq = custoReal / (1 - margem - desp - 0.021);
+      const vNF = precoLiq * (1 + 0.089); // + IVA Dual 8.9%
+
+      if (displayVProdLiq) displayVProdLiq.textContent = 'R$ ' + precoLiq.toFixed(2).replace('.', ',');
+      if (displayVNF) displayVNF.textContent = 'R$ ' + vNF.toFixed(2).replace('.', ',');
+    }
+
+    if (inputMargem) inputMargem.addEventListener('input', recalcular);
+    if (inputDesp) inputDesp.addEventListener('input', recalcular);
+    if (checkInidoneo) checkInidoneo.addEventListener('change', recalcular);
+  })();
+</script>
+<!-- Drawer Retrátil de Métricas Secundárias e Análise Fiscal -->
+<div class="fixed inset-0 bg-surface-canvas/80 backdrop-blur-sm z-40 hidden lg:hidden" id="drawerBackdrop"></div>
+<div class="fixed top-20 right-0 bottom-0 w-80 sm:w-96 bg-surface-card border-l border-border-muted z-40 shadow-2xl flex flex-col justify-between transition-all duration-300" id="secondaryMetricsDrawer">
+<div class="p-space-md border-b border-border-muted flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">insights</span>
+<h3 class="font-headline-sm text-headline-sm text-text-primary">Painel de Métricas Fiscais</h3>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded-lg text-text-secondary hover:text-text-primary hover:bg-surface-container transition-colors" id="closeDrawerBtn" title="Fechar painel"><span class="material-symbols-outlined text-[20px]">close</span></button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-space-md space-y-space-md">
+<div class="bg-surface-container/60 p-space-sm rounded-xl border border-border-subtle/60">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase">Alíquotas Médias Efetivas</span>
+<div class="mt-2 space-y-2">
+<div class="flex justify-between text-body-sm"><span class="text-text-secondary">ICMS Médio</span><span class="font-label-md text-text-primary font-semibold">12,4%</span></div>
+<div class="flex justify-between text-body-sm"><span class="text-text-secondary">PIS/COFINS Débito</span><span class="font-label-md text-text-primary font-semibold">9,25%</span></div>
+<div class="flex justify-between text-body-sm"><span class="text-text-secondary">PIS/COFINS Crédito Efetivo</span><span class="font-label-md text-semantic-compliance font-semibold">7,88%</span></div>
+<div class="flex justify-between text-body-sm"><span class="text-text-secondary">IRPJ + CSLL (Trimestral)</span><span class="font-label-md text-text-primary font-semibold">5,88%</span></div>
+</div>
+</div>
+<div class="bg-surface-container/60 p-space-sm rounded-xl border border-border-subtle/60">
+<span class="font-label-sm text-label-sm text-text-tertiary uppercase">Risco de Glosa SEFAZ</span>
+<div class="mt-2 flex items-center justify-between">
+<span class="font-headline-sm text-semantic-compliance">Nível Baixo (2,1%)</span>
+<span class="material-symbols-outlined text-semantic-compliance">verified_user</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-secondary mt-1">Conformidade das EFD-ICMS/IPI e EFD-Contribuições sem inconsistências estruturais.</p>
+</div>
+</div>
+<div class="p-space-md border-t border-border-muted flex items-center justify-between bg-surface-canvas/50">
+<span class="font-label-sm text-label-sm text-text-tertiary">Sincronizado via SPED Fiscal</span>
+<button class="text-xs text-primary hover:underline flex items-center gap-1 font-label-sm" id="collapseButtonWide">Recolher <span class="material-symbols-outlined text-[14px]">chevron_right</span></button>
+</div>
+</div>
+<button class="fixed top-28 right-0 z-30 hidden bg-accent-forest-deep text-accent-emerald-bright border-l border-y border-primary/40 px-2 py-3 rounded-l-xl shadow-xl flex items-center gap-1 hover:bg-accent-forest-medium transition-all" id="drawerClosedTrigger" title="Abrir Métricas"><span class="material-symbols-outlined text-[18px]">insights</span></button>
+<script>
+  // Inicialização do Sidebar Toggle (Expandir / Recolher Manual)
+  (function initSidebarToggle() {
+    const sidebar = document.getElementById('appSidebar');
+    const layoutWrapper = document.getElementById('mainLayoutWrapper');
+    const headerToggleBtn = document.getElementById('headerSidebarToggleBtn');
+    const headerToggleIcon = document.getElementById('headerToggleIcon');
+    const internalToggleBtn = document.getElementById('sidebarInternalToggleBtn');
+    const internalToggleIcon = document.getElementById('sidebarToggleIcon');
+    const footerToggleBtn = document.getElementById('sidebarFooterToggleBtn');
+    const footerToggleIcon = document.getElementById('sidebarFooterToggleIcon');
+
+    let isExpanded = true;
+
+    function setSidebarState(expanded) {
+      isExpanded = expanded;
+      const sidebarTexts = sidebar.querySelectorAll('.sidebar-text');
+      const sidebarCard = sidebar.querySelector('.sidebar-card');
+      const navLinks = sidebar.querySelectorAll('nav a');
+
+      if (isExpanded) {
+        // Expandido: w-64 (~260px)
+        sidebar.classList.remove('w-[68px]', 'p-2');
+        sidebar.classList.add('w-64', 'p-space-md');
+        if (layoutWrapper) {
+          layoutWrapper.classList.remove('pl-[68px]');
+          layoutWrapper.classList.add('pl-64');
+        }
+
+        // Mostrar textos
+        sidebarTexts.forEach(el => el.classList.remove('hidden'));
+        if (sidebarCard) {
+          sidebarCard.classList.remove('p-2', 'items-center');
+          sidebarCard.classList.add('p-space-md');
+        }
+
+        // Ajustar alinhamento dos links de navegação
+        navLinks.forEach(link => {
+          link.classList.remove('justify-center', 'px-2');
+          link.classList.add('px-space-md');
+        });
+
+        // Ícones
+        if (internalToggleIcon) internalToggleIcon.textContent = 'chevron_left';
+        if (headerToggleIcon) headerToggleIcon.textContent = 'menu_open';
+        if (footerToggleIcon) footerToggleIcon.textContent = 'keyboard_double_arrow_left';
+
+        if (internalToggleBtn) internalToggleBtn.title = 'Recolher menu lateral';
+        if (footerToggleBtn) footerToggleBtn.title = 'Recolher menu lateral';
+        if (headerToggleBtn) headerToggleBtn.title = 'Recolher menu lateral';
+      } else {
+        // Recolhido / Compacto: w-[68px]
+        sidebar.classList.remove('w-64', 'p-space-md');
+        sidebar.classList.add('w-[68px]', 'p-2');
+        if (layoutWrapper) {
+          layoutWrapper.classList.remove('pl-64');
+          layoutWrapper.classList.add('pl-[68px]');
+        }
+
+        // Ocultar textos
+        sidebarTexts.forEach(el => el.classList.add('hidden'));
+        if (sidebarCard) {
+          sidebarCard.classList.remove('p-space-md');
+          sidebarCard.classList.add('p-2', 'items-center');
+        }
+
+        // Centralizar ícones nos links
+        navLinks.forEach(link => {
+          link.classList.remove('px-space-md');
+          link.classList.add('justify-center', 'px-2');
+        });
+
+        // Ícones
+        if (internalToggleIcon) internalToggleIcon.textContent = 'chevron_right';
+        if (headerToggleIcon) headerToggleIcon.textContent = 'menu';
+        if (footerToggleIcon) footerToggleIcon.textContent = 'keyboard_double_arrow_right';
+
+        if (internalToggleBtn) internalToggleBtn.title = 'Expandir menu lateral';
+        if (footerToggleBtn) footerToggleBtn.title = 'Expandir menu lateral';
+        if (headerToggleBtn) headerToggleBtn.title = 'Expandir menu lateral';
+      }
+    }
+
+    if (headerToggleBtn) {
+      headerToggleBtn.addEventListener('click', () => setSidebarState(!isExpanded));
+    }
+    if (internalToggleBtn) {
+      internalToggleBtn.addEventListener('click', () => setSidebarState(!isExpanded));
+    }
+    if (footerToggleBtn) {
+      footerToggleBtn.addEventListener('click', () => setSidebarState(!isExpanded));
+    }
+
+    // Auto-colapso em telas menores
+    if (window.innerWidth < 1280) {
+      setSidebarState(false);
+    }
+  })();
+
+  // Drawer de Métricas Secundárias
+  (function initDrawer() {
+    const drawer = document.getElementById('secondaryMetricsDrawer');
+    const closedTrigger = document.getElementById('drawerClosedTrigger');
+    const closeBtn = document.getElementById('closeDrawerBtn');
+    const collapseWideBtn = document.getElementById('collapseButtonWide');
+    const topBarToggleBtn = document.getElementById('toggleSecondaryPanelBtn');
+    const backdrop = document.getElementById('drawerBackdrop');
+
+    let isOpen = true;
+
+    function updateDrawerState(open) {
+      isOpen = open;
+      if (isOpen) {
+        drawer.classList.remove('hidden');
+        closedTrigger.classList.add('hidden');
+        if (backdrop) {
+          if (window.innerWidth < 1024) {
+            backdrop.classList.remove('hidden');
+          } else {
+            backdrop.classList.add('hidden');
+          }
+        }
+        if (topBarToggleBtn) {
+          topBarToggleBtn.classList.add('bg-accent-forest-deep', 'text-accent-emerald-bright', 'border-primary/40');
+          topBarToggleBtn.classList.remove('bg-surface-card', 'text-text-primary', 'border-border-subtle');
+        }
+      } else {
+        drawer.classList.add('hidden');
+        closedTrigger.classList.remove('hidden');
+        if (backdrop) backdrop.classList.add('hidden');
+        if (topBarToggleBtn) {
+          topBarToggleBtn.classList.remove('bg-accent-forest-deep', 'text-accent-emerald-bright', 'border-primary/40');
+          topBarToggleBtn.classList.add('bg-surface-card', 'text-text-primary', 'border-border-subtle');
+        }
+      }
+    }
+
+    if (closedTrigger) {
+      closedTrigger.addEventListener('click', () => updateDrawerState(true));
+    }
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => updateDrawerState(false));
+    }
+    if (collapseWideBtn) {
+      collapseWideBtn.addEventListener('click', () => updateDrawerState(false));
+    }
+    if (topBarToggleBtn) {
+      topBarToggleBtn.addEventListener('click', () => updateDrawerState(!isOpen));
+    }
+    if (backdrop) {
+      backdrop.addEventListener('click', () => updateDrawerState(false));
+    }
+
+    if (window.innerWidth < 1280) {
+      updateDrawerState(false);
+    } else {
+      updateDrawerState(true);
+    }
+
+    window.addEventListener('resize', () => {
+      if (isOpen && window.innerWidth >= 1024 && backdrop) {
+        backdrop.classList.add('hidden');
+      }
+    });
+  })();
+</script>
+
+
+
+
+</body></html>

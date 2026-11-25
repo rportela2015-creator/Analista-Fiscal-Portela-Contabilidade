@@ -1401,6 +1401,20 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   // ---------------------------------------------------------------------------
   return (
     <section className="painel-precificacao" aria-label="Painel de Precificação e Margens">
+      <div className="st-page-header">
+        <div>
+          <div className="st-page-title-row">
+            <h2 className="st-page-title">Precificação &amp; Margens</h2>
+            <span className="st-badge-norma">CPC 16 (R1)</span>
+            <span className="st-badge-norma">LC 214/2025</span>
+            <span className="st-badge-norma">SEFA/PR 48/2026</span>
+          </div>
+          <p className="hint" style={{ margin: '4px 0 0' }}>
+            Formação de preço nos 4 regimes com custo real de aquisição, Split Payment e comparativo estratégico B2B.
+          </p>
+        </div>
+      </div>
+
       {empresaAtiva && (
         <div
           style={{
@@ -1449,8 +1463,8 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
             </button>
             <button
               type="button"
-              className="btn primary"
-              style={{ background: '#0b3d91', borderColor: '#0b3d91', fontSize: '13px', padding: '6px 14px' }}
+              className="btn"
+              style={{ fontSize: '13px', padding: '8px 16px', minHeight: '44px' }}
               onClick={() => exportarLaudoHtml('detalhado')}
               disabled={!resultado}
               title="Gerar laudo pericial fiscal completo com todas as seções e fundamentações"
@@ -1519,7 +1533,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
         </div>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 20 }}>
             {/* =============================================================== */}
             {/* COLUNA ESQUERDA: PARÂMETROS, RASTREABILIDADE FISCAL E CUSTO REAL */}
             {/* =============================================================== */}
@@ -1645,13 +1659,13 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                 >
                   <div className="card" style={{ marginTop: 8 }}>
                     {/* PAINEL DE-PARA DE CFOP */}
-                <div style={{ background: '#f8fafc', padding: 12, borderRadius: 6, border: '1px solid #e2e8f0', marginBottom: 14 }}>
+                <div style={{ background: 'var(--bg-card-subtle)', padding: 12, borderRadius: 6, border: '1px solid #e2e8f0', marginBottom: 14 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                     <div>
-                      <span style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }}>
+                      <span style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--ink-2)', fontWeight: 700 }}>
                         Rastreabilidade e Mapeamento de CFOP (Origem ➔ Entrada ➔ Venda)
                       </span>
-                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#0b3d91', marginTop: 2 }}>
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--accent-blue)', marginTop: 2 }}>
                         CFOP Origem: {itemAtual.cfop || '5102'} ➔ Entrada: {deParaCfop?.cfopEntrada || '1102'} ➔ Venda (Destinatário): {resultado?.cfopVendaDestinatario || determinarCfopVendaDestinatario(itemAtual, ufDestino)}
                       </div>
                     </div>
@@ -1666,14 +1680,14 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                         </span>
                       )}
                       {deParaCfop?.temSt ? (
-                        <span className="badge yellow" style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a' }} title="Operação com ICMS Substituição Tributária">
+                        <span className="badge yellow" style={{ background: 'var(--accent-amber-subtle)', color: 'var(--warn)', border: '1px solid #fde68a' }} title="Operação com ICMS Substituição Tributária">
                           🛡️ Sujeito a ST (Retido)
                         </span>
                       ) : (
                         <span className="badge grey">Sem ST</span>
                       )}
                       {deParaCfop?.exigeDifal ? (
-                        <span className="badge blue" style={{ background: '#faf5ff', color: '#7e22ce', border: '1px solid #e9d5ff' }} title="Exigência de Diferencial de Alíquotas">
+                        <span className="badge blue" style={{ background: 'var(--accent-blue-subtle)', color: '#7e22ce', border: '1px solid #e9d5ff' }} title="Exigência de Diferencial de Alíquotas">
                           📦 DIFAL Exigido (EC 87/15)
                         </span>
                       ) : (
@@ -1709,7 +1723,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                       <option value="4">4 - MEI (Microempreendedor Individual)</option>
                     </select>
                     {String(crtEmitente) === 'simples_hibrido' && (
-                      <div style={{ fontSize: '11px', color: '#15803d', fontWeight: 600, marginTop: 4 }}>
+                      <div style={{ fontSize: '11px', color: 'var(--ok)', fontWeight: 600, marginTop: 4 }}>
                         🏢 <b>Simples Híbrido:</b> Gera 100% dos créditos de IBS e CBS destacados ao adquirente.
                       </div>
                     )}
@@ -1766,9 +1780,9 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                 </div>
 
                 {/* MÓDULO DE FRETE CIF VS FOB (CT-e) */}
-                <div style={{ background: '#fdfcfe', padding: 12, borderRadius: 6, border: '1px solid #dfe5f0' }}>
+                <div style={{ background: 'var(--bg-card-subtle)', padding: 12, borderRadius: 6, border: '1px solid #dfe5f0' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>
                       🚚 Modalidade de Frete e Despesas de Transporte:
                     </label>
                     <select
@@ -1782,7 +1796,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   </div>
 
                   {modFrete === '1' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 10, background: '#fff', padding: 10, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 10, background: 'var(--bg-card)', padding: 10, borderRadius: 6, border: '1px solid #e2e8f0' }}>
                       <div>
                         <label style={{ fontSize: '11px', fontWeight: 600, display: 'block', marginBottom: 3 }}>
                           Frete CT-e Total (R$):
@@ -1852,10 +1866,10 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           </div>
 
               {/* CARD NOVO: DETECÇÃO AUTOMÁTICA DE BENEFÍCIOS FISCAIS (REFORMA + ICMS-PR/CONFAZ) */}
-              <div className="card" style={{ marginBottom: 20, background: '#fcfdfe', border: '1px solid #cbd5e1' }}>
+              <div className="card" style={{ marginBottom: 20, background: 'var(--bg-card)', border: '1px solid #cbd5e1' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '14.5px', color: '#0b3d91' }}>
+                    <h3 style={{ margin: 0, fontSize: '14.5px', color: 'var(--accent-blue)' }}>
                       🔍 Detecção Automática de Benefícios Fiscais (Reforma Tributária & RICMS/PR - CONFAZ)
                     </h3>
                     <p className="hint" style={{ margin: '3px 0 0', fontSize: '12px' }}>
@@ -1866,29 +1880,29 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   {/* COLUNA 1: REFORMA TRIBUTÁRIA (IBS/CBS) */}
-                  <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div style={{ background: 'var(--bg-card)', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <strong style={{ fontSize: '13px', color: '#0b3d91' }}>Reforma Tributária (IBS/CBS)</strong>
+                      <strong style={{ fontSize: '13px', color: 'var(--accent-blue)' }}>Reforma Tributária (IBS/CBS)</strong>
                       <span className="badge blue" style={{ fontSize: '10.5px' }}>LC 214/2025</span>
                     </div>
 
                     <div style={{ fontSize: '12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
                       <div>
-                        <span style={{ color: '#64748b' }}>cClassTrib Sugerido:</span>{' '}
-                        <strong className="mono" style={{ color: '#0f172a' }}>{beneficiosFiscais.reforma.cClassTrib}</strong>
+                        <span style={{ color: 'var(--ink-2)' }}>cClassTrib Sugerido:</span>{' '}
+                        <strong className="mono" style={{ color: 'var(--ink)' }}>{beneficiosFiscais.reforma.cClassTrib}</strong>
                       </div>
                       <div>
-                        <span style={{ color: '#64748b' }}>CST IBS/CBS:</span>{' '}
+                        <span style={{ color: 'var(--ink-2)' }}>CST IBS/CBS:</span>{' '}
                         <span className="badge grey" style={{ fontSize: '11px' }}>CST {beneficiosFiscais.reforma.cstIbsCbs}</span>
                       </div>
                       <div>
-                        <span style={{ color: '#64748b' }}>Redução de Alíquota (IBS/CBS):</span>{' '}
+                        <span style={{ color: 'var(--ink-2)' }}>Redução de Alíquota (IBS/CBS):</span>{' '}
                         <strong style={{ color: beneficiosFiscais.reforma.reducaoIbsCbsPct > 0 ? '#15803d' : '#475569' }}>
                           {beneficiosFiscais.reforma.reducaoIbsCbsPct}%
                         </strong>
                       </div>
                       <div>
-                        <span style={{ color: '#64748b' }}>Tema / Fundamentação:</span>{' '}
+                        <span style={{ color: 'var(--ink-2)' }}>Tema / Fundamentação:</span>{' '}
                         <span style={{ fontWeight: 600 }}>{beneficiosFiscais.reforma.tema}</span>
                       </div>
                       <div style={{ marginTop: 4 }}>
@@ -1910,10 +1924,10 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   </div>
 
                   {/* COLUNA 2: MOTOR ICMS PARANÁ & CONVÊNIOS CONFAZ */}
-                  <div style={{ background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div style={{ background: 'var(--bg-card)', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <strong style={{ fontSize: '13px', color: '#1d4ed8' }}>ICMS Paraná & Convênios CONFAZ</strong>
-                      <span className="badge" style={{ background: '#eff6ff', color: '#1e40af', fontSize: '10.5px' }}>RICMS/PR</span>
+                      <strong style={{ fontSize: '13px', color: 'var(--accent-blue)' }}>ICMS Paraná & Convênios CONFAZ</strong>
+                      <span className="badge" style={{ background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', fontSize: '10.5px' }}>RICMS/PR</span>
                     </div>
 
                     <div style={{ marginBottom: 8 }}>
@@ -1940,9 +1954,9 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
 
                     <div style={{ fontSize: '12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <div>
-                        <span style={{ color: '#64748b' }}>Alíq. Nominal vs Efetiva:</span>{' '}
+                        <span style={{ color: 'var(--ink-2)' }}>Alíq. Nominal vs Efetiva:</span>{' '}
                         <span>{beneficiosFiscais.icms.aliqNominalPct}%</span> ➔{' '}
-                        <strong style={{ color: '#15803d' }}>{beneficiosFiscais.icms.aliqEfetivaPct}%</strong>
+                        <strong style={{ color: 'var(--ok)' }}>{beneficiosFiscais.icms.aliqEfetivaPct}%</strong>
                         {beneficiosFiscais.icms.diferimentoPct > 0 && (
                           <span className="badge blue" style={{ marginLeft: 6, fontSize: '10px' }}>
                             Dif: {beneficiosFiscais.icms.diferimentoPct.toFixed(1)}%
@@ -1955,7 +1969,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                         )}
                       </div>
                       <div>
-                        <span style={{ color: '#64748b' }}>CST ICMS Sugerido:</span>{' '}
+                        <span style={{ color: 'var(--ink-2)' }}>CST ICMS Sugerido:</span>{' '}
                         <strong className="mono">CST {beneficiosFiscais.icms.cstIcmsSugerido}</strong>{' '}
                         | FCP Destino: <strong>+{beneficiosFiscais.icms.fcpDestinoPct}%</strong>
                       </div>
@@ -1971,7 +1985,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                         ) : (
                           <span
                             className="badge yellow"
-                            style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', fontSize: '10.5px', padding: '2px 6px' }}
+                            style={{ background: 'var(--accent-amber-subtle)', color: 'var(--warn)', border: '1px solid #fde68a', fontSize: '10.5px', padding: '2px 6px' }}
                             title="Item 6 Anexo II RICMS/PR: Redução com exigência de estorno proporcional de créditos."
                           >
                             ⚠️ Exige Estorno Proporcional (Anexo II RICMS/PR)
@@ -1984,31 +1998,31 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
 
                 {/* PAINEL DIFAL QUANDO APLICÁVEL */}
                 {beneficiosFiscais.difal && (
-                  <div style={{ marginTop: 12, padding: 10, background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 6, fontSize: '12px' }}>
+                  <div style={{ marginTop: 12, padding: 10, background: 'var(--accent-blue-subtle)', border: '1px solid #e9d5ff', borderRadius: 6, fontSize: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                       <strong style={{ color: '#7e22ce' }}>
                         📦 Apuração do DIFAL Interestadual ({beneficiosFiscais.difal.metodologia === 'base_dupla' ? 'Base Dupla - Lucro Real/Presumido' : 'Base Única - Simples Nacional'})
                       </strong>
-                      <span className="badge" style={{ background: '#f3e8ff', color: '#6b21a8', fontSize: '10.5px' }}>
+                      <span className="badge" style={{ background: 'var(--accent-blue-subtle)', color: '#6b21a8', fontSize: '10.5px' }}>
                         EC 87/2015 & LC 190/2022
                       </span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 6 }}>
                       <div>
-                        <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>Base de Cálculo:</span>
+                        <span style={{ color: 'var(--ink-2)', fontSize: '11px', display: 'block' }}>Base de Cálculo:</span>
                         <strong>R$ {beneficiosFiscais.difal.baseCalculo.toFixed(2)}</strong>
                       </div>
                       <div>
-                        <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>DIFAL Líquido:</span>
+                        <span style={{ color: 'var(--ink-2)', fontSize: '11px', display: 'block' }}>DIFAL Líquido:</span>
                         <strong>R$ {beneficiosFiscais.difal.valorDifalLiquido.toFixed(2)}</strong>
                       </div>
                       <div>
-                        <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>Parcela FCP Destino:</span>
+                        <span style={{ color: 'var(--ink-2)', fontSize: '11px', display: 'block' }}>Parcela FCP Destino:</span>
                         <strong>R$ {beneficiosFiscais.difal.valorFcpDestino.toFixed(2)}</strong>
                       </div>
                       <div>
-                        <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>Total Devido Destino:</span>
-                        <strong style={{ color: '#b91c1c' }}>R$ {beneficiosFiscais.difal.valorTotalDevidoDestino.toFixed(2)}</strong>
+                        <span style={{ color: 'var(--ink-2)', fontSize: '11px', display: 'block' }}>Total Devido Destino:</span>
+                        <strong style={{ color: 'var(--bad)' }}>R$ {beneficiosFiscais.difal.valorTotalDevidoDestino.toFixed(2)}</strong>
                       </div>
                     </div>
                   </div>
@@ -2016,9 +2030,9 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
               </div>
 
               {/* CARD 3: DEMONSTRAÇÃO DO CUSTO DE AQUISIÇÃO REAL */}
-              <div className="card" style={{ background: '#fff5f5', border: '1.5px solid #fecdd3', marginBottom: 20 }}>
-                <h3 style={{ margin: '0 0 4px', color: '#991b1b' }}>Bloco A — Custo de Aquisição Real (NBC TG 16 / CPC 16)</h3>
-                <p className="hint" style={{ margin: '0 0 10px', color: '#7f1d1d' }}>
+              <div className="card" style={{ background: 'var(--accent-crimson-subtle)', border: '1.5px solid #fecdd3', marginBottom: 20 }}>
+                <h3 style={{ margin: '0 0 4px', color: 'var(--bad)' }}>Bloco A — Custo de Aquisição Real (NBC TG 16 / CPC 16)</h3>
+                <p className="hint" style={{ margin: '0 0 10px', color: 'var(--bad)' }}>
                   Critério contábil estrito: impostos recuperáveis são deduzidos e tributos sem crédito integram o custo.
                 </p>
 
@@ -2036,10 +2050,10 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                       <td>(+) Frete, Seguro e Despesas Acessórias:</td>
                       <td style={{ textAlign: 'right' }}>+ R$ {compCusto.freteSeguroOutros.toFixed(2)}</td>
                     </tr>
-                    <tr style={{ background: '#fef2f2' }}>
+                    <tr style={{ background: 'var(--accent-crimson-subtle)' }}>
                       <td>
                         (+) Tributos Não Recuperáveis:
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
                           IPI: R$ {compCusto.tributosNaoRecuperaveis.ipi.toFixed(2)} | ST: R$ {compCusto.tributosNaoRecuperaveis.icmsSt.toFixed(2)} | Outros sem crédito: R$ {compCusto.tributosNaoRecuperaveis.tributosEntradaNaoAproveitados.toFixed(2)}
                         </div>
                       </td>
@@ -2047,14 +2061,14 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                         + R$ {compCusto.tributosNaoRecuperaveis.total.toFixed(2)}
                       </td>
                     </tr>
-                    <tr style={{ background: '#eef9f0' }}>
+                    <tr style={{ background: 'var(--accent-emerald-glow)' }}>
                       <td>
                         (-) Impostos a Recuperar:
-                        <div style={{ fontSize: '11px', color: '#107c41' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--ok)' }}>
                           ICMS: R$ {compCusto.impostosARecuperar.creditoIcms.toFixed(2)} | PIS/COF: R$ {compCusto.impostosARecuperar.creditoPisCofins.toFixed(2)} | CBS: R$ {compCusto.impostosARecuperar.creditoCbs.toFixed(2)} | IBS: R$ {compCusto.impostosARecuperar.creditoIbs.toFixed(2)}
                         </div>
                       </td>
-                      <td style={{ textAlign: 'right', color: '#107c41', fontWeight: 700 }}>
+                      <td style={{ textAlign: 'right', color: 'var(--ok)', fontWeight: 700 }}>
                         - R$ {compCusto.impostosARecuperar.totalImpostosRecuperaveis.toFixed(2)}
                       </td>
                     </tr>
@@ -2063,14 +2077,14 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
 
                 {/* DUAS LINHAS FINAIS CONTORNADAS DE PONTA A PONTA */}
                 <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ background: '#fee2e2', border: '2px solid #e11d48', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#9f1239' }}>Custo de Aquisição Real Total:</span>
-                    <span style={{ fontWeight: 900, fontSize: '1.25rem', color: '#9f1239' }}>R$ {compCusto.custoAquisicaoReal.toFixed(2)}</span>
+                  <div style={{ background: 'var(--accent-crimson-subtle)', border: '2px solid #e11d48', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--bad)' }}>Custo de Aquisição Real Total:</span>
+                    <span style={{ fontWeight: 900, fontSize: '1.25rem', color: 'var(--bad)' }}>R$ {compCusto.custoAquisicaoReal.toFixed(2)}</span>
                   </div>
 
-                  <div style={{ background: '#ffe4e6', border: '2px solid #f43f5e', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: '#881337' }}>Custo Unitário Efetivo:</span>
-                    <span style={{ fontWeight: 900, fontSize: '1.3rem', color: '#881337' }}>R$ {compCusto.custoUnitarioReal.toFixed(2)} <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>/ un</span></span>
+                  <div style={{ background: 'var(--accent-crimson-subtle)', border: '2px solid #f43f5e', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--bad)' }}>Custo Unitário Efetivo:</span>
+                    <span style={{ fontWeight: 900, fontSize: '1.3rem', color: 'var(--bad)' }}>R$ {compCusto.custoUnitarioReal.toFixed(2)} <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>/ un</span></span>
                   </div>
                 </div>
 
@@ -2095,8 +2109,8 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                       <span
                         className="badge"
                         style={{
-                          background: '#fef3c7',
-                          color: '#92400e',
+                          background: 'var(--accent-amber-subtle)',
+                          color: 'var(--warn)',
                           border: '1px solid #f59e0b',
                           fontSize: '11px',
                           fontWeight: 700,
@@ -2118,9 +2132,9 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                           padding: '6px 12px',
                           fontSize: '0.8rem',
                           fontWeight: 600,
-                          color: '#991b1b',
+                          color: 'var(--bad)',
                           borderColor: '#fca5a5',
-                          background: '#fef2f2',
+                          background: 'var(--accent-crimson-subtle)',
                         }}
                         title="Remover todas as alíquotas customizadas e restaurar os valores oficiais"
                       >
@@ -2143,25 +2157,25 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 12 }}>
                       <div className="badge-stat">
                         <span className="lbl">
-                          CBS Saída {overrides.cbsPct !== undefined && <span title="Alíquota customizada" style={{ color: '#b45309' }}>● Custom</span>}
+                          CBS Saída {overrides.cbsPct !== undefined && <span title="Alíquota customizada" style={{ color: 'var(--warn)' }}>● Custom</span>}
                         </span>
                         <span className="val tabular-nums">{sugestao.aliquotasAplicadas.cbsPct}%</span>
                       </div>
                       <div className="badge-stat">
                         <span className="lbl">
-                          IBS Saída {overrides.ibsPct !== undefined && <span title="Alíquota customizada" style={{ color: '#b45309' }}>● Custom</span>}
+                          IBS Saída {overrides.ibsPct !== undefined && <span title="Alíquota customizada" style={{ color: 'var(--warn)' }}>● Custom</span>}
                         </span>
                         <span className="val tabular-nums">{sugestao.aliquotasAplicadas.ibsPct}%</span>
                       </div>
                       <div className="badge-stat">
                         <span className="lbl">
-                          ICMS Saída {overrides.icmsVendaPct !== undefined && <span title="Alíquota customizada" style={{ color: '#b45309' }}>● Custom</span>}
+                          ICMS Saída {overrides.icmsVendaPct !== undefined && <span title="Alíquota customizada" style={{ color: 'var(--warn)' }}>● Custom</span>}
                         </span>
                         <span className="val tabular-nums">{sugestao.aliquotasAplicadas.icmsVendaPct}%</span>
                       </div>
                       <div className="badge-stat">
                         <span className="lbl">
-                          Redução IVA {overrides.reducaoIbsCbsPct !== undefined && <span title="Alíquota customizada" style={{ color: '#b45309' }}>● Custom</span>}
+                          Redução IVA {overrides.reducaoIbsCbsPct !== undefined && <span title="Alíquota customizada" style={{ color: 'var(--warn)' }}>● Custom</span>}
                         </span>
                         <span className="val tabular-nums">{sugestao.aliquotasAplicadas.reducaoIbsCbsPct}%</span>
                       </div>
@@ -2173,7 +2187,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                         aria-live="polite"
                         style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}
                       >
-                        <span className="badge yellow" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+                        <span className="badge yellow" style={{ background: 'var(--accent-amber-subtle)', color: 'var(--warn)', border: '1px solid #fde68a' }}>
                           ⚠️ Alíquotas customizadas persistidas ({empresaAtiva?.razaoSocial || 'Padrão'}):{' '}
                           {(sugestao.camposEditados.length > 0 ? sugestao.camposEditados : camposCustomizados).join(', ')}
                         </span>
@@ -2188,7 +2202,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
                           <div>
                             <label htmlFor="override-cbs" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
-                              CBS (%) {overrides.cbsPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                              CBS (%) {overrides.cbsPct !== undefined && <strong style={{ color: 'var(--warn)' }}>[custom]</strong>}
                             </label>
                             <input
                               id="override-cbs"
@@ -2201,7 +2215,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                           </div>
                           <div>
                             <label htmlFor="override-ibs" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
-                              IBS (%) {overrides.ibsPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                              IBS (%) {overrides.ibsPct !== undefined && <strong style={{ color: 'var(--warn)' }}>[custom]</strong>}
                             </label>
                             <input
                               id="override-ibs"
@@ -2214,7 +2228,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                           </div>
                           <div>
                             <label htmlFor="override-is" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
-                              IS (%) {overrides.isPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                              IS (%) {overrides.isPct !== undefined && <strong style={{ color: 'var(--warn)' }}>[custom]</strong>}
                             </label>
                             <input
                               id="override-is"
@@ -2227,7 +2241,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                           </div>
                           <div>
                             <label htmlFor="override-icms" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
-                              ICMS Venda (%) {overrides.icmsVendaPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                              ICMS Venda (%) {overrides.icmsVendaPct !== undefined && <strong style={{ color: 'var(--warn)' }}>[custom]</strong>}
                             </label>
                             <input
                               id="override-icms"
@@ -2240,7 +2254,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                           </div>
                           <div>
                             <label htmlFor="override-piscofins" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
-                              PIS/COFINS Venda (%) {overrides.pisCofinsVendaPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                              PIS/COFINS Venda (%) {overrides.pisCofinsVendaPct !== undefined && <strong style={{ color: 'var(--warn)' }}>[custom]</strong>}
                             </label>
                             <input
                               id="override-piscofins"
@@ -2253,7 +2267,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                           </div>
                           <div>
                             <label htmlFor="override-ipi" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
-                              IPI (%) {overrides.ipiPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                              IPI (%) {overrides.ipiPct !== undefined && <strong style={{ color: 'var(--warn)' }}>[custom]</strong>}
                             </label>
                             <input
                               id="override-ipi"
@@ -2266,7 +2280,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                           </div>
                           <div>
                             <label htmlFor="override-das" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
-                              DAS Efetivo Simples (%) {overrides.dasEfetivoPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                              DAS Efetivo Simples (%) {overrides.dasEfetivoPct !== undefined && <strong style={{ color: 'var(--warn)' }}>[custom]</strong>}
                             </label>
                             <input
                               id="override-das"
@@ -2279,7 +2293,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                           </div>
                           <div>
                             <label htmlFor="override-irpj" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
-                              IRPJ/CSLL Efetivo (%) {overrides.irpjCsllEfetivoPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                              IRPJ/CSLL Efetivo (%) {overrides.irpjCsllEfetivoPct !== undefined && <strong style={{ color: 'var(--warn)' }}>[custom]</strong>}
                             </label>
                             <input
                               id="override-irpj"
@@ -2292,7 +2306,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                           </div>
                           <div>
                             <label htmlFor="override-reducao" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
-                              Redução IVA (%) {overrides.reducaoIbsCbsPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                              Redução IVA (%) {overrides.reducaoIbsCbsPct !== undefined && <strong style={{ color: 'var(--warn)' }}>[custom]</strong>}
                             </label>
                             <input
                               id="override-reducao"
@@ -2317,22 +2331,22 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   <b>Falha no Cálculo:</b> {erroCalculo}
                 </div>
               ) : resultado ? (
-                <div className="card" style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', marginBottom: 20 }}>
-                  <h3 style={{ margin: '0 0 12px', color: '#166534' }}>
+                <div className="card" style={{ background: 'var(--accent-emerald-glow)', border: '1.5px solid #bbf7d0', marginBottom: 20 }}>
+                  <h3 style={{ margin: '0 0 12px', color: 'var(--ok)' }}>
                     Bloco B — Formação de Preço e Demonstração de Resultados
                   </h3>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-                    <div style={{ background: '#fff', padding: 12, borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                      <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Preço Venda Líquido (vProdLiq):</div>
-                      <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#1e293b' }}>
+                    <div style={{ background: 'var(--bg-card)', padding: 12, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--ink-2)' }}>Preço Venda Líquido (vProdLiq):</div>
+                      <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--ink)' }}>
                         R$ {resultado.preco.vProdLiq.toFixed(2)}
                       </div>
                     </div>
 
-                    <div style={{ background: '#dcfce7', border: '2px solid #16a34a', padding: 12, borderRadius: 6 }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#14532d' }}>Preço de Venda Final na Nota (vNF):</div>
-                      <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#14532d' }}>
+                    <div style={{ background: 'var(--accent-emerald-glow)', border: '2px solid #16a34a', padding: 12, borderRadius: 6 }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--ok)' }}>Preço de Venda Final na Nota (vNF):</div>
+                      <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--ok)' }}>
                         R$ {resultado.preco.precoFinal.toFixed(2)}
                       </div>
                     </div>
@@ -2340,12 +2354,12 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
 
                   {/* BARRA HORIZONTAL SEGMENTADA (WATERFALL STACKED BAR 100%) */}
                   {decompPreco && (
-                    <div style={{ marginBottom: 18, background: '#fff', padding: 14, borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                    <div style={{ marginBottom: 18, background: 'var(--bg-card)', padding: 14, borderRadius: 6, border: '1px solid #e2e8f0' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ink-2)', textTransform: 'uppercase' }}>
                           Decomposição Visual do Preço de Venda (100% vNF)
                         </span>
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
                           Total Nota: R$ {resultado.preco.precoFinal.toFixed(2)}
                         </span>
                       </div>
@@ -2359,7 +2373,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                           borderRadius: 8,
                           overflow: 'hidden',
                           boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)',
-                          background: '#f1f5f9',
+                          background: 'var(--bg-card-subtle)',
                         }}
                         role="img"
                         aria-label="Gráfico de barras da composição do preço de venda"
@@ -2460,13 +2474,13 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                       </tr>
                       <tr>
                         <td>Split Payment Retido (Bancos):</td>
-                        <td style={{ textAlign: 'right', color: '#b91c1c', fontWeight: 600 }}>
+                        <td style={{ textAlign: 'right', color: 'var(--bad)', fontWeight: 600 }}>
                           R$ {resultado.apuracaoCaixa.retencaoSplitIva.toFixed(2)}
                         </td>
                       </tr>
-                      <tr style={{ background: '#f0fdf4' }}>
+                      <tr style={{ background: 'var(--accent-emerald-glow)' }}>
                         <td>Crédito Transferido para Cliente B2B:</td>
-                        <td style={{ textAlign: 'right', color: '#15803d', fontWeight: 700 }}>
+                        <td style={{ textAlign: 'right', color: 'var(--ok)', fontWeight: 700 }}>
                           R$ {(resultado.relatorioMargens?.creditoTransferidoClienteB2B ?? 0).toFixed(2)}
                         </td>
                       </tr>
@@ -2478,11 +2492,11 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                       </tr>
                       <tr>
                         <td>Provisão de IRPJ e CSLL ({regime}):</td>
-                        <td style={{ textAlign: 'right', color: '#b91c1c' }}>
+                        <td style={{ textAlign: 'right', color: 'var(--bad)' }}>
                           R$ {resultado.resultado.irpjCsll.toFixed(2)}
                         </td>
                       </tr>
-                      <tr style={{ borderTop: '2px solid #cbd5e1', fontWeight: 700, background: '#f0fdf4' }}>
+                      <tr style={{ borderTop: '2px solid #cbd5e1', fontWeight: 700, background: 'var(--accent-emerald-glow)' }}>
                         <td>Margem Líquida Real Realizada:</td>
                         <td style={{ textAlign: 'right', color: '#16a34a', fontSize: '1rem' }}>
                           R$ {resultado.resultado.lucroLiquido.toFixed(2)} ({resultado.resultado.margemRealizadaPct.toFixed(1)}%)
@@ -2499,9 +2513,9 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           {/* BLOCO C: RESUMO EXECUTIVO (3 CARDS COM FONTE 24PX E PESO 900) */}
           {/* =============================================================== */}
           {resultado && (
-            <div className="card" style={{ marginTop: 20, marginBottom: 24, padding: 16, background: '#f8fafc', border: '1.5px solid #cbd5e1' }}>
+            <div className="card" style={{ marginTop: 20, marginBottom: 24, padding: 16, background: 'var(--bg-card-subtle)', border: '1.5px solid #cbd5e1' }}>
               <div style={{ marginBottom: 12 }}>
-                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '1.1rem' }}>
+                <h3 style={{ margin: 0, color: 'var(--ink)', fontSize: '1.1rem' }}>
                   📌 Bloco C — Resumo Executivo Gerencial
                 </h3>
                 <p className="hint" style={{ margin: '3px 0 0' }}>
@@ -2511,11 +2525,11 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
                 {/* CARD 1: VERMELHO - CUSTO EFETIVO DE ENTRADA UNITÁRIO */}
-                <div style={{ background: '#fff1f2', border: '2px solid #f43f5e', borderRadius: 8, padding: '16px 18px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#be123c', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                <div style={{ background: 'var(--accent-crimson-subtle)', border: '2px solid #f43f5e', borderRadius: 8, padding: '16px 18px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--bad)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
                     Custo Efetivo de Entrada Unitário
                   </div>
-                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#9f1239', lineHeight: 1.2 }}>
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--bad)', lineHeight: 1.2 }}>
                     R$ {compCusto.custoUnitarioReal.toFixed(2)}
                   </div>
                   <div style={{ fontSize: '11px', color: '#e11d48', marginTop: 4, fontWeight: 600 }}>
@@ -2524,11 +2538,11 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                 </div>
 
                 {/* CARD 2: VERDE - MARGEM LÍQUIDA (%) */}
-                <div style={{ background: '#f0fdf4', border: '2px solid #22c55e', borderRadius: 8, padding: '16px 18px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                <div style={{ background: 'var(--accent-emerald-glow)', border: '2px solid #22c55e', borderRadius: 8, padding: '16px 18px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--ok)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
                     Margem Líquida Realizada (%)
                   </div>
-                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#14532d', lineHeight: 1.2 }}>
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--ok)', lineHeight: 1.2 }}>
                     {resultado.resultado.margemRealizadaPct.toFixed(1)}%
                   </div>
                   <div style={{ fontSize: '11px', color: '#16a34a', marginTop: 4, fontWeight: 600 }}>
@@ -2537,14 +2551,14 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                 </div>
 
                 {/* CARD 3: AZUL - PREÇO DE VENDA SUGERIDO */}
-                <div style={{ background: '#eff6ff', border: '2px solid #3b82f6', borderRadius: 8, padding: '16px 18px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 800, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                <div style={{ background: 'var(--accent-blue-subtle)', border: '2px solid #3b82f6', borderRadius: 8, padding: '16px 18px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
                     Preço de Venda Sugerido (vNF)
                   </div>
-                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#1e40af', lineHeight: 1.2 }}>
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--accent-blue)', lineHeight: 1.2 }}>
                     R$ {resultado.preco.precoFinal.toFixed(2)}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#2563eb', marginTop: 4, fontWeight: 600 }}>
+                  <div style={{ fontSize: '11px', color: 'var(--accent-blue)', marginTop: 4, fontWeight: 600 }}>
                     vProd Líquido: R$ {resultado.preco.vProdLiq.toFixed(2)} + Tributos
                   </div>
                 </div>
@@ -2579,8 +2593,8 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
                 {/* CARD 1: TESTE VRL & IMPAIRMENT */}
-                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+                <div style={{ background: 'var(--bg-card-subtle)', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ink-2)', textTransform: 'uppercase', marginBottom: 6 }}>
                     1. Teste de Valor Realizável Líquido (CPC 16)
                   </div>
                   <div style={{ fontSize: '13px', marginBottom: 4 }}>
@@ -2590,19 +2604,19 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                     VRL (Preço - Desp. Venda): <b>R$ {(resultado.relatorioMargens.analiseVrlEArbitramento?.valorRealizavelLiquido ?? 0).toFixed(2)}</b>
                   </div>
                   {resultado.relatorioMargens.analiseVrlEArbitramento?.requerProvisaoImpairment ? (
-                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '6px 8px', borderRadius: 4, color: '#b91c1c', fontSize: '12px', fontWeight: 700 }}>
+                    <div style={{ background: 'var(--accent-crimson-subtle)', border: '1px solid #fecaca', padding: '6px 8px', borderRadius: 4, color: 'var(--bad)', fontSize: '12px', fontWeight: 700 }}>
                       ⚠️ ALERTA IMPAIRMENT: Provisão de R$ {(resultado.relatorioMargens.analiseVrlEArbitramento?.valorProvisaoUnitaria ?? 0).toFixed(2)}/un exigida por lei (Art. 183 Lei 6.404/76)!
                     </div>
                   ) : (
-                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '6px 8px', borderRadius: 4, color: '#15803d', fontSize: '12px', fontWeight: 700 }}>
+                    <div style={{ background: 'var(--accent-emerald-glow)', border: '1px solid #bbf7d0', padding: '6px 8px', borderRadius: 4, color: 'var(--ok)', fontSize: '12px', fontWeight: 700 }}>
                       ✅ Em Conformidade: VRL supera o custo contábil. Dispensa provisão para perdas.
                     </div>
                   )}
                 </div>
 
                 {/* CARD 2: PONTO DE EQUILÍBRIO CONTÁBIL (PEC) */}
-                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+                <div style={{ background: 'var(--bg-card-subtle)', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ink-2)', textTransform: 'uppercase', marginBottom: 6 }}>
                     2. Ponto de Equilíbrio Contábil (PEC)
                   </div>
                   <div style={{ fontSize: '13px', marginBottom: 4 }}>
@@ -2611,23 +2625,23 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   <div style={{ fontSize: '13px', marginBottom: 4 }}>
                     PEC em Volume: <b>{(resultado.relatorioMargens.pontoEquilibrioContabil?.pecVolume ?? 0).toFixed(0)} un</b>
                   </div>
-                  <div style={{ fontSize: '13px', color: '#0b3d91', fontWeight: 700 }}>
+                  <div style={{ fontSize: '13px', color: 'var(--accent-blue)', fontWeight: 700 }}>
                     PEC em Faturamento: R$ {(resultado.relatorioMargens.pontoEquilibrioContabil?.pecValor ?? 0).toFixed(2)}
                   </div>
                 </div>
 
                 {/* CARD 3: LIMITE DE ARBITRAMENTO FISCAL RIR/2018 */}
-                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+                <div style={{ background: 'var(--bg-card-subtle)', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ink-2)', textTransform: 'uppercase', marginBottom: 6 }}>
                     3. Limite Arbitramento Fiscal (Art. 309 RIR)
                   </div>
                   <div style={{ fontSize: '13px', marginBottom: 4 }}>
                     Custo Arbitrado Fiscal: <b>R$ {(resultado.relatorioMargens.analiseVrlEArbitramento?.custoArbitradoRir2018 ?? 0).toFixed(2)}</b>
                   </div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginBottom: 6 }}>
+                  <div style={{ fontSize: '12px', color: 'var(--ink-2)', marginBottom: 6 }}>
                     Referência: {tipoEstabelecimento === 'industria' ? '80% (Indústria)' : '70% (Comércio)'} sobre o preço de venda.
                   </div>
-                  <div style={{ fontSize: '11px', color: '#475569' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--ink-2)' }}>
                     Parâmetro de glosa fiscal da RFB caso os registros de inventário sejam desclassificados.
                   </div>
                 </div>
@@ -2669,7 +2683,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                       <tr
                         key={reg}
                         style={{
-                          background: isSelected ? '#f0f9ff' : 'transparent',
+                          background: isSelected ? 'var(--accent-blue-subtle)' : 'transparent',
                           fontWeight: isSelected ? 600 : 'normal',
                         }}
                       >
@@ -2686,7 +2700,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                         <td style={{ color: '#16a34a', fontWeight: 600 }}>
                           R$ {info.creditoTransferidoClienteB2B.toFixed(2)}
                         </td>
-                        <td style={{ fontWeight: 700, color: '#0b3d91' }}>
+                        <td style={{ fontWeight: 700, color: 'var(--accent-blue)' }}>
                           R$ {custoEfetivoB2B.toFixed(2)}
                         </td>
                         <td>R$ {info.margemLiquidaValor.toFixed(2)}</td>
@@ -2714,10 +2728,10 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
               badge={<span className="badge amber" style={{ fontSize: '11px' }}>Nível Sênior</span>}
             >
               {/* SEÇÃO 4.1: ANÁLISE DO SIMPLES HÍBRIDO & PONTO DE INFLEXÃO (LC 214/25) */}
-              <div className="card" style={{ marginTop: 8, background: '#f8fafc', border: '1px solid #cbd5e1' }}>
+              <div className="card" style={{ marginTop: 8, background: 'var(--bg-card-subtle)', border: '1px solid #cbd5e1' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
               <div>
-                <h3 style={{ margin: 0, color: '#0b3d91' }}>
+                <h3 style={{ margin: 0, color: 'var(--accent-blue)' }}>
                   ⚖️ Análise Estratégica: Simples Tradicional (DAS) vs. Simples Híbrido (IBS/CBS Por Fora — LC 214/25 & Res. CGSN 186/26)
                 </h3>
                 <p className="hint" style={{ margin: '3px 0 0' }}>
@@ -2758,8 +2772,8 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: 16 }}>
               {/* BLOCO 1: DECOMPOSIÇÃO DO DAS */}
-              <div style={{ background: '#fff', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+              <div style={{ background: 'var(--bg-card)', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ink-2)', textTransform: 'uppercase', marginBottom: 6 }}>
                   1. Decomposição do DAS ({ano})
                 </div>
                 <div style={{ fontSize: '12.5px', display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -2767,17 +2781,17 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                     <span>DAS Tradicional Efetivo:</span>
                     <strong>{analiseSimplesHibrido.aliquotaDasOriginalPct.toFixed(2)}% (R$ {analiseSimplesHibrido.valorDasSemExpurgo.toFixed(2)})</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#b91c1c' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--bad)' }}>
                     <span>Expurgo PIS/COFINS e ICMS:</span>
                     <strong>-{analiseSimplesHibrido.fatorExpurgoDasPct}%</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#15803d' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--ok)' }}>
                     <span>DAS Híbrido Reduzido:</span>
                     <strong>{analiseSimplesHibrido.aliquotaDasAjustadaPct.toFixed(2)}% (R$ {analiseSimplesHibrido.valorDasComExpurgo.toFixed(2)})</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', background: '#f0fdf4', padding: '4px 6px', borderRadius: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--accent-emerald-glow)', padding: '4px 6px', borderRadius: 4 }}>
                     <span style={{ fontWeight: 600 }}>Economia Bruta no DAS:</span>
-                    <strong style={{ color: '#15803d' }}>R$ {analiseSimplesHibrido.economiaDas.toFixed(2)}</strong>
+                    <strong style={{ color: 'var(--ok)' }}>R$ {analiseSimplesHibrido.economiaDas.toFixed(2)}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
                     <span>Saldo IBS/CBS a Pagar (Déb - Créd):</span>
@@ -2785,32 +2799,32 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: 4, fontWeight: 700 }}>
                     <span>Carga Tributária Total Híbrido:</span>
-                    <span style={{ color: '#0b3d91' }}>R$ {analiseSimplesHibrido.cargaTributariaTotal.toFixed(2)}</span>
+                    <span style={{ color: 'var(--accent-blue)' }}>R$ {analiseSimplesHibrido.cargaTributariaTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
               {/* BLOCO 2: VANTAGEM COMERCIAL B2B */}
-              <div style={{ background: '#fff', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+              <div style={{ background: 'var(--bg-card)', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ink-2)', textTransform: 'uppercase', marginBottom: 6 }}>
                   2. Vantagem Comercial B2B (Créditos Transferidos)
                 </div>
                 <div style={{ fontSize: '12.5px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div>
-                    <span style={{ color: '#64748b' }}>Crédito no Simples Tradicional:</span>
-                    <div style={{ fontWeight: 700, color: '#b45309' }}>
+                    <span style={{ color: 'var(--ink-2)' }}>Crédito no Simples Tradicional:</span>
+                    <div style={{ fontWeight: 700, color: 'var(--warn)' }}>
                       {analiseSimplesHibrido.creditoB2bTradicionalPct.toFixed(2)}% (Restrito - Art. 58 §4º Res. CGSN 186)
                     </div>
                   </div>
                   <div>
-                    <span style={{ color: '#64748b' }}>Crédito no Simples Híbrido:</span>
-                    <div style={{ fontWeight: 700, color: '#15803d' }}>
+                    <span style={{ color: 'var(--ink-2)' }}>Crédito no Simples Híbrido:</span>
+                    <div style={{ fontWeight: 700, color: 'var(--ok)' }}>
                       {analiseSimplesHibrido.creditoB2bHibridoPct.toFixed(1)}% (Integral 26,5% Destacado na NF-e)
                     </div>
                   </div>
-                  <div style={{ background: '#eff6ff', padding: '6px 8px', borderRadius: 4, marginTop: 4 }}>
-                    <span style={{ color: '#1e40af', fontWeight: 600, display: 'block' }}>Ganho de Competitividade B2B:</span>
-                    <strong style={{ fontSize: '13.5px', color: '#1d4ed8' }}>
+                  <div style={{ background: 'var(--accent-blue-subtle)', padding: '6px 8px', borderRadius: 4, marginTop: 4 }}>
+                    <span style={{ color: 'var(--accent-blue)', fontWeight: 600, display: 'block' }}>Ganho de Competitividade B2B:</span>
+                    <strong style={{ fontSize: '13.5px', color: 'var(--accent-blue)' }}>
                       +{analiseSimplesHibrido.ganhoCompetitividadeB2bPct.toFixed(2)}% de crédito para o cliente PJ
                     </strong>
                     <div style={{ fontSize: '11px', color: '#3b82f6', marginTop: 2 }}>
@@ -2821,13 +2835,13 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
               </div>
 
               {/* BLOCO 3: VEREDITO & PONTO DE INFLEXÃO (BREAK-EVEN) */}
-              <div style={{ background: '#fff', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: 6 }}>
+              <div style={{ background: 'var(--bg-card)', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--ink-2)', textTransform: 'uppercase', marginBottom: 6 }}>
                   3. Ponto de Inflexão & Veredito Executivo
                 </div>
                 <div style={{ fontSize: '12.5px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div>
-                    <span style={{ color: '#64748b' }}>Compras c/ Crédito p/ Empate (Break-Even):</span>
+                    <span style={{ color: 'var(--ink-2)' }}>Compras c/ Crédito p/ Empate (Break-Even):</span>
                     <div style={{ fontWeight: 800, fontSize: '14px', color: '#7c3aed' }}>
                       {analiseSimplesHibrido.pontoInflexao.creditoMinimoEntradaParaEmpatePct.toFixed(1)}% da Receita Bruta
                     </div>
@@ -2843,10 +2857,10 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: '11.5px', color: '#475569', lineHeight: 1.4, background: '#f8fafc', padding: '6px 8px', borderRadius: 4, border: '1px solid #f1f5f9' }}>
+                  <div style={{ fontSize: '11.5px', color: 'var(--ink-2)', lineHeight: 1.4, background: 'var(--bg-card-subtle)', padding: '6px 8px', borderRadius: 4, border: '1px solid #f1f5f9' }}>
                     {analiseSimplesHibrido.pontoInflexao.justificativa}
                   </div>
-                  <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: 2 }}>
+                  <div style={{ fontSize: '10.5px', color: 'var(--ink-2)', marginTop: 2 }}>
                     ⚖️ <b>Aviso Normativo:</b> A opção pelo recolhimento de IBS/CBS fora do Simples é irretratável para todo o ano-calendário e deve ser manifestada entre setembro e novembro do ano anterior (LC 214/2025).
                   </div>
                 </div>
@@ -2857,11 +2871,11 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           {/* =============================================================== */}
           {/* SEÇÃO 4.2: SIMULADOR DUAL-STACK 2027 (CONSULTA SEFA/PR 48/2026 VS TESE JUDICIAL) */}
           {/* =============================================================== */}
-          <div className="card" style={{ marginTop: 24, background: '#fff', border: '1.5px solid #0284c7' }}>
+          <div className="card" style={{ marginTop: 24, background: 'var(--bg-card)', border: '1.5px solid #0284c7' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <h3 style={{ margin: 0, color: '#0369a1' }}>
+                  <h3 style={{ margin: 0, color: 'var(--accent-blue)' }}>
                     ⚡ Simulador Dual-Stack 2027: Consulta SEFA/PR nº 48/2026 vs. Tese Judicial
                   </h3>
                   <span className="badge blue" style={{ fontSize: '11px' }}>Transição 2026–2027</span>
@@ -2872,8 +2886,8 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
               </div>
 
               {/* Toggle Jurídico */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0f9ff', padding: '6px 12px', borderRadius: 6, border: '1px solid #bae6fd' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#0369a1' }}>Posicionamento Jurídico:</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--accent-blue-subtle)', padding: '6px 12px', borderRadius: 6, border: '1px solid #bae6fd' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-blue)' }}>Posicionamento Jurídico:</span>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>
                   <input
                     type="checkbox"
@@ -2887,7 +2901,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
 
             {/* Alerta Executivo do Simples Nacional Híbrido 2027 */}
             {regime === 'simples' && (
-              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '8px 12px', marginBottom: 14, fontSize: '12px', color: '#92400e', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ background: 'var(--accent-amber-subtle)', border: '1px solid #fde68a', borderRadius: 6, padding: '8px 12px', marginBottom: 14, fontSize: '12px', color: 'var(--warn)', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span>⚠️</span>
                 <div>
                   <strong>Janela Normativa do Simples Nacional Híbrido 2027 (Resoluções CGSN nº 186/2026 e 194/2026):</strong>{' '}
@@ -2900,18 +2914,18 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: 14 }}>
               {/* Card Modo 1: SEFA/PR 48/2026 */}
               <div style={{
-                background: incluirIbsCbsBcIcms ? '#f0fdf4' : '#f8fafc',
+                background: incluirIbsCbsBcIcms ? 'var(--accent-emerald-glow)' : 'var(--bg-card-subtle)',
                 border: incluirIbsCbsBcIcms ? '2px solid #22c55e' : '1px solid #cbd5e1',
                 borderRadius: 8,
                 padding: 14
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#166534' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--ok)' }}>
                     Modo 1: Administrativo SEFA/PR
                   </span>
                   {incluirIbsCbsBcIcms && <span className="badge green">Ativo</span>}
                 </div>
-                <div style={{ fontSize: '12px', color: '#475569', marginBottom: 8 }}>
+                <div style={{ fontSize: '12px', color: 'var(--ink-2)', marginBottom: 8 }}>
                   Consulta SEFA/PR nº 48/2026 (IBS e CBS compõem a BC do ICMS)
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12.5px' }}>
@@ -2921,7 +2935,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>ICMS Efetivo:</span>
-                    <strong style={{ color: '#b91c1c' }}>R$ {simulacaoDualStack.valorIcmsModo1.toFixed(2)}</strong>
+                    <strong style={{ color: 'var(--bad)' }}>R$ {simulacaoDualStack.valorIcmsModo1.toFixed(2)}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>IBS + CBS (por fora):</span>
@@ -2929,25 +2943,25 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1.5px solid #bbf7d0', paddingTop: 6, marginTop: 4, fontWeight: 800 }}>
                     <span>Preço Final Consumidor:</span>
-                    <strong style={{ fontSize: '15px', color: '#14532d' }}>R$ {simulacaoDualStack.precoFinalModo1.toFixed(2)}</strong>
+                    <strong style={{ fontSize: '15px', color: 'var(--ok)' }}>R$ {simulacaoDualStack.precoFinalModo1.toFixed(2)}</strong>
                   </div>
                 </div>
               </div>
 
               {/* Card Modo 2: Tese Judicial */}
               <div style={{
-                background: !incluirIbsCbsBcIcms ? '#f0fdf4' : '#f8fafc',
+                background: !incluirIbsCbsBcIcms ? 'var(--accent-emerald-glow)' : 'var(--bg-card-subtle)',
                 border: !incluirIbsCbsBcIcms ? '2px solid #22c55e' : '1px solid #cbd5e1',
                 borderRadius: 8,
                 padding: 14
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#1e40af' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent-blue)' }}>
                     Modo 2: Tese Judicial (Tema 69 STF)
                   </span>
                   {!incluirIbsCbsBcIcms && <span className="badge green">Ativo</span>}
                 </div>
-                <div style={{ fontSize: '12px', color: '#475569', marginBottom: 8 }}>
+                <div style={{ fontSize: '12px', color: 'var(--ink-2)', marginBottom: 8 }}>
                   Exclusão do IBS e CBS da Base de Cálculo do ICMS
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12.5px' }}>
@@ -2957,7 +2971,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>ICMS Efetivo:</span>
-                    <strong style={{ color: '#2563eb' }}>R$ {simulacaoDualStack.valorIcmsModo2.toFixed(2)}</strong>
+                    <strong style={{ color: 'var(--accent-blue)' }}>R$ {simulacaoDualStack.valorIcmsModo2.toFixed(2)}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>IBS + CBS (por fora):</span>
@@ -2965,33 +2979,33 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1.5px solid #bfdbfe', paddingTop: 6, marginTop: 4, fontWeight: 800 }}>
                     <span>Preço Final Consumidor:</span>
-                    <strong style={{ fontSize: '15px', color: '#1e3a8a' }}>R$ {simulacaoDualStack.precoFinalModo2.toFixed(2)}</strong>
+                    <strong style={{ fontSize: '15px', color: 'var(--accent-blue)' }}>R$ {simulacaoDualStack.precoFinalModo2.toFixed(2)}</strong>
                   </div>
                 </div>
               </div>
 
               {/* Card Efeito Cascata & Choque de Margem */}
-              <div style={{ background: '#fff1f2', border: '1.5px solid #fecdd3', borderRadius: 8, padding: 14 }}>
-                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#9f1239' }}>
+              <div style={{ background: 'var(--accent-crimson-subtle)', border: '1.5px solid #fecdd3', borderRadius: 8, padding: 14 }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--bad)' }}>
                   📊 Choque Comercial & Efeito Cascata
                 </span>
                 <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6, fontSize: '12.5px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Efeito Cascata (ICMS s/ IBS-CBS):</span>
-                    <strong style={{ color: '#b91c1c' }}>+ R$ {simulacaoDualStack.efeitoCascataReais.toFixed(2)}</strong>
+                    <strong style={{ color: 'var(--bad)' }}>+ R$ {simulacaoDualStack.efeitoCascataReais.toFixed(2)}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Aumento Efetivo no ICMS:</span>
                     <strong style={{ color: '#dc2626' }}>+{simulacaoDualStack.aumentoPercentualIcms.toFixed(2)}%</strong>
                   </div>
-                  <div style={{ background: '#ffe4e6', padding: '6px 8px', borderRadius: 4, marginTop: 4 }}>
-                    <span style={{ color: '#881337', fontWeight: 700, display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>
+                  <div style={{ background: 'var(--accent-crimson-subtle)', padding: '6px 8px', borderRadius: 4, marginTop: 4 }}>
+                    <span style={{ color: 'var(--bad)', fontWeight: 700, display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>
                       Risco de Erosão de Margem
                     </span>
-                    <div style={{ color: '#9f1239', fontWeight: 800, fontSize: '14px' }}>
+                    <div style={{ color: 'var(--bad)', fontWeight: 800, fontSize: '14px' }}>
                       -{simulacaoDualStack.erosaoMargemPpSePrecoTravado.toFixed(2)} p.p. de margem
                     </div>
-                    <div style={{ fontSize: '10.5px', color: '#be123c', marginTop: 2 }}>
+                    <div style={{ fontSize: '10.5px', color: 'var(--bad)', marginTop: 2 }}>
                       Caso o preço de venda seja mantido inalterado frente ao mercado em 2027.
                     </div>
                   </div>
@@ -3003,10 +3017,10 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           {/* =============================================================== */}
           {/* SEÇÃO 4.3: MESA DE COMPRAS PR (COMPARADOR DE CUSTO ATERRISSADO) */}
           {/* =============================================================== */}
-          <div className="card" style={{ marginTop: 24, background: '#f8fafc', border: '1.5px solid #cbd5e1' }}>
+          <div className="card" style={{ marginTop: 24, background: 'var(--bg-card-subtle)', border: '1.5px solid #cbd5e1' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <h3 style={{ margin: 0, color: '#0f172a' }}>
+                <h3 style={{ margin: 0, color: 'var(--ink)' }}>
                   🛒 Mesa de Compras PR: Comparador de Custo Efetivo Aterrissado
                 </h3>
                 <p className="hint" style={{ margin: '3px 0 0' }}>
@@ -3026,7 +3040,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
             {expandirMesaCompras && (
               <div style={{ marginTop: 16 }}>
                 {/* Parâmetros Financeiros de Capital de Giro */}
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', background: '#fff', padding: '10px 14px', borderRadius: 6, border: '1px solid #e2e8f0', marginBottom: 14 }}>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', background: 'var(--bg-card)', padding: '10px 14px', borderRadius: 6, border: '1px solid #e2e8f0', marginBottom: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <label htmlFor="taxa-cap-giro" style={{ fontSize: '12px', fontWeight: 600 }}>Taxa Capital Giro Mensal:</label>
                     <input
@@ -3053,16 +3067,16 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                     />
                     <span style={{ fontSize: '12px' }}>dias</span>
                   </div>
-                  <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+                  <div style={{ fontSize: '11.5px', color: 'var(--ink-2)' }}>
                     💡 Considera o custo de oportunidade financeiro sobre o desembolso antecipado de ICMS-ST / Art. 16.
                   </div>
                 </div>
 
                 {/* Tabela de Cotações da Mesa de Compras */}
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 6 }}>
+                  <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse', background: 'var(--bg-card)', border: '1px solid #cbd5e1', borderRadius: 6 }}>
                     <thead>
-                      <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', color: '#334155' }}>
+                      <tr style={{ background: 'var(--bg-card-subtle)', borderBottom: '2px solid #cbd5e1', color: 'var(--ink)' }}>
                         <th style={{ padding: '8px' }}>Fornecedor</th>
                         <th style={{ padding: '8px' }}>UF</th>
                         <th style={{ padding: '8px' }}>Regime</th>
@@ -3081,21 +3095,21 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                         return (
                           <tr key={cot.id} style={{
                             borderBottom: '1px solid #e2e8f0',
-                            background: ehVencedor ? '#f0fdf4' : '#fff'
+                            background: ehVencedor ? 'var(--accent-emerald-glow)' : '#fff'
                           }}>
                             <td style={{ padding: '8px', fontWeight: 600 }}>
                               {cot.nome}
-                              <div style={{ fontSize: '10.5px', color: '#64748b', fontWeight: 400 }}>{cot.justificativaTributaria}</div>
+                              <div style={{ fontSize: '10.5px', color: 'var(--ink-2)', fontWeight: 400 }}>{cot.justificativaTributaria}</div>
                             </td>
                             <td style={{ padding: '8px' }}><span className="badge blue">{cot.ufEmitente}</span></td>
                             <td style={{ padding: '8px' }}>{cot.crtEmitente === '1' ? 'Simples' : 'Normal'}</td>
                             <td style={{ padding: '8px', textAlign: 'right' }}>R$ {cot.precoUnitario.toFixed(2)}</td>
                             <td style={{ padding: '8px', textAlign: 'right' }}>R$ {cot.freteUnitario.toFixed(2)}</td>
                             <td style={{ padding: '8px', textAlign: 'right' }}>R$ {cot.vIpiUnitario.toFixed(2)}</td>
-                            <td style={{ padding: '8px', textAlign: 'right', color: '#b91c1c' }}>
+                            <td style={{ padding: '8px', textAlign: 'right', color: 'var(--bad)' }}>
                               R$ {(cot.icmsStEntrada + cot.antecipacaoArt16).toFixed(2)}
                             </td>
-                            <td style={{ padding: '8px', textAlign: 'right', color: '#64748b' }}>
+                            <td style={{ padding: '8px', textAlign: 'right', color: 'var(--ink-2)' }}>
                               R$ {cot.custoCapitalGiro.toFixed(2)}
                             </td>
                             <td style={{ padding: '8px', textAlign: 'right', fontWeight: 800, fontSize: '13px', color: ehVencedor ? '#15803d' : '#0f172a' }}>
@@ -3105,7 +3119,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                               {ehVencedor ? (
                                 <span className="badge green" style={{ fontWeight: 700 }}>🏆 Menor Custo</span>
                               ) : (
-                                <span style={{ fontSize: '11px', color: '#b91c1c' }}>
+                                <span style={{ fontSize: '11px', color: 'var(--bad)' }}>
                                   +R$ {(cot.custoEfetivoAterrissado - resultadoMesaCompras.melhorOpcao.custoEfetivoAterrissado).toFixed(2)}
                                 </span>
                               )}
@@ -3118,12 +3132,12 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                 </div>
 
                 {/* Banner de Conclusão da Mesa de Compras */}
-                <div style={{ marginTop: 12, background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ marginTop: 12, background: 'var(--accent-emerald-glow)', border: '1.5px solid #86efac', borderRadius: 6, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <strong style={{ color: '#166534', fontSize: '13px' }}>
+                    <strong style={{ color: 'var(--ok)', fontSize: '13px' }}>
                       🏆 Vencedor da Mesa de Compras: {resultadoMesaCompras.melhorOpcao.nome}
                     </strong>
-                    <div style={{ fontSize: '11.5px', color: '#15803d', marginTop: 2 }}>
+                    <div style={{ fontSize: '11.5px', color: 'var(--ok)', marginTop: 2 }}>
                       Economia real de <strong>R$ {resultadoMesaCompras.economiaVsPiorReais.toFixed(2)} ({resultadoMesaCompras.economiaVsPiorPct}%)</strong> por unidade vs. a pior opção analisada.
                     </div>
                   </div>
@@ -3138,17 +3152,17 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           {/* =============================================================== */}
           {/* SEÇÃO 4.4: RADAR DE COMBUSTÍVEIS MONOFÁSICOS AD REM (01/02/2027) */}
           {/* =============================================================== */}
-          <div className="card" style={{ marginTop: 24, background: '#f8fafc', border: '1px solid #cbd5e1' }}>
+          <div className="card" style={{ marginTop: 24, background: 'var(--bg-card-subtle)', border: '1px solid #cbd5e1' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <h4 style={{ margin: 0, color: '#334155' }}>
+                <h4 style={{ margin: 0, color: 'var(--ink)' }}>
                   ⛽ Radar Logístico: Virada de Combustíveis Monofásicos Ad Rem em 01/02/2027
                 </h4>
                 <span className="badge amber" style={{ fontSize: '10.5px' }}>Convênios ICMS 127/2026 e 128/2026</span>
               </div>
-              <span style={{ fontSize: '11px', color: '#64748b' }}>CST 61 / EFD PR012000</span>
+              <span style={{ fontSize: '11px', color: 'var(--ink-2)' }}>CST 61 / EFD PR012000</span>
             </div>
-            <div style={{ marginTop: 8, fontSize: '12px', color: '#475569', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+            <div style={{ marginTop: 8, fontSize: '12px', color: 'var(--ink-2)', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
               <div>
                 <strong>Diesel / Biodiesel (NCM 2710.19.21):</strong> R$ 1,17 ➔ <strong>R$ 1,30/L</strong> (+11,11%) — Acréscimo de R$ 1.300,00/mês para 10.000 L.
               </div>
@@ -3191,7 +3205,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
               <div className="card" style={{ marginTop: 10 }}>
                 <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 6 }}>
                   <table style={{ width: '100%', fontSize: '11.5px', borderCollapse: 'collapse' }}>
-                    <thead style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 1 }}>
+                    <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-card-subtle)', zIndex: 1 }}>
                       <tr>
                         <th style={{ padding: '6px 8px', borderBottom: '1px solid #cbd5e1' }}>ID</th>
                         <th style={{ padding: '6px 8px', borderBottom: '1px solid #cbd5e1' }}>Norma</th>

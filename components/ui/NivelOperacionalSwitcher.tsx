@@ -88,20 +88,14 @@ export default function NivelOperacionalSwitcher({
     [disabled, nivelAtivo, mudarNivel]
   );
 
-  const paddingClasse = size === 'sm' ? 'py-1 px-2.5 text-xs' : 'py-2 px-3.5 text-xs';
-
   return (
     <div
       ref={groupRef}
       role="radiogroup"
       aria-label="Nível operacional de detalhamento"
       onKeyDown={handleKeyDown}
-      className={`inline-flex items-center gap-1 p-1 bg-slate-100 rounded-full border border-slate-300 shadow-inner ${className}`}
-      style={{
-        backgroundColor: 'var(--surface-subtle, #f1f5f9)',
-        borderColor: 'var(--border-subtle, #e2e8f0)',
-        minHeight: '44px',
-      }}
+      className={`st-switcher ${className}`}
+      style={{ minHeight: '44px' }}
     >
       {OPCOES_NIVEL.map((op) => {
         const isAtivo = op.id === nivelAtivo;
@@ -110,32 +104,21 @@ export default function NivelOperacionalSwitcher({
             key={op.id}
             type="button"
             role="radio"
+            data-nivel={op.id}
             aria-checked={isAtivo}
             tabIndex={isAtivo ? 0 : -1}
             disabled={disabled}
             title={op.hint}
             onClick={() => mudarNivel(op.id)}
-            className={`flex items-center justify-center gap-1.5 font-semibold rounded-full transition-all duration-150 select-none outline-none focus-visible:ring-2 focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${paddingClasse}`}
+            className={`st-switcher-btn ${isAtivo ? 'is-active' : ''}`}
             style={{
-              minHeight: '40px',
-              minWidth: '92px',
-              backgroundColor: isAtivo ? 'var(--surface-card, #ffffff)' : 'transparent',
-              color: isAtivo ? 'var(--portela-brand-blue, #0b3d91)' : 'var(--text-secondary, #475569)',
-              boxShadow: isAtivo ? '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)' : 'none',
-              border: isAtivo ? '1px solid var(--border-subtle, #e2e8f0)' : '1px solid transparent',
+              minHeight: size === 'sm' ? '36px' : '40px',
+              minWidth: '88px',
             }}
           >
             <span>{op.label}</span>
             {op.badge && (
-              <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
-                style={{
-                  backgroundColor: isAtivo ? '#eff6ff' : '#e2e8f0',
-                  color: isAtivo ? '#1d4ed8' : '#64748b',
-                }}
-              >
-                {op.badge}
-              </span>
+              <span className="st-switcher-badge">{op.badge}</span>
             )}
           </button>
         );

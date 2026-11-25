@@ -773,14 +773,29 @@ export default function AuditoriaEntrada() {
   };
 
   return (
-    <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-        <h2>Auditoria de Entrada (IA Local · RX 580)</h2>
-        <span className="badge success mono">Soberania Local-First</span>
+    <div>
+      <div className="st-page-header">
+        <div>
+          <div className="st-page-title-row">
+            <h2 className="st-page-title">Auditoria de Entrada</h2>
+            <span className="st-badge-norma">CPC 16</span>
+            <span className="st-badge-norma">DIFAL PR</span>
+            <span className="st-badge-norma">IA Local · RX 580</span>
+          </div>
+          <p className="hint" style={{ margin: '4px 0 0' }}>
+            Upload de NF-e/DANFE ou NFS-e com extração determinística, apuração DIFAL produto a produto e análise pericial.
+          </p>
+        </div>
+        <span className="badge green mono">Soberania Local-First</span>
       </div>
-      <p className="hint">
-        Faça o upload da nota fiscal (.xml da NF-e ou .pdf do DANFE) para auditar documento fiscal com extração determinística imediata e análise pericial por IA.
-      </p>
+
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <h3 style={{ margin: 0, textTransform: 'none', fontSize: 16, color: 'var(--ink)' }}>Documento Fiscal de Entrada</h3>
+        </div>
+        <p className="hint">
+          Faça o upload da nota fiscal (.xml da NF-e ou .pdf do DANFE) para auditar documento fiscal com extração determinística imediata e análise pericial por IA.
+        </p>
 
       {/* =========================================================================
        * ETAPA 1: Formulário de Upload e Extração Determinística Imediata
@@ -883,7 +898,7 @@ export default function AuditoriaEntrada() {
               onClick={handleExecutarOrquestracaoCompleta}
               disabled={isExtracting || isOrquestrando || !file}
               className="btn primary"
-              style={{ background: '#2563eb', borderColor: '#2563eb', fontWeight: 600 }}
+              style={{ background: '#1d4ed8', borderColor: '#3b82f6', color: '#ffffff', fontWeight: 600 }}
               title="Executa em DAG: Extração + Motor Oficial RFB RTC + ICMS/PR v5.0.0 + Créditos 3 Camadas + 4 Regimes + Persistência"
             >
               {isOrquestrando ? '⚡ Executando Orquestrador DAG...' : '⚡ Executar Orquestração Completa (RFB RTC + ICMS/PR + Créditos + 4 Regimes)'}
@@ -921,7 +936,7 @@ export default function AuditoriaEntrada() {
       {extractedInvoice && !auditResult && (
         <div style={{ marginTop: 20 }}>
           {/* Cabeçalho Resumo da NF-e */}
-          <div className="card" style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+          <div className="card" style={{ background: 'var(--bg-card-subtle)', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <strong>NF-e: {extractedInvoice.identificacao?.numero || 'S/N'} (Série {extractedInvoice.identificacao?.serie || '1'})</strong>
@@ -996,8 +1011,8 @@ export default function AuditoriaEntrada() {
                         borderRadius: 4,
                         background:
                           resultadoOrquestracao.etapas.rtc.origemCalculoRtc === 'OFICIAL_RFB'
-                            ? '#1e3a1e'
-                            : '#3a2a1e',
+                            ? 'var(--accent-emerald-glow)'
+                            : 'var(--accent-amber-subtle)',
                         color:
                           resultadoOrquestracao.etapas.rtc.origemCalculoRtc === 'OFICIAL_RFB'
                             ? '#6ee7b7'
@@ -1022,10 +1037,10 @@ export default function AuditoriaEntrada() {
                           borderRadius: 4,
                           background:
                             resultadoOrquestracao.etapas.rtc.validacaoXml.status === 'VALIDO'
-                              ? '#1e3a1e'
+                              ? 'var(--accent-emerald-glow)'
                               : resultadoOrquestracao.etapas.rtc.validacaoXml.status === 'INVALIDO'
-                              ? '#3a1e1e'
-                              : '#3a2a1e',
+                              ? 'var(--accent-crimson-subtle)'
+                              : 'var(--accent-amber-subtle)',
                           color:
                             resultadoOrquestracao.etapas.rtc.validacaoXml.status === 'VALIDO'
                               ? '#6ee7b7'
@@ -1038,7 +1053,7 @@ export default function AuditoriaEntrada() {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--ink-2)' }}>
                     Motor: <b>{resultadoOrquestracao.etapas.rtc.motorRtcUtilizado}</b> · Latência:{' '}
                     <b>{resultadoOrquestracao.etapas.rtc.duracaoRtcMs}ms</b>
                   </div>
@@ -1054,31 +1069,31 @@ export default function AuditoriaEntrada() {
                   }}
                 >
                   <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
-                    <div style={{ color: 'var(--muted)' }}>IBS Estadual (UF)</div>
+                    <div style={{ color: 'var(--ink-2)' }}>IBS Estadual (UF)</div>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>
                       R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIbsUf.toFixed(2)}
                     </div>
                   </div>
                   <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
-                    <div style={{ color: 'var(--muted)' }}>IBS Municipal</div>
+                    <div style={{ color: 'var(--ink-2)' }}>IBS Municipal</div>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>
                       R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIbsMun.toFixed(2)}
                     </div>
                   </div>
                   <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
-                    <div style={{ color: 'var(--muted)' }}>CBS Federal</div>
+                    <div style={{ color: 'var(--ink-2)' }}>CBS Federal</div>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>
                       R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vCbs.toFixed(2)}
                     </div>
                   </div>
                   <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
-                    <div style={{ color: 'var(--muted)' }}>Imposto Seletivo (IS)</div>
+                    <div style={{ color: 'var(--ink-2)' }}>Imposto Seletivo (IS)</div>
                     <div style={{ fontWeight: 700, fontSize: 14 }}>
                       R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIs.toFixed(2)}
                     </div>
                   </div>
                   <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
-                    <div style={{ color: 'var(--muted)' }}>Total IVA Dual</div>
+                    <div style={{ color: 'var(--ink-2)' }}>Total IVA Dual</div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: '#3b82f6' }}>
                       R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIvaTotal.toFixed(2)}
                     </div>
@@ -1098,7 +1113,7 @@ export default function AuditoriaEntrada() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <strong style={{ fontSize: 14 }}>⚖️ Auditoria Tripartida de Créditos de Entrada</strong>
-                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+                  <span style={{ fontSize: 11, color: 'var(--ink-2)' }}>
                     Status Extinção: <b>{resultadoOrquestracao.etapas.creditos.statusExtincaoFornecedor}</b>
                   </span>
                 </div>
@@ -1106,7 +1121,7 @@ export default function AuditoriaEntrada() {
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', textAlign: 'right' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid var(--line)', color: 'var(--muted)' }}>
+                      <tr style={{ borderBottom: '1px solid var(--line)', color: 'var(--ink-2)' }}>
                         <th style={{ textAlign: 'left', padding: '6px 8px' }}>Tributo</th>
                         <th style={{ padding: '6px 8px' }}>Camada 1: Destacado no XML</th>
                         <th style={{ padding: '6px 8px' }}>Camada 2: Admitido pela Regra</th>
@@ -1192,7 +1207,7 @@ export default function AuditoriaEntrada() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
                   <div>
                     <strong style={{ fontSize: 14 }}>📊 Comparativo Tributário dos 4 Regimes (Custo Aterrissado & Preço)</strong>
-                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: 'var(--ink-2)', marginTop: 2 }}>
                       Calculado com precisão numérica ADR003 HALF_EVEN e mark-up divisor considerando desembolsos e créditos efetivos.
                     </div>
                   </div>
@@ -1227,7 +1242,7 @@ export default function AuditoriaEntrada() {
                         }}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontWeight: 700, fontSize: 13, color: c.melhorCenario ? '#6ee7b7' : 'var(--text)' }}>
+                          <span style={{ fontWeight: 700, fontSize: 13, color: c.melhorCenario ? '#6ee7b7' : 'var(--ink)' }}>
                             {c.nomeExibicao}
                           </span>
                           {c.melhorCenario && (
@@ -1247,19 +1262,19 @@ export default function AuditoriaEntrada() {
                           )}
                         </div>
 
-                        <div style={{ fontSize: 11, color: 'var(--muted)' }}>{c.justificativa}</div>
+                        <div style={{ fontSize: 11, color: 'var(--ink-2)' }}>{c.justificativa}</div>
 
                         <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ color: 'var(--muted)' }}>CMV Líquido:</span>
+                            <span style={{ color: 'var(--ink-2)' }}>CMV Líquido:</span>
                             <b>R$ {c.cmvLiquidoTotal.toFixed(2)}</b>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ color: 'var(--muted)' }}>Créditos Entrada:</span>
+                            <span style={{ color: 'var(--ink-2)' }}>Créditos Entrada:</span>
                             <span style={{ color: '#10b981' }}>R$ {c.creditosAproveitados.toFixed(2)}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ color: 'var(--muted)' }}>Tributos Saída:</span>
+                            <span style={{ color: 'var(--ink-2)' }}>Tributos Saída:</span>
                             <span>R$ {c.tributosSaidaEstimados.toFixed(2)}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--line)', paddingTop: 4, marginTop: 2 }}>
@@ -1268,7 +1283,7 @@ export default function AuditoriaEntrada() {
                               R$ {c.precoVendaSugerido.toFixed(2)}
                             </b>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--muted)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-2)' }}>
                             <span>Carga Efetiva:</span>
                             <span>{c.cargaTributariaEfetivaPct.toFixed(2)}%</span>
                           </div>
@@ -1289,7 +1304,7 @@ export default function AuditoriaEntrada() {
               style={{
                 marginTop: 14,
                 marginBottom: 14,
-                background: '#f0fdf4',
+                background: 'var(--accent-emerald-glow)',
                 border: '1px solid #bbf7d0',
                 padding: 14,
                 borderRadius: 8,
@@ -1297,10 +1312,10 @@ export default function AuditoriaEntrada() {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                 <div>
-                  <h4 style={{ margin: 0, color: '#166534', fontSize: '14px' }}>
+                  <h4 style={{ margin: 0, color: 'var(--ok)', fontSize: '14px' }}>
                     📊 Resumo Analítico de Custo de Entrada & Tributos (NBC TG 16 / CPC 16 R1)
                   </h4>
-                  <p className="hint" style={{ margin: '3px 0 0', color: '#15803d', fontSize: '12px' }}>
+                  <p className="hint" style={{ margin: '3px 0 0', color: 'var(--ok)', fontSize: '12px' }}>
                     Custo de aquisição apurado segundo o Item 11 do CPC 16 (R1) e créditos admitidos no regime <b>{regime}</b>.
                   </p>
                 </div>
@@ -1308,7 +1323,7 @@ export default function AuditoriaEntrada() {
                   <button
                     type="button"
                     className="btn primary"
-                    style={{ background: '#2e7d32', borderColor: '#2e7d32', fontSize: '12.5px', padding: '6px 12px', fontWeight: 600 }}
+                    style={{ background: '#15803d', borderColor: '#22c55e', color: '#ffffff', fontSize: '12.5px', padding: '6px 12px', fontWeight: 600 }}
                     onClick={() => setModalCusto({ aberto: true, modo: 'resumido' })}
                     title="Visualizar a tabela de composição de custo de aquisição individualizado por produto"
                   >
@@ -1317,7 +1332,7 @@ export default function AuditoriaEntrada() {
                   <button
                     type="button"
                     className="btn primary"
-                    style={{ background: '#107c41', borderColor: '#107c41', fontSize: '12.5px', padding: '6px 12px' }}
+                    style={{ background: '#166534', borderColor: 'var(--ok)', color: '#ffffff', fontSize: '12.5px', padding: '6px 12px' }}
                     onClick={() => handleEnviarParaPrecificacao(extractedInvoice.itens)}
                     title="Transferir todos os itens da nota fiscal diretamente para a aba de Precificação"
                   >
@@ -1326,7 +1341,7 @@ export default function AuditoriaEntrada() {
                   <button
                     type="button"
                     className="btn primary"
-                    style={{ background: '#0b3d91', borderColor: '#0b3d91', fontSize: '12.5px', padding: '6px 12px' }}
+                    style={{ background: '#1d4ed8', borderColor: 'var(--accent-blue)', color: '#ffffff', fontSize: '12.5px', padding: '6px 12px' }}
                     onClick={() => handleEnviarParaErp(extractedInvoice.itens, false)}
                     title="Transferir todos os itens da nota fiscal diretamente para a aba de Parametrização ERP"
                   >
@@ -1372,37 +1387,37 @@ export default function AuditoriaEntrada() {
                   fontSize: '12.5px',
                 }}
               >
-                <div style={{ background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px solid #dcfce7' }}>
-                  <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>Produtos (vProd):</span>
-                  <strong style={{ fontSize: '13px', color: '#1e293b' }}>
+                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #dcfce7' }}>
+                  <span style={{ color: 'var(--ink-2)', fontSize: '11px', display: 'block' }}>Produtos (vProd):</span>
+                  <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>
                     {consolidadoCPC16.valorTotalBruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
                 </div>
 
-                <div style={{ background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px solid #dcfce7' }}>
-                  <span style={{ color: '#64748b', fontSize: '11px', display: 'block' }}>Frete/Seg/Outros:</span>
-                  <strong style={{ fontSize: '13px', color: '#1e293b' }}>
+                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #dcfce7' }}>
+                  <span style={{ color: 'var(--ink-2)', fontSize: '11px', display: 'block' }}>Frete/Seg/Outros:</span>
+                  <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>
                     + {consolidadoCPC16.freteSeguroTotais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
                 </div>
 
-                <div style={{ background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px solid #fee2e2' }}>
-                  <span style={{ color: '#991b1b', fontSize: '11px', display: 'block' }}>Tributos s/ Crédito (IPI/ST):</span>
-                  <strong style={{ fontSize: '13px', color: '#b91c1c' }}>
+                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #fee2e2' }}>
+                  <span style={{ color: 'var(--bad)', fontSize: '11px', display: 'block' }}>Tributos s/ Crédito (IPI/ST):</span>
+                  <strong style={{ fontSize: '13px', color: 'var(--bad)' }}>
                     + {consolidadoCPC16.tributosNaoRecuperaveisTotais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
                 </div>
 
-                <div style={{ background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px solid #dbeafe' }}>
-                  <span style={{ color: '#1e40af', fontSize: '11px', display: 'block' }}>Impostos a Recuperar:</span>
-                  <strong style={{ fontSize: '13px', color: '#2563eb' }}>
+                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #dbeafe' }}>
+                  <span style={{ color: 'var(--accent-blue)', fontSize: '11px', display: 'block' }}>Impostos a Recuperar:</span>
+                  <strong style={{ fontSize: '13px', color: 'var(--accent-blue)' }}>
                     - {consolidadoCPC16.impostosRecuperaveisTotais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
                 </div>
 
-                <div style={{ background: '#dcfce7', padding: '8px 12px', borderRadius: 6, border: '1px solid #86efac' }}>
-                  <span style={{ color: '#14532d', fontSize: '11px', display: 'block', fontWeight: 600 }}>Custo Real Líquido:</span>
-                  <strong style={{ fontSize: '14px', color: '#166534' }}>
+                <div style={{ background: 'var(--accent-emerald-glow)', padding: '8px 12px', borderRadius: 6, border: '1px solid #86efac' }}>
+                  <span style={{ color: 'var(--ok)', fontSize: '11px', display: 'block', fontWeight: 600 }}>Custo Real Líquido:</span>
+                  <strong style={{ fontSize: '14px', color: 'var(--ok)' }}>
                     {consolidadoCPC16.custoTotalRealConsolidado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
                 </div>
@@ -1416,7 +1431,7 @@ export default function AuditoriaEntrada() {
             style={{
               marginTop: 14,
               marginBottom: 14,
-              background: '#f8fafc',
+              background: 'var(--bg-card-subtle)',
               border: '1.5px solid #cbd5e1',
               padding: 14,
               borderRadius: 8,
@@ -1425,7 +1440,7 @@ export default function AuditoriaEntrada() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: '16px' }}>⚖️</span>
-                <strong style={{ fontSize: '13.5px', color: '#1e293b' }}>
+                <strong style={{ fontSize: '13.5px', color: 'var(--ink)' }}>
                   Parâmetros de Entrada no Paraná (RICMS/PR · Decreto nº 7.871/2017)
                 </strong>
               </div>
@@ -1435,7 +1450,7 @@ export default function AuditoriaEntrada() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, alignItems: 'flex-end' }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12px', color: '#334155' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12px', color: 'var(--ink)' }}>
                 <strong>Regime do Destinatário (CRT):</strong>
                 <select
                   value={crtDestinatario}
@@ -1445,7 +1460,7 @@ export default function AuditoriaEntrada() {
                     borderRadius: 6,
                     border: '1px solid #cbd5e1',
                     fontSize: '12.5px',
-                    background: '#ffffff',
+                    background: 'var(--bg-card)',
                   }}
                 >
                   <option value="3">CRT 3 - Regime Normal (Lucro Real / Presumido)</option>
@@ -1455,7 +1470,7 @@ export default function AuditoriaEntrada() {
                 </select>
               </label>
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12px', color: '#334155' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12px', color: 'var(--ink)' }}>
                 <strong>Destinação Predominante:</strong>
                 <select
                   value={destinacaoPadrao}
@@ -1465,7 +1480,7 @@ export default function AuditoriaEntrada() {
                     borderRadius: 6,
                     border: '1px solid #cbd5e1',
                     fontSize: '12.5px',
-                    background: '#ffffff',
+                    background: 'var(--bg-card)',
                   }}
                 >
                   <option value="comercializacao">Revenda / Comercialização</option>
@@ -1481,11 +1496,11 @@ export default function AuditoriaEntrada() {
                   alignItems: 'center',
                   gap: 8,
                   fontSize: '11.5px',
-                  color: '#475569',
+                  color: 'var(--ink-2)',
                   cursor: 'pointer',
                   padding: '6px 8px',
                   borderRadius: 6,
-                  background: '#f1f5f9',
+                  background: 'var(--bg-card-subtle)',
                   border: '1px solid #e2e8f0',
                   minHeight: '44px',
                 }}
@@ -1507,11 +1522,11 @@ export default function AuditoriaEntrada() {
                   alignItems: 'center',
                   gap: 8,
                   fontSize: '11.5px',
-                  color: '#475569',
+                  color: 'var(--ink-2)',
                   cursor: 'pointer',
                   padding: '6px 8px',
                   borderRadius: 6,
-                  background: '#f1f5f9',
+                  background: 'var(--bg-card-subtle)',
                   border: '1px solid #e2e8f0',
                   minHeight: '44px',
                 }}
@@ -1537,7 +1552,7 @@ export default function AuditoriaEntrada() {
                 marginBottom: 14,
                 padding: 14,
                 borderRadius: 8,
-                background: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#fff7ed' : '#f0fdf4',
+                background: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? 'var(--accent-amber-subtle)' : 'var(--accent-emerald-glow)',
                 border: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota
                   ? '2px solid #ea580c'
                   : '1px solid #86efac',
@@ -1594,11 +1609,11 @@ export default function AuditoriaEntrada() {
                   marginTop: 12,
                 }}
               >
-                <div style={{ background: '#ffffff', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
-                  <span style={{ color: '#9a3412', fontSize: '11px', display: 'block', fontWeight: 600 }}>
+                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
+                  <span style={{ color: 'var(--warn)', fontSize: '11px', display: 'block', fontWeight: 600 }}>
                     1. DIFAL Base Dupla (Consumo/Ativo):
                   </span>
-                  <strong style={{ fontSize: '14px', color: '#c2410c' }}>
+                  <strong style={{ fontSize: '14px', color: 'var(--warn)' }}>
                     {((apuracaoDifalNota.resumoDifalNota.totalDebitoDifal || 0)).toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
@@ -1606,11 +1621,11 @@ export default function AuditoriaEntrada() {
                   </strong>
                 </div>
 
-                <div style={{ background: '#ffffff', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
-                  <span style={{ color: '#9a3412', fontSize: '11px', display: 'block', fontWeight: 600 }}>
+                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
+                  <span style={{ color: 'var(--warn)', fontSize: '11px', display: 'block', fontWeight: 600 }}>
                     2. FECOP 2% (Art. 14-A da Lei nº 11.580/1996 e Anexo XII do RICMS/PR):
                   </span>
-                  <strong style={{ fontSize: '14px', color: '#c2410c' }}>
+                  <strong style={{ fontSize: '14px', color: 'var(--warn)' }}>
                     {((apuracaoDifalNota.resumoDifalNota.totalDebitoFecop || 0)).toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
@@ -1618,11 +1633,11 @@ export default function AuditoriaEntrada() {
                   </strong>
                 </div>
 
-                <div style={{ background: '#ffffff', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
-                  <span style={{ color: '#9a3412', fontSize: '11px', display: 'block', fontWeight: 600 }}>
+                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
+                  <span style={{ color: 'var(--warn)', fontSize: '11px', display: 'block', fontWeight: 600 }}>
                     3. Antecipação Tributária (Simples):
                   </span>
-                  <strong style={{ fontSize: '14px', color: '#c2410c' }}>
+                  <strong style={{ fontSize: '14px', color: 'var(--warn)' }}>
                     {((apuracaoDifalNota.resumoDifalNota.totalAntecipacaoArt16 || 0)).toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
@@ -1632,7 +1647,7 @@ export default function AuditoriaEntrada() {
 
                 <div
                   style={{
-                    background: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#ffedd5' : '#dcfce7',
+                    background: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? 'var(--accent-amber-subtle)' : 'var(--accent-emerald-glow)',
                     padding: '8px 12px',
                     borderRadius: 6,
                     border: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '1.5px solid #f97316' : '1px solid #86efac',
@@ -1669,7 +1684,7 @@ export default function AuditoriaEntrada() {
                     marginTop: 10,
                     padding: '10px 12px',
                     borderRadius: 6,
-                    background: '#ffffff',
+                    background: 'var(--bg-card)',
                     border: demonstrativoDifalPR.exigeRecolhimento ? '1px solid #fed7aa' : '1px solid #bbf7d0',
                     fontSize: '11.5px',
                     color: demonstrativoDifalPR.exigeRecolhimento ? '#7c2d12' : '#166534',
@@ -1725,10 +1740,10 @@ export default function AuditoriaEntrada() {
                     marginTop: 10,
                     padding: '10px 12px',
                     borderRadius: 6,
-                    background: '#eff6ff',
+                    background: 'var(--accent-blue-subtle)',
                     border: '1px solid #bfdbfe',
                     fontSize: '12px',
-                    color: '#1e3a8a',
+                    color: 'var(--accent-blue)',
                     display: 'flex',
                     flexWrap: 'wrap',
                     gap: 16,
@@ -1751,10 +1766,10 @@ export default function AuditoriaEntrada() {
 
               {/* Tabela Expansível: Demonstrativo Produto a Produto DIFAL PR (Marco 2) */}
               {demonstrativoDifalPR && expandirDemonstrativoDifal && (
-                <div style={{ marginTop: 12, overflowX: 'auto', background: '#ffffff', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                <div style={{ marginTop: 12, overflowX: 'auto', background: 'var(--bg-card)', borderRadius: 6, border: '1px solid #e2e8f0' }}>
                   <table style={{ width: '100%', fontSize: '11.5px', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #cbd5e1', color: '#334155', textAlign: 'left' }}>
+                      <tr style={{ background: 'var(--bg-card-subtle)', borderBottom: '1px solid #cbd5e1', color: 'var(--ink)', textAlign: 'left' }}>
                         <th style={{ padding: '8px' }}>Cód.</th>
                         <th style={{ padding: '8px' }}>Produto</th>
                         <th style={{ padding: '8px' }}>NCM</th>
@@ -1809,7 +1824,7 @@ export default function AuditoriaEntrada() {
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr style={{ background: '#fff7ed', borderTop: '2px solid #fdba74', fontWeight: 700, color: '#9a3412' }}>
+                      <tr style={{ background: 'var(--accent-amber-subtle)', borderTop: '2px solid #fdba74', fontWeight: 700, color: 'var(--warn)' }}>
                         <td colSpan={8} style={{ padding: '8px' }}>
                           SOMATÓRIO CONSOLIDADO ({demonstrativoDifalPR.somatorio.qtdItensTributados} de {demonstrativoDifalPR.somatorio.qtdItensAnalisados} itens tributados)
                         </td>
@@ -1844,7 +1859,7 @@ export default function AuditoriaEntrada() {
                         padding: '6px 10px',
                         borderRadius: 6,
                         fontSize: '11.5px',
-                        background: alerta.includes('revogação') || alerta.includes('indevido') ? '#fee2e2' : '#fffbeb',
+                        background: alerta.includes('revogação') || alerta.includes('indevido') ? 'var(--accent-crimson-subtle)' : 'var(--accent-amber-subtle)',
                         border: alerta.includes('revogação') || alerta.includes('indevido') ? '1px solid #fca5a5' : '1px solid #fde68a',
                         color: alerta.includes('revogação') || alerta.includes('indevido') ? '#991b1b' : '#92400e',
                       }}
@@ -1877,7 +1892,7 @@ export default function AuditoriaEntrada() {
           />
 
           {/* Painel Dual Engine Selector (Seletor de Motor Duplo) */}
-          <div className="card" style={{ marginTop: 20, marginBottom: 20, background: '#fcfdfe' }}>
+          <div className="card" style={{ marginTop: 20, marginBottom: 20, background: 'var(--bg-card)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--ink)' }}>
@@ -1902,7 +1917,7 @@ export default function AuditoriaEntrada() {
                   borderRadius: 12,
                   cursor: isAuditing ? 'not-allowed' : 'pointer',
                   border: motor === 'ollama' ? '2px solid var(--brand)' : '1px solid var(--line)',
-                  background: motor === 'ollama' ? '#f4f8fe' : '#ffffff',
+                  background: motor === 'ollama' ? 'var(--accent-blue-subtle)' : '#ffffff',
                   boxShadow: motor === 'ollama' ? '0 2px 8px rgba(11,61,145,0.08)' : 'none',
                   transition: 'all 0.15s ease-in-out',
                 }}
@@ -1964,7 +1979,7 @@ export default function AuditoriaEntrada() {
                   borderRadius: 12,
                   cursor: isAuditing ? 'not-allowed' : 'pointer',
                   border: motor === 'gemini' ? '2px solid var(--brand)' : '1px solid var(--line)',
-                  background: motor === 'gemini' ? '#f4f8fe' : '#ffffff',
+                  background: motor === 'gemini' ? 'var(--accent-blue-subtle)' : '#ffffff',
                   boxShadow: motor === 'gemini' ? '0 2px 8px rgba(11,61,145,0.08)' : 'none',
                   transition: 'all 0.15s ease-in-out',
                 }}
@@ -2092,12 +2107,12 @@ export default function AuditoriaEntrada() {
             </div>
           </div>
 
-          <div className="card" style={{ marginTop: 14, marginBottom: 16, background: '#f9f9f9', padding: 16, borderRadius: 8 }}>
+          <div className="card" style={{ marginTop: 14, marginBottom: 16, background: 'var(--bg-card-subtle)', padding: 16, borderRadius: 8 }}>
             <h4>Parecer Técnico do Documento</h4>
             <p className="small">{auditResult.parecerTecnicoXml || 'Nenhum parecer técnico disponível.'}</p>
           </div>
 
-          <div className="card" style={{ marginBottom: 16, background: '#f0f4f8', padding: 16, borderRadius: 8 }}>
+          <div className="card" style={{ marginBottom: 16, background: 'var(--bg-card-subtle)', padding: 16, borderRadius: 8 }}>
             <h4>Parecer Breve de Conformidade e Créditos</h4>
             <p className="small">{auditResult.parecerConformidade || 'Nenhum parecer de conformidade disponível.'}</p>
           </div>
@@ -2149,7 +2164,7 @@ export default function AuditoriaEntrada() {
         >
           <div
             style={{
-              backgroundColor: '#ffffff',
+              backgroundColor: 'var(--bg-card)',
               borderRadius: 10,
               width: '100%',
               maxWidth: 1100,
@@ -2168,14 +2183,14 @@ export default function AuditoriaEntrada() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                backgroundColor: '#f8fafc',
+                backgroundColor: 'var(--bg-card-subtle)',
               }}
             >
               <div>
                 <h3 style={{ margin: 0, color: '#3A4A1E', fontSize: '1.15rem' }}>
                   📊 Custo de Aquisição Individualizado por Produto — CPC 16 (R1)
                 </h3>
-                <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--ink-2)' }}>
                   Regime tributário: <b>{regime}</b> · Finalidade: <b>{finalidade}</b>
                 </span>
               </div>
@@ -2187,7 +2202,7 @@ export default function AuditoriaEntrada() {
                   border: 'none',
                   fontSize: '1.4rem',
                   cursor: 'pointer',
-                  color: '#64748b',
+                  color: 'var(--ink-2)',
                   lineHeight: 1,
                   padding: '4px 8px',
                 }}
@@ -2201,7 +2216,7 @@ export default function AuditoriaEntrada() {
             <div
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#ffffff',
+                backgroundColor: 'var(--bg-card)',
                 borderBottom: '1px solid #f1f5f9',
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -2216,7 +2231,7 @@ export default function AuditoriaEntrada() {
                   className="mini"
                   onClick={() => setModalCusto((prev) => ({ ...prev, modo: 'resumido' }))}
                   style={{
-                    backgroundColor: modalCusto.modo === 'resumido' ? '#3A4A1E' : '#f1f5f9',
+                    backgroundColor: modalCusto.modo === 'resumido' ? '#3A4A1E' : 'var(--bg-card-subtle)',
                     color: modalCusto.modo === 'resumido' ? '#ffffff' : '#334155',
                     fontWeight: 600,
                     padding: '6px 12px',
@@ -2232,7 +2247,7 @@ export default function AuditoriaEntrada() {
                   className="mini"
                   onClick={() => setModalCusto((prev) => ({ ...prev, modo: 'detalhado' }))}
                   style={{
-                    backgroundColor: modalCusto.modo === 'detalhado' ? '#3A4A1E' : '#f1f5f9',
+                    backgroundColor: modalCusto.modo === 'detalhado' ? '#3A4A1E' : 'var(--bg-card-subtle)',
                     color: modalCusto.modo === 'detalhado' ? '#ffffff' : '#334155',
                     fontWeight: 600,
                     padding: '6px 12px',
@@ -2259,7 +2274,7 @@ export default function AuditoriaEntrada() {
                     a.click();
                     setTimeout(() => window.URL.revokeObjectURL(url), 1000);
                   }}
-                  style={{ backgroundColor: '#2563eb', color: '#fff', fontWeight: 600, padding: '6px 12px' }}
+                  style={{ backgroundColor: 'var(--accent-blue)', color: '#fff', fontWeight: 600, padding: '6px 12px' }}
                 >
                   📥 Baixar HTML
                 </button>
@@ -2280,7 +2295,7 @@ export default function AuditoriaEntrada() {
                 padding: '16px 20px',
                 overflowY: 'auto',
                 flex: 1,
-                backgroundColor: '#f8fafc',
+                backgroundColor: 'var(--bg-card-subtle)',
               }}
               dangerouslySetInnerHTML={{
                 __html: gerarRelatorioCustosHtml(consolidadoCPC16, modalCusto.modo),
@@ -2309,7 +2324,7 @@ export default function AuditoriaEntrada() {
       >
         {itemDifalSelecionado && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+            <div style={{ background: 'var(--bg-card-subtle)', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
                 <div><b>CFOP:</b> <span className="mono">{itemDifalSelecionado.CFOP || '—'}</span></div>
                 <div><b>Destinação:</b> {itemDifalSelecionado.destinacao}</div>
@@ -2328,9 +2343,9 @@ export default function AuditoriaEntrada() {
 
             <div>
               <strong style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Fundamentação Legal:</strong>
-              <p style={{ margin: 0, fontSize: 12, color: '#334155', lineHeight: 1.5 }}>{itemDifalSelecionado.fundamento}</p>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--ink)', lineHeight: 1.5 }}>{itemDifalSelecionado.fundamento}</p>
               {itemDifalSelecionado.motivoDispensa && (
-                <p style={{ margin: '6px 0 0', fontSize: 12, color: '#15803d', fontWeight: 600 }}>
+                <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--ok)', fontWeight: 600 }}>
                   Motivo da Dispensa: {itemDifalSelecionado.motivoDispensa}
                 </p>
               )}
@@ -2349,7 +2364,7 @@ export default function AuditoriaEntrada() {
 
             <div>
               <strong style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Memória de Cálculo:</strong>
-              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 11.5, color: '#334155', lineHeight: 1.5 }}>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 11.5, color: 'var(--ink)', lineHeight: 1.5 }}>
                 {itemDifalSelecionado.memoriaCalculo.map((m, i) => (
                   <li key={i}>{m}</li>
                 ))}
@@ -2433,6 +2448,7 @@ export default function AuditoriaEntrada() {
           }
         />
       )}
+      </div>
     </div>
   );
 }
