@@ -191,6 +191,14 @@ const ALL_TESTS = [
   'tests/orquestrador-fiscal-dag.test.mjs',
   'tests/auditoria-nfse-danfse.test.mjs',
   'tests/paridade-rfb-relatorio.test.mjs',
+  'tests/ux-fundacao-componentes.test.mjs',
+  'tests/ux-auditoria-entrada-niveis.test.mjs',
+  'tests/ux-precificacao-empresas-niveis.test.mjs',
+  'tests/ux-classificar-lote-reforma-niveis.test.mjs',
+  'tests/ux-release-v7-integridade.test.mjs',
+  'tests/difal-demonstrativo-e-fontes.test.mjs',
+  'tests/precificacao-persistencia-aliquotas.test.mjs',
+  'tests/empresas-persistencia-e-cnpj.test.mjs',
 ];
 
 // Suporte a execução de suíte única via CLI: node scripts/test.mjs tests/foo.test.mjs

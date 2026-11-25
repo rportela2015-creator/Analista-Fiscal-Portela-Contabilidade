@@ -1,7 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
+import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
+import NivelOperacionalSwitcher from '@/components/ui/NivelOperacionalSwitcher';
+import type { PrecificacaoItemInput, ParametrizacaoItemInput } from '@/lib/extrator-nfe-types';
 
 const CadastroEmpresas = dynamic(() => import('@/components/CadastroEmpresas'), { ssr: false });
 const Classificar = dynamic(() => import('@/components/Classificar'), { ssr: false });
@@ -12,8 +16,6 @@ const AuditoriaEntrada = dynamic(() => import('@/components/AuditoriaEntrada'), 
 const Precificar = dynamic(() => import('@/components/Precificar'), { ssr: false });
 const ReformaTab = dynamic(() => import('@/components/Reforma'), { ssr: false });
 const Regras = dynamic(() => import('@/components/Regras'), { ssr: false });
-
-import type { PrecificacaoItemInput, ParametrizacaoItemInput } from '@/lib/extrator-nfe-types';
 
 const TABS = [
   { id: 'empresas', nome: '0 · Clientes & Perfis', hint: 'gestão de empresas, CNPJs, perfis tributários bitemporais e status dos sidecars' },
@@ -31,6 +33,21 @@ export default function Home() {
   const [tab, setTab] = useState<(typeof TABS)[number]['id']>('empresas');
   const [itensPrecificacao, setItensPrecificacao] = useState<PrecificacaoItemInput[]>([]);
   const [itensParametrizacao, setItensParametrizacao] = useState<ParametrizacaoItemInput[]>([]);
+  const [statusAnuncio, setStatusAnuncio] = useState<string>('');
+
+  const { empresaAtiva } = useEmpresaAtiva();
+  const { nivel, setNivel } = useNivelOperacional();
+
+  const handleMudarAba = useCallback((novaAba: (typeof TABS)[number]['id']) => {
+    setTab(novaAba);
+    const abaObj = TABS.find((t) => t.id === novaAba);
+    setStatusAnuncio(`Navegou para a aba ${abaObj?.nome || novaAba}`);
+  }, []);
+
+  const handleMudarNivel = useCallback((novoNivel: typeof nivel) => {
+    setNivel(novoNivel);
+    setStatusAnuncio(`Nível operacional alterado para ${novoNivel}`);
+  }, [setNivel]);
 
   useEffect(() => {
     try {
@@ -61,96 +78,128 @@ export default function Home() {
 
   return (
     <>
-      <header className="top">
-        <div className="wrap">
-          <div className="header-brand-row">
-            <div className="logo-container">
+      {/* Região aria-live global para anúncios de acessibilidade */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {statusAnuncio}
+      </div>
+
+      {/* HEADER COMPACTO (~56px) - Eliminação de Dead Space */}
+      <header
+        className="w-full bg-[#0e291b] text-white border-b border-[#0d2b1a] sticky top-0 z-30 shadow-md"
+        style={{ minHeight: '56px' }}
+      >
+        <div className="max-w-[1440px] mx-auto px-4 py-2 flex items-center justify-between gap-4 flex-wrap">
+          {/* Identidade Corporativa Portela */}
+          <div className="flex items-center gap-3">
+            <div className="bg-white p-1 rounded-md shadow-xs flex items-center justify-center">
               <img
                 src="/logo-portela.jpg"
                 alt="Contabilidade Portela - Desde 1970"
-                className="office-logo"
+                className="h-8 w-auto object-contain block"
               />
             </div>
-            <div className="brand-titles">
-              <div className="office-header-meta">
-                <span className="office-title">CONTABILIDADE PORTELA</span>
-                <span className="office-sub">AUDITORIA FISCAL & TRIBUTÁRIA · DESDE 1970</span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-serif font-bold text-xs sm:text-sm tracking-wider text-[#c9e6d4] uppercase">
+                  Portela Fiscal
+                </span>
+                <span className="text-[10px] font-mono bg-white/15 text-white/90 px-1.5 py-0.5 rounded border border-white/20 uppercase">
+                  v7.0
+                </span>
               </div>
-              <div className="brand">
-                <h1>Sistema de Classificação Fiscal NCM & Reforma Tributária</h1>
-                <span className="tag">Portal Único Siscomex</span>
-                <span className="tag">10.515 códigos</span>
-                <span className="tag tag-highlight">Arquitetura em 3 Níveis</span>
-              </div>
+              <p className="text-[10.5px] text-white/70 hidden sm:block">
+                Auditoria NCM & Reforma Tributária • Desde 1970
+              </p>
             </div>
           </div>
 
-          <div className="three-tier-banner">
-            <div className="tier-card tier-1">
-              <div className="tier-header">
-                <span className="tier-num">NÍVEL 1</span>
-                <span className="tier-mode">Automático</span>
-              </div>
-              <div className="tier-title">Extrator Multifonte & Quarentena</div>
-              <div className="tier-desc">XML/PDF/CSV sem perda de zeros · Validação contra 10.515 NCMs · % de Confiabilidade da Ingestão</div>
-            </div>
+          {/* Empresa Ativa Chip & Seletor de Nível */}
+          <div className="flex items-center gap-3 ml-auto flex-wrap">
+            {/* Chip de Empresa Ativa (clique leva à aba de empresas) */}
+            <button
+              type="button"
+              onClick={() => handleMudarAba('empresas')}
+              title={empresaAtiva ? `Empresa Ativa: ${empresaAtiva.razaoSocial} (${empresaAtiva.cnpj})` : 'Clique para selecionar uma empresa'}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-black/25 hover:bg-black/40 border border-white/20 text-white/90 transition-colors"
+              style={{ minHeight: '38px' }}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true" />
+              <span className="truncate max-w-[180px] sm:max-w-[240px]">
+                {empresaAtiva ? empresaAtiva.razaoSocial : 'Selecionar Empresa'}
+              </span>
+              {empresaAtiva && (
+                <span className="text-[10px] font-mono text-emerald-200 hidden md:inline">
+                  • {empresaAtiva.cnpj}
+                </span>
+              )}
+            </button>
 
-            <div className="tier-arrow">➔</div>
-
-            <div className="tier-card tier-2">
-              <div className="tier-header">
-                <span className="tier-num">NÍVEL 2</span>
-                <span className="tier-mode">Automático</span>
-              </div>
-              <div className="tier-title">Motor Siscomex + RGI 1-6</div>
-              <div className="tier-desc">Decodificação da árvore fiscal · Reforma LC 214/2025 (IBS/CBS/IS) · % de Confiabilidade do Enquadramento</div>
-            </div>
-
-            <div className="tier-arrow">➔</div>
-
-            <div className="tier-card tier-3">
-              <div className="tier-header">
-                <span className="tier-num">NÍVEL 3</span>
-                <span className="tier-mode user-demand">Sob Demanda</span>
-              </div>
-              <div className="tier-title">Auditoria Pericial & Laudo</div>
-              <div className="tier-desc">IA Especialista (Ollama Local / Nuvem) · Pareceres NESH/COSIT · Emissão de Laudo Técnico Formal</div>
-            </div>
+            {/* Seletor Unificado de 3 Níveis Operacionais */}
+            <NivelOperacionalSwitcher
+              currentLevel={nivel}
+              onLevelChange={handleMudarNivel}
+              size="sm"
+            />
           </div>
-          <nav className="tabs" role="tablist">
-            {TABS.map((t) => (
-              <button key={t.id} role="tab" type="button" aria-selected={tab === t.id} title={t.hint}
-                onClick={() => setTab(t.id)}>{t.nome}</button>
-            ))}
-          </nav>
         </div>
+
+        {/* NAVEGAÇÃO COMPACTA POR ABAS (~44px) */}
+        <nav
+          role="tablist"
+          aria-label="Abas de operações fiscais"
+          className="max-w-[1440px] mx-auto px-4 flex items-center gap-1 overflow-x-auto border-t border-white/10"
+          style={{ minHeight: '44px' }}
+        >
+          {TABS.map((t) => {
+            const isSelected = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                role="tab"
+                type="button"
+                aria-selected={isSelected}
+                title={t.hint}
+                onClick={() => handleMudarAba(t.id)}
+                className={`flex items-center px-3 py-2 text-xs font-semibold rounded-t-md transition-colors whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-white select-none ${
+                  isSelected
+                    ? 'bg-[#f5f7fb] text-[#0b3d91] shadow-xs'
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+                style={{ minHeight: '40px' }}
+              >
+                {t.nome}
+              </button>
+            );
+          })}
+        </nav>
       </header>
 
-      <main className="wrap" id="parametrizar">
-        <div className="disclaimer">
-          <span style={{ fontSize: 18 }}>⚖️</span>
-          <div>
-            <b>Isto é apoio à decisão, não parecer fiscal.</b> Classificação de mercadoria é ato complexo e exige
-            conferência do texto legal (Notas de Seção/Capítulo, Notas Explicativas do Sistema Harmonizado, Resoluções
-            Gecex, convênios CONFAZ) e, quando houver dúvida relevante, consulta formal à RFB ou solução de consulta.
-            Alíquotas de PIS/COFINS, ICMS e regimes especiais <b>não</b> são declaradas aqui como definitivas.
+      {/* CONTAINER PRINCIPAL COM RESERVA DE ALTURA (ANTI-CLS) */}
+      <main className="wrap" id="parametrizar" style={{ minHeight: '600px' }}>
+        {/* Aviso Legal Conciso */}
+        <div className="disclaimer" style={{ marginTop: '14px', marginBottom: '14px' }}>
+          <span style={{ fontSize: 18 }} aria-hidden="true">⚖️</span>
+          <div className="text-xs">
+            <b>Apoio à decisão técnica, não parecer fiscal vinculante.</b> Classificação de mercadorias exige
+            conferência com as Notas da NESH, Resoluções Gecex, RICMS/PR (Dec. 7.871/17) e legislação da Reforma (LC 214/2025).
           </div>
         </div>
 
-        {tab === 'empresas' && <CadastroEmpresas />}
-        {tab === 'classificar' && <Classificar />}
-        {tab === 'lote' && <Lote />}
-        {tab === 'consultar' && <Consultar />}
-        {tab === 'parametrizar' && <Parametrizar itensImportados={itensParametrizacao} />}
-        {tab === 'auditoria-entrada' && <AuditoriaEntrada />}
-        {tab === 'precificar' && <Precificar itensIniciais={itensPrecificacao} />}
-        {tab === 'reforma' && <ReformaTab />}
-        {tab === 'regras' && <Regras />}
+        {/* Renderização Condicional de Abas com Reserva de Espaço */}
+        <div className="w-full">
+          {tab === 'empresas' && <CadastroEmpresas />}
+          {tab === 'classificar' && <Classificar />}
+          {tab === 'lote' && <Lote />}
+          {tab === 'consultar' && <Consultar />}
+          {tab === 'parametrizar' && <Parametrizar itensImportados={itensParametrizacao} />}
+          {tab === 'auditoria-entrada' && <AuditoriaEntrada />}
+          {tab === 'precificar' && <Precificar itensIniciais={itensPrecificacao} />}
+          {tab === 'reforma' && <ReformaTab />}
+          {tab === 'regras' && <Regras />}
+        </div>
 
         <footer className="small muted" style={{ marginTop: 26, borderTop: '1px solid var(--line)', paddingTop: 14 }}>
-          Motor local, sem envio de dados a terceiros: a descrição que você digita é processada no seu navegador
-          contra o dataset estático gerado das fontes oficiais. Pipeline: <code className="mono">scripts/baixar_fontes.py</code>{' '}
-          → <code className="mono">scripts/pipeline.py</code> → <code className="mono">public/data/</code>.
+          Motor local, sem envio de dados a terceiros: processamento seguro no navegador com persistência local e auditoria pericial.
         </footer>
       </main>
     </>

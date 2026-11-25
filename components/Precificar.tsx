@@ -43,6 +43,17 @@ import type { PrecificacaoItemInput } from '@/lib/extrator-nfe-types';
 import { esc } from '@/lib/html';
 import { PORTELA_HEADER_CSS, renderHeaderPortela } from '@/lib/relatorio-header';
 import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
+import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
+import { useParametrosPrecificacao } from '@/lib/hooks/useParametrosPrecificacao';
+import { obterFontesNormativasPorAba } from '@/lib/fiscal/fontes-normativas';
+import {
+  KpiStrip,
+  StickyActionBar,
+  ProgressiveSection,
+  LegalCitationBlock,
+  type KpiItemData,
+  type NormativeCitation,
+} from '@/components/ui';
 import { formatarCnpj } from '@/lib/fiscal/perfil-tributario';
 
 export interface PrecificarProps {
@@ -79,6 +90,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   // 1. HOOKS DE ESTADO (ORDEM ESTRITA NO TOPO ABSOLUTO - scripts/hookcheck.mjs)
   // ---------------------------------------------------------------------------
   const { empresaAtiva, perfilAtivo } = useEmpresaAtiva();
+  const { nivel, isGerencial, isOperacional, isSenior } = useNivelOperacional();
   const [ds, setDs] = useState<Dataset | null>(null);
   const [reforma, setReforma] = useState<Reforma | null>(null);
   const [marco, setMarco] = useState<MarcoLegal | null>(null);
@@ -119,9 +131,15 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   // Gaveta do Marco Legal & Fontes Oficiais
   const [expandirMarcoLegal, setExpandirMarcoLegal] = useState<boolean>(false);
 
-  // Overrides Manuais de Alíquotas
+  // Overrides Manuais de Alíquotas Persistidos por Empresa (Marco 3)
   const [modoEdicao, setModoEdicao] = useState<boolean>(false);
-  const [overrides, setOverrides] = useState<Partial<AliquotasSugeridas>>({});
+  const {
+    overrides,
+    setAliquota,
+    restaurarPadrao,
+    temCustomizacao,
+    camposCustomizados,
+  } = useParametrosPrecificacao(empresaAtiva?.id);
 
   // Parâmetros Específicos da Etapa 12: Convênios ICMS/PR e Simples Híbrido
   const [convenioIcmsSelecionado, setConvenioIcmsSelecionado] = useState<string>('auto');
@@ -688,13 +706,16 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   const simulacaoDualStack = useMemo(() => {
     const pLiq = compCusto.custoUnitarioReal > 0 ? compCusto.custoUnitarioReal : 100;
     const aliqIcms = sugestao?.aliquotasAplicadas.icmsVendaPct ?? (ufDestino === 'PR' ? 19.5 : 12.0);
+    const aliqCbs = sugestao?.aliquotasAplicadas.cbsPct ?? 8.8;
+    const aliqIbs = sugestao?.aliquotasAplicadas.ibsPct ?? 0.1;
+    const aliqIs = sugestao?.aliquotasAplicadas.isPct ?? 0;
     return simularPrecificacaoDualStack2027PR({
       precoLiquidoSemTributos: pLiq,
       aliquotaIcmsPrPct: aliqIcms,
       aliquotaFecopPrPct: 0,
-      aliquotaCbsPct: 8.8,
-      aliquotaIbsPct: 0.1,
-      aliquotaIsPct: 0,
+      aliquotaCbsPct: aliqCbs,
+      aliquotaIbsPct: aliqIbs,
+      aliquotaIsPct: aliqIs,
       incluirIbsCbsBcIcms,
     });
   }, [compCusto.custoUnitarioReal, sugestao, ufDestino, incluirIbsCbsBcIcms]);
@@ -716,20 +737,95 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
     return simularImpactoCombustivelAdRem2027('DIESEL_BIODIESEL', 10000);
   }, []);
 
+  // Citações Normativas para o Design System (LegalCitationBlock - Marco 1)
+  const citacoesNormativas = useMemo<NormativeCitation[]>(() => {
+    return obterFontesNormativasPorAba('precificacao');
+  }, []);
+
+  // 4 Macro-KPIs formatados para o KpiStrip (WCAG AA + Tabular Nums)
+  const kpiItems = useMemo<KpiItemData[]>(() => {
+    const pv = resultado?.preco.precoFinal ?? 0;
+    const margemRealizada = resultado?.resultado.margemRealizadaPct ?? 0;
+    const lucroLiq = resultado?.resultado.lucroLiquido ?? 0;
+
+    const totalTributosSaida = resultado
+      ? (resultado.relatorioMargens?.tributosVendaPorDentro ?? resultado.preco.vICMS) +
+        resultado.preco.vCBS +
+        resultado.preco.vIBS +
+        resultado.resultado.irpjCsll
+      : 0;
+    const cargaTribPct = pv > 0 ? (totalTributosSaida / pv) * 100 : 0;
+
+    const melhorRegimeObj = comparativo?.melhorMargemLiquida;
+    const melhorRegimeNome = melhorRegimeObj
+      ? melhorRegimeObj.regime === 'simples'
+        ? 'Simples Nacional'
+        : melhorRegimeObj.regime === 'simples_hibrido'
+        ? 'Simples Híbrido'
+        : melhorRegimeObj.regime === 'presumido'
+        ? 'Lucro Presumido'
+        : 'Lucro Real'
+      : 'Calculando...';
+
+    return [
+      {
+        id: 'kpi-pv',
+        label: 'Preço de Venda Sugerido (vNF)',
+        value: resultado ? `R$ ${pv.toFixed(2)}` : 'R$ 0,00',
+        subValue: `vProd Líquido (R$ ${(resultado?.preco.vProdLiq ?? 0).toFixed(2)}) + Tributos`,
+        trafficLight: 'info',
+        statusLabel: 'Preço Final',
+        tooltipText: 'Preço sugerido na nota fiscal com markup e tributos apurados (NBC TG 16)',
+      },
+      {
+        id: 'kpi-margem',
+        label: 'Margem Líquida Realizada',
+        value: resultado ? `${margemRealizada.toFixed(1)}%` : '0.0%',
+        subValue: `R$ ${lucroLiq.toFixed(2)} por unidade`,
+        trafficLight: margemRealizada >= margemAlvo ? 'success' : margemRealizada > 0 ? 'warning' : 'danger',
+        statusLabel: margemRealizada >= margemAlvo ? 'Meta Atingida' : 'Abaixo da Meta',
+        trend: margemRealizada >= margemAlvo ? 'up' : 'down',
+        trendValue: `Alvo: ${margemAlvo}%`,
+      },
+      {
+        id: 'kpi-carga',
+        label: 'Carga Tributária Efetiva',
+        value: resultado ? `${cargaTribPct.toFixed(1)}%` : '0.0%',
+        subValue: `ICMS/DAS + IVA Dual + IRPJ (R$ ${totalTributosSaida.toFixed(2)})`,
+        trafficLight: 'info',
+        statusLabel: 'Carga Total',
+        tooltipText: 'Percentual total de tributos incidentes sobre o preço bruto final na nota',
+      },
+      {
+        id: 'kpi-cenario',
+        label: 'Regime Mais Vantajoso',
+        value: melhorRegimeNome,
+        subValue: melhorRegimeObj ? `Maior Margem: ${melhorRegimeObj.margemLiquidaPct.toFixed(1)}%` : '',
+        trafficLight: 'success',
+        statusLabel: 'Recomendado',
+        trend: 'up',
+        tooltipText: 'Regime fiscal mais rentável apurado na simulação comparativa quádrupla',
+      },
+    ];
+  }, [resultado, margemAlvo, comparativo]);
+
   const atualizarCotacaoMesa = useCallback((id: string, campo: keyof CotacaoFornecedorPR, valor: any) => {
     setCotacoesMesa((prev) =>
       prev.map((c) => (c.id === id ? { ...c, [campo]: valor } : c))
     );
   }, []);
 
-  // Callbacks de manipulação
-  const aplicarCampoOverride = useCallback((campo: keyof AliquotasSugeridas, valor: number) => {
-    setOverrides((prev) => ({ ...prev, [campo]: valor }));
-  }, []);
+  // Callbacks de manipulação persistente de alíquotas
+  const aplicarCampoOverride = useCallback(
+    (campo: keyof AliquotasSugeridas, valor: number) => {
+      setAliquota(campo, valor);
+    },
+    [setAliquota]
+  );
 
   const limparOverrides = useCallback(() => {
-    setOverrides({});
-  }, []);
+    restaurarPadrao();
+  }, [restaurarPadrao]);
 
   // ---------------------------------------------------------------------------
   // 4. EXPORTAÇÃO SEGURA: LAUDO HTML IMPRIMÍVEL (Sanitização via esc())
@@ -1210,7 +1306,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           {
             ...paramsPreco,
             custosFixosTotaisPeriodo: custosFixosTotais,
-            overrides: undefined,
+            overrides: sugestao?.aliquotasAplicadas,
           },
           { reforma, marco }
         );
@@ -1390,9 +1486,8 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
               value={itemIndex}
               onChange={(e) => {
                 setItemIndex(Number(e.target.value));
-                setOverrides({});
               }}
-              style={{ maxWidth: 480 }}
+              style={{ maxWidth: 480, minHeight: '44px' }}
             >
               {itens.map((it, idx) => (
                 <option key={idx} value={idx}>
@@ -1402,6 +1497,20 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
             </select>
           </div>
         )}
+      </div>
+
+      {/* KPI STRIP DE FORMAÇÃO DE PREÇO (4 MACRO-INDICADORES FORMATADOS COM TABULAR-NUMS) */}
+      <div style={{ marginBottom: 20 }}>
+        <KpiStrip
+          items={kpiItems}
+          level={nivel}
+          showConsolidatedTrafficLightBar
+          proportions={{
+            regularPct: (resultado?.resultado.margemRealizadaPct ?? 0) >= margemAlvo ? 70 : 40,
+            warningPct: 20,
+            riskPct: (resultado?.resultado.margemRealizadaPct ?? 0) < margemAlvo ? 40 : 10,
+          }}
+        />
       </div>
 
       {carregando ? (
@@ -1522,11 +1631,20 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                 </div>
               </div>
 
-              {/* CARD 2: RASTREABILIDADE FISCAL, DE-PARA DE CFOP E FRETE */}
-              <div className="card" style={{ marginBottom: 20 }}>
-                <h3 style={{ margin: '0 0 10px' }}>2. Rastreabilidade de Entrada, De-Para CFOP e Frete</h3>
-
-                {/* PAINEL DE-PARA DE CFOP */}
+              {/* CARD 2: RASTREABILIDADE FISCAL, DE-PARA DE CFOP E FRETE (PROGRESSIVE SECTION) */}
+              <div style={{ marginBottom: 20 }}>
+                <ProgressiveSection
+                  id="sec-premissas-rastreabilidade"
+                  title="2. Rastreabilidade de Entrada, De-Para CFOP e Frete"
+                  subtitle="Mapeamento de CFOP, destinação da mercadoria, CRT emitente e frete CT-e"
+                  minLevel="operacional"
+                  currentLevel={nivel}
+                  defaultExpanded={!isGerencial}
+                  onDemandTriggerLabel="Ajustar Rastreabilidade Fiscal e Frete"
+                  badge={<span className="badge blue" style={{ fontSize: '11px' }}>Operacional / Sênior</span>}
+                >
+                  <div className="card" style={{ marginTop: 8 }}>
+                    {/* PAINEL DE-PARA DE CFOP */}
                 <div style={{ background: '#f8fafc', padding: 12, borderRadius: 6, border: '1px solid #e2e8f0', marginBottom: 14 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                     <div>
@@ -1730,6 +1848,8 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                   )}
                 </div>
               </div>
+            </ProgressiveSection>
+          </div>
 
               {/* CARD NOVO: DETECÇÃO AUTOMÁTICA DE BENEFÍCIOS FISCAIS (REFORMA + ICMS-PR/CONFAZ) */}
               <div className="card" style={{ marginBottom: 20, background: '#fcfdfe', border: '1px solid #cbd5e1' }}>
@@ -1966,92 +2086,220 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
             {/* COLUNA DIREITA: ALÍQUOTAS, FORMAÇÃO DE PREÇO E WATERFALL */}
             {/* =============================================================== */}
             <div>
-              {/* CARD: ALÍQUOTAS APLICADAS E OVERRIDES */}
+              {/* CARD: ALÍQUOTAS APLICADAS E OVERRIDES PERSISTENTES (MARCO 3) */}
               <div className="card" style={{ marginBottom: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ margin: 0 }}>Alíquotas Aplicadas & Edição</h3>
-                  <button
-                    type="button"
-                    className="btn-secundario"
-                    style={{ fontSize: '0.8rem', padding: '4px 8px' }}
-                    onClick={() => setModoEdicao(!modoEdicao)}
-                  >
-                    {modoEdicao ? 'Fechar Edição' : '✏️ Editar Alíquotas (Override)'}
-                  </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0 }}>Alíquotas Aplicadas & Edição</h3>
+                    {temCustomizacao && (
+                      <span
+                        className="badge"
+                        style={{
+                          background: '#fef3c7',
+                          color: '#92400e',
+                          border: '1px solid #f59e0b',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                        }}
+                        title="Existem alíquotas editadas manualmente salvas para esta empresa"
+                      >
+                        ● Customizada ({camposCustomizados.length})
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    {temCustomizacao && (
+                      <button
+                        type="button"
+                        onClick={limparOverrides}
+                        className="btn-secundario min-h-[44px]"
+                        style={{
+                          minHeight: '44px',
+                          padding: '6px 12px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          color: '#991b1b',
+                          borderColor: '#fca5a5',
+                          background: '#fef2f2',
+                        }}
+                        title="Remover todas as alíquotas customizadas e restaurar os valores oficiais"
+                      >
+                        ↺ Restaurar Alíquotas Padrão
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-secundario min-h-[44px]"
+                      style={{ fontSize: '0.8rem', padding: '6px 12px', minHeight: '44px' }}
+                      onClick={() => setModoEdicao(!modoEdicao)}
+                    >
+                      {modoEdicao ? 'Fechar Edição' : '✏️ Editar Alíquotas (Override)'}
+                    </button>
+                  </div>
                 </div>
 
                 {sugestao && (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 12 }}>
                       <div className="badge-stat">
-                        <span className="lbl">CBS Saída</span>
-                        <span className="val">{sugestao.aliquotasAplicadas.cbsPct}%</span>
+                        <span className="lbl">
+                          CBS Saída {overrides.cbsPct !== undefined && <span title="Alíquota customizada" style={{ color: '#b45309' }}>● Custom</span>}
+                        </span>
+                        <span className="val tabular-nums">{sugestao.aliquotasAplicadas.cbsPct}%</span>
                       </div>
                       <div className="badge-stat">
-                        <span className="lbl">IBS Saída</span>
-                        <span className="val">{sugestao.aliquotasAplicadas.ibsPct}%</span>
+                        <span className="lbl">
+                          IBS Saída {overrides.ibsPct !== undefined && <span title="Alíquota customizada" style={{ color: '#b45309' }}>● Custom</span>}
+                        </span>
+                        <span className="val tabular-nums">{sugestao.aliquotasAplicadas.ibsPct}%</span>
                       </div>
                       <div className="badge-stat">
-                        <span className="lbl">ICMS Saída</span>
-                        <span className="val">{sugestao.aliquotasAplicadas.icmsVendaPct}%</span>
+                        <span className="lbl">
+                          ICMS Saída {overrides.icmsVendaPct !== undefined && <span title="Alíquota customizada" style={{ color: '#b45309' }}>● Custom</span>}
+                        </span>
+                        <span className="val tabular-nums">{sugestao.aliquotasAplicadas.icmsVendaPct}%</span>
                       </div>
                       <div className="badge-stat">
-                        <span className="lbl">Redução IVA</span>
-                        <span className="val">{sugestao.aliquotasAplicadas.reducaoIbsCbsPct}%</span>
+                        <span className="lbl">
+                          Redução IVA {overrides.reducaoIbsCbsPct !== undefined && <span title="Alíquota customizada" style={{ color: '#b45309' }}>● Custom</span>}
+                        </span>
+                        <span className="val tabular-nums">{sugestao.aliquotasAplicadas.reducaoIbsCbsPct}%</span>
                       </div>
                     </div>
 
-                    {sugestao.camposEditados.length > 0 && (
-                      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    {(sugestao.camposEditados.length > 0 || temCustomizacao) && (
+                      <div
+                        role="status"
+                        aria-live="polite"
+                        style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}
+                      >
                         <span className="badge yellow" style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
-                          ⚠️ [Editado Manualmente]: {sugestao.camposEditados.join(', ')}
+                          ⚠️ Alíquotas customizadas persistidas ({empresaAtiva?.razaoSocial || 'Padrão'}):{' '}
+                          {(sugestao.camposEditados.length > 0 ? sugestao.camposEditados : camposCustomizados).join(', ')}
                         </span>
-                        <button
-                          type="button"
-                          onClick={limparOverrides}
-                          style={{ background: 'none', border: 'none', color: 'var(--bad)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
-                        >
-                          ↺ Restaurar Alíquotas Oficiais
-                        </button>
                       </div>
                     )}
 
                     {modoEdicao && (
                       <div style={{ marginTop: 14, padding: 12, background: 'var(--bg-subtle)', borderRadius: 6 }}>
-                        <h4 style={{ margin: '0 0 10px', fontSize: '0.9rem' }}>Editar Alíquotas Manualmente:</h4>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <h4 style={{ margin: '0 0 10px', fontSize: '0.9rem' }}>
+                          Editar Alíquotas Manualmente (Persistência Automática por Empresa):
+                        </h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
                           <div>
-                            <label style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>CBS (%):</label>
+                            <label htmlFor="override-cbs" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
+                              CBS (%) {overrides.cbsPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                            </label>
                             <input
+                              id="override-cbs"
                               type="number"
                               step="0.1"
+                              min="0"
                               value={sugestao.aliquotasAplicadas.cbsPct}
                               onChange={(e) => aplicarCampoOverride('cbsPct', Number(e.target.value))}
                             />
                           </div>
                           <div>
-                            <label style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>IBS (%):</label>
+                            <label htmlFor="override-ibs" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
+                              IBS (%) {overrides.ibsPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                            </label>
                             <input
+                              id="override-ibs"
                               type="number"
                               step="0.1"
+                              min="0"
                               value={sugestao.aliquotasAplicadas.ibsPct}
                               onChange={(e) => aplicarCampoOverride('ibsPct', Number(e.target.value))}
                             />
                           </div>
                           <div>
-                            <label style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>ICMS Venda (%):</label>
+                            <label htmlFor="override-is" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
+                              IS (%) {overrides.isPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                            </label>
                             <input
+                              id="override-is"
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              value={sugestao.aliquotasAplicadas.isPct}
+                              onChange={(e) => aplicarCampoOverride('isPct', Number(e.target.value))}
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="override-icms" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
+                              ICMS Venda (%) {overrides.icmsVendaPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                            </label>
+                            <input
+                              id="override-icms"
                               type="number"
                               step="0.5"
+                              min="0"
                               value={sugestao.aliquotasAplicadas.icmsVendaPct}
                               onChange={(e) => aplicarCampoOverride('icmsVendaPct', Number(e.target.value))}
                             />
                           </div>
                           <div>
-                            <label style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>Redução IVA (%):</label>
+                            <label htmlFor="override-piscofins" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
+                              PIS/COFINS Venda (%) {overrides.pisCofinsVendaPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                            </label>
                             <input
+                              id="override-piscofins"
+                              type="number"
+                              step="0.05"
+                              min="0"
+                              value={sugestao.aliquotasAplicadas.pisCofinsVendaPct}
+                              onChange={(e) => aplicarCampoOverride('pisCofinsVendaPct', Number(e.target.value))}
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="override-ipi" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
+                              IPI (%) {overrides.ipiPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                            </label>
+                            <input
+                              id="override-ipi"
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              value={sugestao.aliquotasAplicadas.ipiPct}
+                              onChange={(e) => aplicarCampoOverride('ipiPct', Number(e.target.value))}
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="override-das" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
+                              DAS Efetivo Simples (%) {overrides.dasEfetivoPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                            </label>
+                            <input
+                              id="override-das"
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              value={sugestao.aliquotasAplicadas.dasEfetivoPct}
+                              onChange={(e) => aplicarCampoOverride('dasEfetivoPct', Number(e.target.value))}
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="override-irpj" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
+                              IRPJ/CSLL Efetivo (%) {overrides.irpjCsllEfetivoPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                            </label>
+                            <input
+                              id="override-irpj"
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              value={sugestao.aliquotasAplicadas.irpjCsllEfetivoPct}
+                              onChange={(e) => aplicarCampoOverride('irpjCsllEfetivoPct', Number(e.target.value))}
+                            />
+                          </div>
+                          <div>
+                            <label htmlFor="override-reducao" style={{ fontSize: '0.8rem', display: 'block', marginBottom: 2 }}>
+                              Redução IVA (%) {overrides.reducaoIbsCbsPct !== undefined && <strong style={{ color: '#b45309' }}>[custom]</strong>}
+                            </label>
+                            <input
+                              id="override-reducao"
                               type="number"
                               step="5"
+                              min="0"
+                              max="100"
                               value={sugestao.aliquotasAplicadas.reducaoIbsCbsPct}
                               onChange={(e) => aplicarCampoOverride('reducaoIbsCbsPct', Number(e.target.value))}
                             />
@@ -2452,9 +2700,21 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           )}
 
           {/* =============================================================== */}
-          {/* SEÇÃO 4.1: ANÁLISE DO SIMPLES HÍBRIDO & PONTO DE INFLEXÃO (LC 214/25) */}
+          {/* SEÇÃO 4: TRANSIÇÃO 2027, DUAL-STACK & MESA DE COMPRAS (PROGRESSIVE SECTION) */}
           {/* =============================================================== */}
-          <div className="card" style={{ marginTop: 24, background: '#f8fafc', border: '1px solid #cbd5e1' }}>
+          <div style={{ marginTop: 24 }}>
+            <ProgressiveSection
+              id="sec-dual-stack-mesa-compras"
+              title="4. Transição 2027: Dual-Stack SEFA/PR 48/2026, Mesa de Compras & Combustíveis Ad Rem"
+              subtitle="Análise do Simples Híbrido (LC 214/25), efeito cascata de IBS/CBS na BC do ICMS e cotações de fornecedores"
+              minLevel="senior"
+              currentLevel={nivel}
+              defaultExpanded={isSenior}
+              onDemandTriggerLabel="Expandir Análise Dual-Stack e Mesa de Compras PR"
+              badge={<span className="badge amber" style={{ fontSize: '11px' }}>Nível Sênior</span>}
+            >
+              {/* SEÇÃO 4.1: ANÁLISE DO SIMPLES HÍBRIDO & PONTO DE INFLEXÃO (LC 214/25) */}
+              <div className="card" style={{ marginTop: 8, background: '#f8fafc', border: '1px solid #cbd5e1' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
               <div>
                 <h3 style={{ margin: 0, color: '#0b3d91' }}>
@@ -2900,29 +3160,36 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
               </div>
             </div>
           </div>
+        </ProgressiveSection>
+      </div>
 
           {/* =============================================================== */}
-          {/* SEÇÃO 5: GAVETA DO MARCO LEGAL & FONTES OFICIAIS EXPANSÍVEL */}
+          {/* SEÇÃO 5: FUNDAMENTAÇÃO LEGAL & FONTES OFICIAIS (LEGAL CITATION BLOCK) */}
           {/* =============================================================== */}
-          <div className="card" style={{ marginTop: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0 }}>⚖️ Fundamentação Legal e Fontes Oficiais (Marco Legal Vigente)</h3>
+          <div style={{ marginTop: 24, marginBottom: 32 }}>
+            <LegalCitationBlock
+              citations={citacoesNormativas}
+              currentLevel={nivel}
+              title="5. Fundamentação Normativa & Memória Pericial (CPC 16 (R1) / LC 214/2025 / LC 227/2026 / RICMS-PR)"
+              defaultCollapsed={!isSenior}
+              calculationMemory={`Preço Venda Líquido = Custo Unitário Real (R$ ${compCusto.custoUnitarioReal.toFixed(2)}) / [1 - Despesas Variáveis (${despesasVar}%) - Margem Líquida Pretendida (${margemAlvo}%) - Tributos por Dentro (${(resultado?.relatorioMargens?.tributosVendaPorDentro ?? resultado?.preco.vICMS ?? 0).toFixed(2)})]\nPreço Final vNF = vProd Líquido + IBS (${sugestao?.aliquotasAplicadas.ibsPct ?? 0.1}%) + CBS (${sugestao?.aliquotasAplicadas.cbsPct ?? 8.8}%) + Imposto Seletivo (${sugestao?.aliquotasAplicadas.isPct ?? 0}%)`}
+            />
+
+            {/* Gaveta opcional com as 28 normas oficiais */}
+            <div style={{ marginTop: 12, textAlign: 'right' }}>
               <button
                 type="button"
                 className="btn-secundario"
-                style={{ fontSize: '0.8rem', padding: '4px 10px' }}
+                style={{ fontSize: '0.8rem', padding: '6px 12px', minHeight: '44px' }}
                 onClick={() => setExpandirMarcoLegal(!expandirMarcoLegal)}
               >
-                {expandirMarcoLegal ? '▲ Ocultar Fontes' : '▼ Ver Catálogo de 28 Normas Oficiais'}
+                {expandirMarcoLegal ? '▲ Ocultar Catálogo Completo' : '▼ Ver Catálogo de 28 Normas Oficiais'}
               </button>
             </div>
 
             {expandirMarcoLegal && (
-              <div style={{ marginTop: 14 }}>
-                <p className="hint">
-                  Todas as regras e travas do motor são sustentadas em diplomas legais vigentes com rastreabilidade auditável:
-                </p>
-                <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 6, marginTop: 8 }}>
+              <div className="card" style={{ marginTop: 10 }}>
+                <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 6 }}>
                   <table style={{ width: '100%', fontSize: '11.5px', borderCollapse: 'collapse' }}>
                     <thead style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 1 }}>
                       <tr>
@@ -2955,6 +3222,45 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
           </div>
         </>
       )}
+
+      {/* BARRA DE AÇÃO PERSISTENTE (STICKY ACTION BAR COM 1 CTA PRIMÁRIO SÓLIDO) */}
+      <StickyActionBar
+        screenState={resultado ? 'audited' : 'default'}
+        summary={{
+          itemCount: itensRateados.length,
+          totalValueBrl: resultado?.preco.precoFinal,
+          selectedCount: 1,
+          customMessage: `Item #${itemIndex + 1}: ${itemAtual.codigo} | PV: R$ ${(resultado?.preco.precoFinal ?? 0).toFixed(2)} | Margem: ${(resultado?.resultado.margemRealizadaPct ?? 0).toFixed(1)}%`,
+        }}
+        primaryAction={{
+          label: resultado ? 'Exportar / Aplicar Tabela' : 'Calcular Preço e Margens',
+          onClick: () => exportarLaudoHtml('detalhado'),
+          disabled: !resultado,
+          title: 'Exportar laudo pericial completo de formação de preço em HTML/PDF',
+        }}
+        secondaryActions={[
+          {
+            id: 'export-resumido',
+            label: 'Laudo Resumido',
+            onClick: () => exportarLaudoHtml('resumido'),
+            disabled: !resultado,
+            title: 'Gerar resumo executivo gerencial',
+          },
+          {
+            id: 'export-csv',
+            label: 'Exportar Planilha CSV',
+            onClick: exportarCsv,
+            disabled: carregando,
+            title: 'Baixar formação de preço em planilha Excel/CSV',
+          },
+        ]}
+        contextBadge={
+          <span style={{ fontSize: '11px', background: '#1e3a5f', color: '#93c5fd', padding: '3px 8px', borderRadius: 4, fontWeight: 600 }}>
+            Regime: {regime.toUpperCase()} · Nível: {nivel.toUpperCase()}
+          </span>
+        }
+        statusMessage={resultado ? `Formação de preço calculada com sucesso para ${itemAtual.descricao.slice(0, 30)}...` : 'Aguardando simulação'}
+      />
     </section>
   );
 }

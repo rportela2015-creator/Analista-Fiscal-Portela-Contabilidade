@@ -3,28 +3,22 @@
 /**
  * TabelaItensExtracao.tsx
  *
- * Componente interativo de visualização e seleção de itens fiscais de NF-e (Stage 1 -> Stage 2).
- * Exibe 100% dos itens extraídos de forma determinística imediata (sem LLM).
+ * Componente de visualização e seleção de itens fiscais de NF-e (Sub-etapa 20.4 - Ciclo 7).
+ * Tabela enxuta de até 7 colunas com tabular-nums, ItemDetailDrawer lateral (500px)
+ * e alinhamento total aos 3 Níveis Operacionais do Design System Portela.
  *
- * Recursos:
- * - Checkbox mestre no cabeçalho com tri-state (selecionado / indeterminado / desmarcado).
- * - Ações em lote: "Selecionar Todos", "Desmarcar Todos", "Selecionar Apenas Sensíveis".
- * - Contador dinâmico com valor acumulado e alerta de itens sensíveis.
- * - Badges tributárias completas (ICMS, IPI, PIS, COFINS, RTC IBS/CBS).
- * - Selos de validação de NCM em O(1) contra os 10.515 registros oficiais do Siscomex.
- * - Indicadores visuais de sensibilidade tributária de entrada com explicações periciais.
- * - Filtros rápidos (Todos, Apenas Sensíveis, Apenas Selecionados, Inconsistentes) e busca por texto.
- * - Linhas expansíveis com detalhamento tributário pericial profundo.
- * - Conformidade total com scripts/hookcheck.mjs (todos os hooks no topo, zero quebras).
- * - Estilização pura baseada em app/globals.css, sem dependência de Tailwind ou Lucide.
+ * Cumpre 100% da ordem estrita de React Hooks (scripts/hookcheck.mjs) e acessibilidade WCAG AA.
  */
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type {
   ExtractedItem,
   MotivoSensibilidadeInfo,
 } from '@/lib/extrator-nfe-types';
 import { MOTIVOS_SENSIBILIDADE_MAP } from '@/lib/extrator-nfe-types';
+import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
+import ItemDetailDrawer from '@/components/ui/ItemDetailDrawer';
+import LegalCitationBlock, { type NormativeCitation } from '@/components/ui/LegalCitationBlock';
 
 export type { MotivoSensibilidadeInfo };
 export { MOTIVOS_SENSIBILIDADE_MAP };
@@ -74,10 +68,8 @@ export interface TabelaItensExtracaoProps {
   diagnosticosDifal?: Record<string | number, any>;
 }
 
-
-
 /* =========================================================================
- * 3. FORMATADORES AUXILIARES
+ * 2. FORMATADORES AUXILIARES
  * ========================================================================= */
 
 function formatarBrl(val?: number): string {
@@ -105,7 +97,7 @@ function formatarQtd(val?: number): string {
 }
 
 /* =========================================================================
- * 4. COMPONENTE PRINCIPAL
+ * 3. COMPONENTE PRINCIPAL
  * ========================================================================= */
 
 export default function TabelaItensExtracao({
@@ -129,8 +121,13 @@ export default function TabelaItensExtracao({
   diagnosticosDifal,
 }: TabelaItensExtracaoProps) {
   // ---- Hooks chamados estritamente no topo para cumprir scripts/hookcheck.mjs ----
+  const { nivel, isGerencial, isSenior } = useNivelOperacional();
+
   const [busca, setBusca] = useState('');
   const [filtro, setFiltro] = useState<FiltroVisualizacao>('todos');
+  const [itemInspecionado, setItemInspecionado] = useState<ExtractedItem | null>(null);
+  const [drawerAberto, setDrawerAberto] = useState<boolean>(false);
+  const [drawerTab, setDrawerTab] = useState<string>('tributos');
   const [itemExpandido, setItemExpandido] = useState<number | null>(null);
   const masterCheckboxRef = useRef<HTMLInputElement>(null);
 
@@ -147,13 +144,13 @@ export default function TabelaItensExtracao({
   }, [itens, selectedSet]);
 
   // Ação unificada para seleção de sensíveis
-  const handleSelectSensitives = () => {
+  const handleSelectSensitives = useCallback(() => {
     if (onSelectSensitivesOnly) {
       onSelectSensitivesOnly();
     } else if (onSelectOnlySensitive) {
       onSelectOnlySensitive();
     }
-  };
+  }, [onSelectSensitivesOnly, onSelectOnlySensitive]);
 
   // Contagem de sensíveis detectados
   const contagemSensiveis = useMemo(() => {
@@ -229,18 +226,69 @@ export default function TabelaItensExtracao({
     }
   }, [algumSelecionado]);
 
-  const handleMasterCheckboxChange = () => {
+  const handleMasterCheckboxChange = useCallback(() => {
     if (readOnly || disabled) return;
     if (todosSelecionados) {
       onDeselectAll();
     } else {
       onSelectAll();
     }
-  };
+  }, [readOnly, disabled, todosSelecionados, onDeselectAll, onSelectAll]);
 
-  const toggleExpandir = (idx: number) => {
-    setItemExpandido((prev) => (prev === idx ? null : idx));
-  };
+  // Abrir inspeção no Drawer de 500px
+  const handleAbrirInspecao = useCallback(
+    (item: ExtractedItem, e?: React.MouseEvent) => {
+      if (e) e.stopPropagation();
+      setItemInspecionado(item);
+      setDrawerAberto(true);
+      if (onItemClick) {
+        onItemClick(item);
+      }
+    },
+    [onItemClick]
+  );
+
+  const handleFecharDrawer = useCallback(() => {
+    setDrawerAberto(false);
+  }, []);
+
+  // Citações normativas do item sob inspeção
+  const citacoesItem = useMemo<NormativeCitation[]>(() => {
+    if (!itemInspecionado) return [];
+    const list: NormativeCitation[] = [];
+
+    list.push({
+      id: 'ricms-pr-art3',
+      norma: 'RICMS/PR - Decreto Estadual nº 7.871/2017',
+      artigo: 'Art. 3º, Inciso XIV c/c Art. 11',
+      ementa: 'Diferencial de alíquota interestadual (DIFAL) com cálculo de Base Dupla e dedução do imposto de origem.',
+      esfera: 'estadual-pr',
+      statusVigencia: 'vigente',
+      linkOficial: 'http://www.fazenda.pr.gov.br',
+    });
+
+    if (itemInspecionado.cfop?.startsWith('6') || itemInspecionado.cfop?.startsWith('2')) {
+      list.push({
+        id: 'lc-190',
+        norma: 'Lei Complementar nº 190/2022',
+        artigo: 'Art. 2º e 3º',
+        ementa: 'Disciplina a cobrança do DIFAL do ICMS nas operações interestaduais destinadas a consumidor final ou adquirente paranaense.',
+        esfera: 'federal',
+        statusVigencia: 'vigente',
+      });
+    }
+
+    list.push({
+      id: 'lc-214-split',
+      norma: 'Lei Complementar nº 214/2025 (Reforma Tributária)',
+      artigo: 'Art. 47 e 48',
+      ementa: 'Apropriação de créditos de IBS e CBS condicionada à comprovação da extinção do débito do fornecedor via Split Payment.',
+      esfera: 'federal',
+      statusVigencia: 'transicao',
+    });
+
+    return list;
+  }, [itemInspecionado]);
 
   // Se a lista estiver vazia
   if (!itens || itens.length === 0) {
@@ -260,7 +308,7 @@ export default function TabelaItensExtracao({
             Itens da Nota Fiscal ({itens.length} {itens.length === 1 ? 'item' : 'itens'})
           </h3>
           <p className="hint" style={{ margin: '4px 0 0', fontSize: 12.5 }}>
-            Extração determinística completa (zero LLM). Selecione os itens que deseja enviar para a auditoria pericial.
+            Extração determinística completa (zero LLM). Tabela enxuta de 7 colunas com inspeção pericial sob demanda.
           </p>
         </div>
 
@@ -302,752 +350,393 @@ export default function TabelaItensExtracao({
         </div>
       </div>
 
-      {/* ---------------- BARRA DE CONTROLE: AÇÕES EM LOTE E FILTROS ---------------- */}
+      {/* ---------------- BARRA DE FERRAMENTAS E FILTROS RÁPIDOS ---------------- */}
       <div
         style={{
-          marginTop: 14,
-          padding: '12px 14px',
-          background: '#f8fafc',
-          borderRadius: 10,
-          border: '1px solid var(--line)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: 12,
+          gap: 10,
+          margin: '14px 0',
+          padding: '10px 14px',
+          background: '#f8fafc',
+          borderRadius: 8,
+          border: '1px solid var(--line)',
         }}
       >
-        {/* Ações em Lote */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* Ações em Lote de Seleção */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           <button
             type="button"
             className="mini"
             onClick={onSelectAll}
-            disabled={disabled || readOnly || todosSelecionados}
-            style={{ fontWeight: 600 }}
+            disabled={readOnly || disabled}
+            title="Selecionar Todos"
+            style={{ minHeight: '36px' }}
           >
-            ✓ Selecionar Todos ({itens.length})
+            Selecionar Todos ({itens.length})
           </button>
           <button
             type="button"
             className="mini"
             onClick={onDeselectAll}
-            disabled={disabled || readOnly || selectedCount === 0}
-            style={{ color: 'var(--bad)', fontWeight: 600 }}
+            disabled={readOnly || disabled}
+            title="Desmarcar Todos"
+            style={{ minHeight: '36px' }}
           >
-            ✗ Desmarcar Todos
+            Desmarcar Todos
           </button>
           <button
             type="button"
             className="mini"
             onClick={handleSelectSensitives}
-            disabled={disabled || readOnly || contagemSensiveis === 0}
+            disabled={readOnly || disabled || contagemSensiveis === 0}
             style={{
-              background: '#fffbeb',
-              borderColor: '#f59e0b',
-              color: '#b45309',
-              fontWeight: 700,
+              borderColor: contagemSensiveis > 0 ? '#e0a32b' : undefined,
+              background: contagemSensiveis > 0 ? '#fffdf5' : undefined,
+              color: contagemSensiveis > 0 ? '#92400e' : undefined,
+              fontWeight: contagemSensiveis > 0 ? 600 : undefined,
+              minHeight: '36px',
             }}
-            title="Seleciona automaticamente apenas os itens com Substituição Tributária, CFOP interestadual, NCMs divergentes ou vedações"
+            title="Selecionar Apenas Sensíveis"
           >
-            ⚡ Selecionar Apenas Sensíveis ({contagemSensiveis})
+            ⚠️ Selecionar Apenas Sensíveis {contagemSensiveis > 0 ? `(${contagemSensiveis})` : ''}
           </button>
-          {onParametrizarSelecionados && selectedCount > 0 && (
+          {onParametrizarSelecionados && (
             <button
               type="button"
               className="mini"
               onClick={() => {
-                const selItens = itens.filter((it) => selectedSet.has(it.index));
-                onParametrizarSelecionados(selItens);
+                const selecionados = itens.filter((it) => selectedSet.has(it.index));
+                if (selecionados.length > 0) {
+                  onParametrizarSelecionados(selecionados);
+                }
               }}
+              disabled={readOnly || disabled || selectedCount === 0}
               style={{
-                background: '#0b3d91',
-                borderColor: '#0b3d91',
-                color: '#fff',
-                fontWeight: 650,
+                borderColor: '#0284c7',
+                background: '#f0f9ff',
+                color: '#0369a1',
+                fontWeight: 600,
+                minHeight: '36px',
               }}
-              title="Transferir os itens selecionados para a tela de Parametrização de ERP"
+              title="Enviar itens selecionados para a tela de parametrização de ERP"
             >
               ⚙️ Parametrizar Selecionados ({selectedCount})
             </button>
           )}
         </div>
 
-        {/* Campo de Busca Rápida */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 260 }}>
-          <input
-            type="text"
-            placeholder="Buscar por código, descrição ou NCM..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            style={{ padding: '6px 10px', fontSize: 12.5 }}
-          />
-          {busca && (
+        {/* Busca e Filtros por Categoria */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 4 }}>
             <button
               type="button"
-              className="mini"
-              onClick={() => setBusca('')}
-              style={{ padding: '4px 8px' }}
-              title="Limpar busca"
+              className={`mini ${filtro === 'todos' ? 'active' : ''}`}
+              style={{
+                background: filtro === 'todos' ? 'var(--brand)' : '#fff',
+                color: filtro === 'todos' ? '#fff' : 'var(--ink-2)',
+                fontWeight: filtro === 'todos' ? 650 : 400,
+                minHeight: '36px',
+              }}
+              onClick={() => setFiltro('todos')}
             >
-              ✕
+              Todos ({itens.length})
             </button>
-          )}
+            <button
+              type="button"
+              className={`mini ${filtro === 'sensiveis' ? 'active' : ''}`}
+              style={{
+                background: filtro === 'sensiveis' ? 'var(--warn)' : '#fff',
+                color: filtro === 'sensiveis' ? '#fff' : 'var(--ink-2)',
+                fontWeight: filtro === 'sensiveis' ? 650 : 400,
+                minHeight: '36px',
+              }}
+              onClick={() => setFiltro('sensiveis')}
+            >
+              Sensíveis ({contagemSensiveis})
+            </button>
+            <button
+              type="button"
+              className={`mini ${filtro === 'selecionados' ? 'active' : ''}`}
+              style={{
+                background: filtro === 'selecionados' ? 'var(--ok)' : '#fff',
+                color: filtro === 'selecionados' ? '#fff' : 'var(--ink-2)',
+                fontWeight: filtro === 'selecionados' ? 650 : 400,
+                minHeight: '36px',
+              }}
+              onClick={() => setFiltro('selecionados')}
+            >
+              Marcados ({selectedCount})
+            </button>
+          </div>
+
+          <input
+            type="text"
+            placeholder="Buscar por código, produto ou NCM..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            style={{
+              width: 210,
+              fontSize: 12,
+              padding: '6px 10px',
+              borderRadius: 6,
+              border: '1px solid #c9d3e6',
+              minHeight: '36px',
+            }}
+          />
         </div>
       </div>
 
-      {/* ---------------- FILTROS DE CATEGORIA (CHIPS) ---------------- */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 11.5, color: 'var(--ink-2)', fontWeight: 600 }}>Filtrar exibição:</span>
-        <button
-          type="button"
-          className={`chip ${filtro === 'todos' ? 'selo-oficial' : ''}`}
-          onClick={() => setFiltro('todos')}
-          style={{ fontWeight: filtro === 'todos' ? 700 : 400 }}
+      {/* Alerta de nenhum item selecionado */}
+      {selectedCount === 0 && (
+        <div
+          role="status"
+          style={{
+            margin: '0 0 12px',
+            padding: '8px 14px',
+            background: '#fffbeb',
+            border: '1px solid #fde68a',
+            borderRadius: 6,
+            color: '#92400e',
+            fontSize: 12.5,
+            fontWeight: 500,
+          }}
         >
-          Todos ({itens.length})
-        </button>
-        <button
-          type="button"
-          className={`chip ${filtro === 'sensiveis' ? 'selo-inferido' : ''}`}
-          onClick={() => setFiltro('sensiveis')}
-          style={{ fontWeight: filtro === 'sensiveis' ? 700 : 400 }}
-        >
-          ⚠️ Apenas Sensíveis ({contagemSensiveis})
-        </button>
-        <button
-          type="button"
-          className={`chip ${filtro === 'selecionados' ? 'selo-oficial' : ''}`}
-          onClick={() => setFiltro('selecionados')}
-          style={{ fontWeight: filtro === 'selecionados' ? 700 : 400 }}
-        >
-          ✓ Apenas Selecionados ({selectedCount})
-        </button>
-        {contagemInconsistentes > 0 && (
-          <button
-            type="button"
-            className={`chip ${filtro === 'inconsistentes' ? 'selo-duvidoso' : ''}`}
-            onClick={() => setFiltro('inconsistentes')}
-            style={{ fontWeight: filtro === 'inconsistentes' ? 700 : 400 }}
-          >
-            ⛔ NCMs Inexistentes ({contagemInconsistentes})
-          </button>
-        )}
-      </div>
-
-      {/* ---------------- ALERTA / MENSAGEM DINÂMICA ---------------- */}
-      {selectedCount === 0 ? (
-        <div className="note atencao" style={{ marginTop: 12, marginBottom: 0 }}>
-          <div className="t">Nenhum item selecionado para auditoria</div>
-          <div className="x">
-            Selecione manualmente os itens na tabela abaixo ou clique em{' '}
-            <strong>&quot;Selecionar Apenas Sensíveis&quot;</strong> para auditar automaticamente os itens com impacto fiscal.
-          </div>
-        </div>
-      ) : (
-        <div className="note info" style={{ marginTop: 12, marginBottom: 0 }}>
-          <div className="t">
-            {resumoSelecionados.quantidade} de {itens.length} {itens.length === 1 ? 'item selecionado' : 'itens selecionados'} ({resumoSelecionados.totalSensiveisSel} sensíveis)
-          </div>
-          <div className="x">
-            Valor acumulado dos produtos selecionados:{' '}
-            <strong>{formatarBrl(resumoSelecionados.totalValorProd)}</strong>. Apenas estes itens serão processados pelo motor de IA.
-          </div>
+          ⚠️ Nenhum item selecionado para auditoria. Marque ao menos um item para prosseguir com a análise fiscal.
         </div>
       )}
 
-      {/* ---------------- TABELA DE ITENS COM ROLAGEM HORIZONTAL E CABEÇALHO FIXO ---------------- */}
-      <div className="scroll" style={{ marginTop: 12, maxHeight: '62vh' }}>
-        <table className="tb" style={{ minWidth: 1100 }}>
+      {/* ---------------- TABELA ENXUTA DE 7 COLUNAS COM TABULAR-NUMS ---------------- */}
+      <div className="scroll" style={{ maxHeight: '60vh' }}>
+        <table className="tb" aria-label="Tabela enxuta de itens da nota fiscal">
           <thead>
             <tr>
-              {/* Checkbox Mestre */}
-              <th style={{ width: 44, textAlign: 'center' }}>
-                <input
-                  type="checkbox"
-                  ref={masterCheckboxRef}
-                  checked={todosSelecionados}
-                  onChange={handleMasterCheckboxChange}
-                  disabled={readOnly || disabled}
-                  aria-label="Selecionar todos os itens da tabela"
-                  title="Selecionar / Desmarcar todos os itens da nota"
-                  style={{ cursor: readOnly || disabled ? 'not-allowed' : 'pointer' }}
-                />
+              {/* Coluna 1: Item / Cód. */}
+              <th style={{ width: 110, textAlign: 'left' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    ref={masterCheckboxRef}
+                    type="checkbox"
+                    checked={todosSelecionados}
+                    onChange={handleMasterCheckboxChange}
+                    disabled={readOnly || disabled}
+                    aria-label="Selecionar ou desmarcar todos os itens da nota"
+                    title={todosSelecionados ? 'Desmarcar todos' : 'Selecionar todos'}
+                    style={{ cursor: readOnly || disabled ? 'not-allowed' : 'pointer' }}
+                  />
+                  <span>Item / Cód. / EAN</span>
+                </div>
               </th>
-              <th style={{ width: 40, textAlign: 'center' }}>#</th>
-              <th style={{ width: 110 }}>Cód. / EAN</th>
-              <th style={{ minWidth: 220 }}>Descrição do Produto</th>
-              <th style={{ width: 140 }}>NCM (Siscomex)</th>
-              <th style={{ width: 70 }}>CFOP</th>
-              <th style={{ width: 85 }}>CST / CSOSN</th>
-              <th style={{ width: 80, textAlign: 'right' }}>Qtd / UN</th>
-              <th style={{ width: 95, textAlign: 'right' }}>V. Unit</th>
-              <th style={{ width: 105, textAlign: 'right' }}>V. Total</th>
-              <th style={{ minWidth: 230 }}>Tributos Destacados</th>
-              <th style={{ minWidth: 165, textAlign: 'center' }}>DIFAL / Entrada PR</th>
-              <th style={{ width: 130, textAlign: 'center' }}>Sensibilidade</th>
-              <th style={{ width: 50, textAlign: 'center' }}>Ação</th>
+
+              {/* Coluna 2: Descrição / NCM */}
+              <th>Descrição / NCM (Siscomex) <span className="sr-only">Descrição do Produto</span></th>
+
+              {/* Coluna 3: CFOP / Destinação */}
+              <th style={{ width: 150 }}>CFOP / Destinação <span className="sr-only">CST / CSOSN</span></th>
+
+              {/* Coluna 4: Vlr. Operação */}
+              <th style={{ width: 115, textAlign: 'right' }}>Vlr. Operação <span className="sr-only">V. Total</span></th>
+
+              {/* Coluna 5: ICMS / ST / DIFAL */}
+              <th style={{ width: 160 }}>ICMS / ST / DIFAL <span className="sr-only">Tributos Destacados</span></th>
+
+              {/* Coluna 6: Crédito Efetivo */}
+              <th style={{ width: 130 }}>Crédito Efetivo <span className="sr-only">Sensibilidade</span></th>
+
+              {/* Coluna 7: Ações */}
+              <th style={{ width: 100, textAlign: 'center' }}>Ações</th>
             </tr>
           </thead>
           <tbody>
             {itensExibidos.length === 0 ? (
               <tr>
-                <td colSpan={14} style={{ textAlign: 'center', padding: '24px 8px', color: 'var(--ink-2)' }}>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '24px 8px', color: 'var(--ink-2)' }}>
                   Nenhum item corresponde ao filtro ou busca aplicada.
                 </td>
               </tr>
             ) : (
               itensExibidos.map((item) => {
                 const isSelected = selectedSet.has(item.index);
-                const isExpanded = itemExpandido === item.index;
-
-                // Destaca linha selecionada
-                const rowStyle: React.CSSProperties = {
-                  background: isSelected ? '#f0f7ff' : isExpanded ? '#fbfcfe' : undefined,
-                  transition: 'background 0.15s ease',
-                  cursor: 'pointer',
-                };
+                const diag = diagnosticosDifal?.[item.index] || diagnosticosDifal?.[item.cProd];
+                const destinacaoItem =
+                  destinacaoPorItem?.[item.index] ||
+                  destinacaoPorItem?.[item.cProd] ||
+                  destinacaoPadrao;
 
                 return (
-                  <React.Fragment key={item.index}>
-                    <tr style={rowStyle} onClick={() => !readOnly && !disabled && onToggleSelect(item.index)}>
-                      {/* Checkbox da Linha */}
-                      <td style={{ textAlign: 'center', verticalAlign: 'middle' }} onClick={(e) => e.stopPropagation()}>
+                  <tr
+                    key={item.index}
+                    onClick={() => !readOnly && !disabled && onToggleSelect(item.index)}
+                    style={{
+                      backgroundColor: isSelected ? '#f0f7ff' : undefined,
+                      cursor: 'pointer',
+                      transition: 'background-color 0.15s ease',
+                    }}
+                  >
+                    {/* 1. Item / Cód. */}
+                    <td style={{ verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <input
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => !readOnly && !disabled && onToggleSelect(item.index)}
+                          onClick={(e) => e.stopPropagation()}
                           disabled={readOnly || disabled}
-                          aria-label={`Selecionar item ${item.index}: ${item.cProd}`}
+                          aria-label={`Selecionar item ${item.index}`}
                           style={{ cursor: readOnly || disabled ? 'not-allowed' : 'pointer' }}
-                          title={`Selecionar item #${item.index}`}
                         />
-                      </td>
-
-                      {/* Índice do Item */}
-                      <td style={{ textAlign: 'center', fontWeight: 600, color: 'var(--ink-2)' }}>
-                        #{item.index}
-                      </td>
-
-                      {/* Código do Fornecedor e EAN */}
-                      <td>
-                        <div className="mono" style={{ fontWeight: 600, fontSize: 12 }}>
-                          {item.cProd || 'S/ CÓD'}
-                        </div>
-                        {item.cEAN && item.cEAN !== 'SEM GTIN' && (
-                          <div style={{ fontSize: 10.5, color: 'var(--ink-2)' }}>
-                            EAN: {item.cEAN}
+                        <div>
+                          <strong className="mono" style={{ fontSize: 12 }}>#{item.index}</strong>
+                          <div className="mono text-slate-500" style={{ fontSize: 11 }}>
+                            {item.cProd || 'S/ CÓD'}
                           </div>
-                        )}
-                      </td>
-
-                      {/* Descrição do Produto & Siscomex */}
-                      <td>
-                        <div
-                          style={{
-                            fontWeight: 600,
-                            color: 'var(--ink)',
-                            lineHeight: 1.35,
-                            wordBreak: 'break-word',
-                          }}
-                        >
-                          {item.xProd || 'Descrição ausente'}
                         </div>
-                        {item.descricaoSiscomex && (
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: 'var(--ink-2)',
-                              marginTop: 2,
-                              fontStyle: 'italic',
-                              display: '-webkit-box',
-                              WebkitLineClamp: isExpanded ? 'unset' : 1,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                            }}
-                            title={`Descrição Siscomex: ${item.descricaoSiscomex}`}
-                          >
-                            Catálogo: {item.descricaoSiscomex}
-                          </div>
-                        )}
-                      </td>
+                      </div>
+                    </td>
 
-                      {/* NCM e Validação Siscomex O(1) */}
-                      <td>
-                        <div className="mono" style={{ fontWeight: 650, fontSize: 12.5 }}>
+                    {/* 2. Descrição / NCM */}
+                    <td>
+                      <div style={{ fontWeight: 600, color: 'var(--ink)', lineHeight: 1.3 }}>
+                        {item.xProd || 'Descrição ausente'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+                        <span className="mono tabular-nums text-slate-700" style={{ fontSize: 11.5, fontWeight: 650 }}>
                           {formatarNcm(item.ncm)}
-                        </div>
-                        <div style={{ marginTop: 2, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                          {item.ncmValidoSiscomex ? (
-                            <span className="badge alta" style={{ fontSize: 10, padding: '1px 6px' }}>
-                              ✓ Siscomex
-                            </span>
-                          ) : (
-                            <span
-                              className="badge baixa"
-                              style={{ fontSize: 10, padding: '1px 6px' }}
-                              title="NCM não encontrado no catálogo oficial de 10.515 registros Siscomex"
-                            >
-                              ⚠️ Inválido
-                            </span>
-                          )}
-                          {item.cest && (
-                            <span
-                              className="selo"
-                              style={{ background: '#eef2ff', color: '#3730a3', fontSize: 10 }}
-                              title={`CEST: ${item.cest}`}
-                            >
-                              CEST {item.cest}
-                            </span>
-                          )}
-                        </div>
-                      </td>
+                        </span>
+                        {item.ncmValidoSiscomex ? (
+                          <span className="badge alta" style={{ fontSize: 9.5, padding: '1px 5px' }}>
+                            ✓ Siscomex
+                          </span>
+                        ) : (
+                          <span className="badge baixa" style={{ fontSize: 9.5, padding: '1px 5px' }} title="NCM não encontrado no catálogo oficial Siscomex">
+                            ⚠️ Inválido
+                          </span>
+                        )}
+                        {item.sensivelParaAuditoria && (
+                          <span className="badge media" style={{ fontSize: 9.5, padding: '1px 5px' }}>
+                            ⚠️ Sensível
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
-                      {/* CFOP com indicador de Interestadual */}
-                      <td>
-                        <span className="mono" style={{ fontWeight: 600 }}>
+                    {/* 3. CFOP / Destinação */}
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                        <span className="mono font-bold text-slate-800" style={{ fontSize: 11.5 }}>
                           {item.cfop || '----'}
                         </span>
                         {item.cfop && (item.cfop.startsWith('6') || item.cfop.startsWith('2')) && (
-                          <div style={{ marginTop: 2 }}>
-                            <span
-                              className="badge media"
-                              style={{ fontSize: 9.5, padding: '1px 4px' }}
-                              title="CFOP Interestadual (sujeito a DIFAL)"
-                            >
-                              Inter
-                            </span>
-                          </div>
+                          <span className="badge media" style={{ fontSize: 9, padding: '1px 4px' }} title="Operação Interestadual">
+                            Inter
+                          </span>
                         )}
-                      </td>
-
-                      {/* CST ou CSOSN */}
-                      <td>
                         {item.tributos?.csosn ? (
-                          <span
-                            className="badge grey"
-                            style={{ fontSize: 11, padding: '2px 6px' }}
-                            title="Código de Situação da Operação no Simples Nacional"
-                          >
+                          <span className="badge grey" style={{ fontSize: 9.5, padding: '1px 4px' }}>
                             CSOSN {item.tributos.csosn}
                           </span>
                         ) : item.tributos?.cstIcms ? (
-                          <span
-                            className="badge blue"
-                            style={{ fontSize: 11, padding: '2px 6px' }}
-                            title="Código de Situação Tributária (ICMS Regime Normal)"
-                          >
+                          <span className="badge blue" style={{ fontSize: 9.5, padding: '1px 4px' }}>
                             CST {item.tributos.cstIcms}
                           </span>
+                        ) : null}
+                      </div>
+
+                      {/* Seletor Rápido de Destinação */}
+                      <select
+                        value={destinacaoItem}
+                        onChange={(e) =>
+                          onAlterarDestinacaoItem &&
+                          onAlterarDestinacaoItem(item.index, e.target.value as any)
+                        }
+                        disabled={readOnly || disabled}
+                        style={{
+                          fontSize: 10.5,
+                          padding: '2px 4px',
+                          borderRadius: 4,
+                          border: '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          marginTop: 3,
+                          width: '100%',
+                          maxWidth: 120,
+                        }}
+                        title="Destinação para apuração de DIFAL / ST"
+                      >
+                        <option value="comercializacao">Revenda</option>
+                        <option value="industrializacao">Industrialização</option>
+                        <option value="uso_consumo">Uso / Consumo</option>
+                        <option value="ativo_imobilizado">Ativo Imobilizado</option>
+                      </select>
+                    </td>
+
+                    {/* 4. Vlr. Operação (tabular-nums alinhado à direita) */}
+                    <td className="num tabular-nums" style={{ verticalAlign: 'middle' }}>
+                      <strong style={{ fontSize: 13 }}>{formatarBrl(item.vProd)}</strong>
+                      <div className="text-slate-500" style={{ fontSize: 10.5 }}>
+                        {formatarQtd(item.qCom)} {item.uCom || 'UN'}
+                      </div>
+                    </td>
+
+                    {/* 5. ICMS / ST / DIFAL */}
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {item.tributos?.vICMS !== undefined && item.tributos.vICMS > 0 ? (
+                          <span className="text-[11px] text-blue-700 font-mono font-semibold">
+                            ICMS: {formatarBrl(item.tributos.vICMS)} ({formatarPct(item.tributos.pICMS)})
+                          </span>
                         ) : (
-                          <span style={{ color: 'var(--ink-2)', fontSize: 11 }}>----</span>
+                          <span className="text-[11px] text-slate-400 font-mono">ICMS: R$ 0,00</span>
                         )}
-                      </td>
 
-                      {/* Quantidade e Unidade Comercial */}
-                      <td className="num">
-                        <span style={{ fontWeight: 600 }}>{formatarQtd(item.qCom)}</span>{' '}
-                        <span style={{ fontSize: 10.5, color: 'var(--ink-2)' }}>{item.uCom || 'UN'}</span>
-                      </td>
-
-                      {/* Valor Unitário */}
-                      <td className="num" style={{ fontSize: 12 }}>
-                        {formatarBrl(item.vUnCom)}
-                      </td>
-
-                      {/* Valor Total do Produto */}
-                      <td className="num" style={{ fontWeight: 650, fontSize: 12.5 }}>
-                        {formatarBrl(item.vProd)}
-                      </td>
-
-                      {/* Tributos Destacados (ICMS, IPI, PIS, COFINS, RTC) */}
-                      <td>
-                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                          {/* ICMS */}
-                          {item.tributos?.vICMS !== undefined && item.tributos.vICMS > 0 && (
-                            <span
-                              className="badge"
-                              style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', fontSize: 10.5 }}
-                              title={`ICMS: Base ${formatarBrl(item.tributos.vBC)} | Alíq ${formatarPct(item.tributos.pICMS)}`}
-                            >
-                              ICMS {formatarPct(item.tributos.pICMS)}: {formatarBrl(item.tributos.vICMS)}
-                            </span>
-                          )}
-
-                          {/* ICMS ST */}
-                          {item.tributos?.vICMSST !== undefined && item.tributos.vICMSST > 0 && (
-                            <span
-                              className="badge"
-                              style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', fontSize: 10.5 }}
-                              title={`ICMS ST: Base ${formatarBrl(item.tributos.vBCST)} | MVA ${formatarPct(item.tributos.pMVAST)}`}
-                            >
-                              ST: {formatarBrl(item.tributos.vICMSST)}
-                            </span>
-                          )}
-
-                          {/* IPI */}
-                          {item.tributos?.vIPI !== undefined && item.tributos.vIPI > 0 && (
-                            <span
-                              className="badge"
-                              style={{ background: '#f5f3ff', color: '#6d28d9', border: '1px solid #ddd6fe', fontSize: 10.5 }}
-                              title={`IPI: CST ${item.tributos.cstIpi || '--'} | Alíq ${formatarPct(item.tributos.pIPI)}`}
-                            >
-                              IPI {formatarPct(item.tributos.pIPI)}: {formatarBrl(item.tributos.vIPI)}
-                            </span>
-                          )}
-
-                          {/* PIS */}
-                          {item.tributos?.vPIS !== undefined && item.tributos.vPIS > 0 && (
-                            <span
-                              className="badge grey"
-                              style={{ fontSize: 10 }}
-                              title={`PIS: CST ${item.tributos.cstPis || '--'} | Alíq ${formatarPct(item.tributos.pPIS)}`}
-                            >
-                              PIS: {formatarBrl(item.tributos.vPIS)}
-                            </span>
-                          )}
-
-                          {/* COFINS */}
-                          {item.tributos?.vCOFINS !== undefined && item.tributos.vCOFINS > 0 && (
-                            <span
-                              className="badge grey"
-                              style={{ fontSize: 10 }}
-                              title={`COFINS: CST ${item.tributos.cstCofins || '--'} | Alíq ${formatarPct(item.tributos.pCOFINS)}`}
-                            >
-                              COF: {formatarBrl(item.tributos.vCOFINS)}
-                            </span>
-                          )}
-
-                          {/* RTC (Reforma Tributária IBS/CBS) */}
-                          {(item.tributos?.cClassTrib || item.tributos?.vIBS || item.tributos?.vCBS) && (
-                            <span
-                              className="badge"
-                              style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontSize: 10 }}
-                              title={`Reforma Tributária: cClassTrib ${item.tributos.cClassTrib || '--'} | IBS ${formatarBrl(item.tributos.vIBS)} | CBS ${formatarBrl(item.tributos.vCBS)}`}
-                            >
-                              RTC IBS/CBS
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Coluna DIFAL / Entrada PR */}
-                      <td style={{ textAlign: 'center', fontSize: 11, minWidth: 160 }} onClick={(e) => e.stopPropagation()}>
-                        {(() => {
-                          const destinacaoItem =
-                            destinacaoPorItem?.[item.index] ||
-                            destinacaoPorItem?.[item.cProd] ||
-                            (item.cfop?.endsWith('556') || item.cfop?.endsWith('407')
-                              ? 'uso_consumo'
-                              : item.cfop?.endsWith('551') || item.cfop?.endsWith('406')
-                              ? 'ativo_imobilizado'
-                              : destinacaoPadrao || 'comercializacao');
-
-                          const diag =
-                            diagnosticosDifal?.[item.index] ||
-                            diagnosticosDifal?.[item.cProd] ||
-                            (item as any).diagnosticoDifal;
-
-                          return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
-                              <select
-                                value={destinacaoItem}
-                                onChange={(e) =>
-                                  onAlterarDestinacaoItem &&
-                                  onAlterarDestinacaoItem(item.index, e.target.value as any)
-                                }
-                                disabled={readOnly || disabled}
-                                style={{
-                                  fontSize: 10.5,
-                                  padding: '2px 4px',
-                                  borderRadius: 4,
-                                  border: '1px solid #cbd5e1',
-                                  background: '#ffffff',
-                                  color: '#334155',
-                                  width: '100%',
-                                  maxWidth: 135,
-                                  cursor: readOnly || disabled ? 'not-allowed' : 'pointer',
-                                }}
-                                title="Selecione a destinação da mercadoria pelo destinatário"
-                              >
-                                <option value="comercializacao">Revenda</option>
-                                <option value="industrializacao">Industrialização</option>
-                                <option value="uso_consumo">Uso / Consumo</option>
-                                <option value="ativo_imobilizado">Ativo Imobilizado</option>
-                              </select>
-
-                              {diag?.exigeRecolhimento ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                  <span
-                                    className="badge"
-                                    style={{
-                                      background: '#fff7ed',
-                                      color: '#c2410c',
-                                      border: '1px solid #fdba74',
-                                      fontSize: 10,
-                                      fontWeight: 650,
-                                      padding: '2px 6px',
-                                      borderRadius: 4,
-                                    }}
-                                    title={`Base Dupla DIFAL: R$ ${(diag.baseCalculoDifal || 0).toFixed(2)} | Alíq Origem: ${diag.aliquotaOrigem}% | Alíq Destino: ${diag.aliquotaDestino}%`}
-                                  >
-                                    {diag.modalidade === 'ANTECIPACAO_4_PCT_ART16'
-                                      ? `Antec. Art. 16: R$ ${(diag.valorDebitoDifal || 0).toFixed(2)}`
-                                      : diag.modalidade === 'ICMS_ST_ENTRADA_ART11'
-                                      ? 'ST Entrada Art. 11'
-                                      : diag.valorDebitoFecop > 0
-                                      ? `DIFAL R$ ${(diag.valorDebitoDifal || 0).toFixed(2)} + FECOP R$ ${(diag.valorDebitoFecop || 0).toFixed(2)}`
-                                      : `DIFAL: R$ ${(diag.valorDebitoDifal || 0).toFixed(2)}`}
-                                  </span>
-                                  {diag.baseCalculoDifal > 0 && (
-                                    <span style={{ fontSize: 9.5, color: '#9a3412', marginTop: 1 }}>
-                                      Base: R$ {diag.baseCalculoDifal.toFixed(2)}
-                                    </span>
-                                  )}
-                                </div>
-                              ) : (
-                                <span
-                                  className="badge"
-                                  style={{
-                                    background: '#f8fafc',
-                                    color: '#64748b',
-                                    border: '1px solid #e2e8f0',
-                                    fontSize: 9.5,
-                                    padding: '1px 5px',
-                                  }}
-                                  title={diag?.fundamentacaoLegal || 'Operação dispensada de recolhimento de DIFAL no PR'}
-                                >
-                                  Dispensado
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </td>
-
-                      {/* Selo de Sensibilidade Fiscal */}
-                      <td style={{ textAlign: 'center' }}>
-                        {item.sensivelParaAuditoria ? (
-                          <div>
-                            <span
-                              className="badge media"
-                              style={{
-                                background: '#fef3c7',
-                                color: '#92400e',
-                                border: '1px solid #fcd34d',
-                                padding: '3px 8px',
-                                fontSize: 11,
-                                cursor: 'help',
-                              }}
-                              title={
-                                item.motivosSensibilidade
-                                  ?.map((m) => MOTIVOS_SENSIBILIDADE_MAP[m]?.rotulo || m)
-                                  .join(' | ') || 'Item com particularidade tributária'
-                              }
-                            >
-                              ⚠️ Sensível
-                            </span>
-                            {/* Badges secundárias dos principais gatilhos */}
-                            {item.motivosSensibilidade && item.motivosSensibilidade.length > 0 && (
-                              <div style={{ marginTop: 2, display: 'flex', gap: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
-                                {item.motivosSensibilidade.slice(0, 2).map((m, mIdx) => (
-                                  <span
-                                    key={mIdx}
-                                    style={{
-                                      fontSize: 9.5,
-                                      background: '#fffbeb',
-                                      color: '#b45309',
-                                      padding: '1px 4px',
-                                      borderRadius: 4,
-                                      border: '1px solid #fde68a',
-                                    }}
-                                  >
-                                    {MOTIVOS_SENSIBILIDADE_MAP[m]?.rotulo || m}
-                                  </span>
-                                ))}
-                                {item.motivosSensibilidade.length > 2 && (
-                                  <span style={{ fontSize: 9, color: 'var(--ink-2)' }}>
-                                    +{item.motivosSensibilidade.length - 2}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span
-                            className="badge alta"
-                            style={{
-                              background: '#ecfdf5',
-                              color: '#065f46',
-                              border: '1px solid #a7f3d0',
-                              padding: '3px 8px',
-                              fontSize: 11,
-                            }}
-                          >
-                            ✓ Regular
+                        {item.tributos?.vICMSST !== undefined && item.tributos.vICMSST > 0 && (
+                          <span className="text-[10.5px] text-amber-700 font-mono font-semibold">
+                            ST: {formatarBrl(item.tributos.vICMSST)}
                           </span>
                         )}
-                      </td>
 
-                      {/* Botão de Expansão / Detalhes e Precificação */}
-                      <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
-                        <div style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
-                          {onPrecificarItem && (
-                            <button
-                              type="button"
-                              className="mini"
-                              onClick={() => onPrecificarItem(item)}
-                              style={{
-                                padding: '3px 8px',
-                                fontSize: 11,
-                                background: '#107c41',
-                                color: '#fff',
-                                borderColor: '#107c41',
-                                fontWeight: 600,
-                              }}
-                              title="Enviar este item individualmente para formação de preço e cálculo de margem"
-                            >
-                              💰 Precificar Item
-                            </button>
-                          )}
-                          {onParametrizarItem && (
-                            <button
-                              type="button"
-                              className="mini"
-                              onClick={() => onParametrizarItem(item)}
-                              style={{
-                                padding: '3px 8px',
-                                fontSize: 11,
-                                background: '#0b3d91',
-                                color: '#fff',
-                                borderColor: '#0b3d91',
-                                fontWeight: 600,
-                              }}
-                              title="Enviar este item individualmente para parametrização fiscal no ERP"
-                            >
-                              ⚙️ Parametrizar ERP
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className="mini"
-                            onClick={() => {
-                              toggleExpandir(item.index);
-                              if (onItemClick) onItemClick(item);
-                            }}
-                            style={{
-                              padding: '3px 6px',
-                              fontSize: 11,
-                              background: isExpanded ? '#0b3d91' : '#fff',
-                              color: isExpanded ? '#fff' : 'var(--brand)',
-                              borderColor: 'var(--brand)',
-                            }}
-                            title={isExpanded ? 'Recolher detalhes' : 'Ver detalhamento fiscal do item'}
-                          >
-                            {isExpanded ? '▲' : '▼'}
-                          </button>
+                        {diag?.exigeRecolhimento && (
+                          <span className="text-[10.5px] text-red-700 font-mono font-bold">
+                            DIFAL PR: {formatarBrl(diag.valorDebitoDifal)}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* 6. Crédito Efetivo */}
+                    <td>
+                      {item.sensivelParaAuditoria ? (
+                        <div className="inline-flex items-center gap-1 text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          <span>⚠️</span>
+                          <span>Requer Perícia</span>
                         </div>
-                      </td>
-                    </tr>
+                      ) : (
+                        <div className="inline-flex items-center gap-1 text-[11px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          <span>✓</span>
+                          <span>Crédito Válido</span>
+                        </div>
+                      )}
+                      <div className="text-[10px] text-slate-500 mt-1">
+                        PIS/COF: {formatarBrl((item.tributos?.vPIS || 0) + (item.tributos?.vCOFINS || 0))}
+                      </div>
+                    </td>
 
-                    {/* Linha Expansível com Detalhes Periciais Profundos */}
-                    {isExpanded && (
-                      <tr style={{ background: '#f8fafc' }}>
-                        <td colSpan={14} style={{ padding: '12px 16px', borderBottom: '2px solid var(--line)' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-                            {/* Bloco 1: Cadastro & Classificação */}
-                            <div style={{ background: '#fff', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                              <strong style={{ fontSize: 12, color: 'var(--brand)' }}>Identificação Cadastral</strong>
-                              <div style={{ fontSize: 11.5, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <div><strong>Código Fornecedor:</strong> {item.cProd || 'N/A'}</div>
-                                <div><strong>GTIN / EAN:</strong> {item.cEAN || 'Sem GTIN'}</div>
-                                <div><strong>Descrição Comercial:</strong> {item.xProd}</div>
-                                <div><strong>NCM Declarado:</strong> {item.ncmOriginal || item.ncm}</div>
-                                <div><strong>NCM Normalizado:</strong> {formatarNcm(item.ncm)}</div>
-                                <div><strong>Status Siscomex:</strong> {item.ncmValidoSiscomex ? 'Localizado no catálogo oficial' : 'Não encontrado no Siscomex'}</div>
-                                {item.descricaoSiscomex && (
-                                  <div><strong>Descrição Oficial Siscomex:</strong> {item.descricaoSiscomex}</div>
-                                )}
-                                {item.cest && <div><strong>CEST:</strong> {item.cest}</div>}
-                              </div>
-                            </div>
-
-                            {/* Bloco 2: Detalhamento de ICMS / ST */}
-                            <div style={{ background: '#fff', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                              <strong style={{ fontSize: 12, color: '#1d4ed8' }}>ICMS e Substituição Tributária</strong>
-                              <div style={{ fontSize: 11.5, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <div><strong>CFOP de Saída:</strong> {item.cfop}</div>
-                                <div><strong>CST ICMS:</strong> {item.tributos?.cstIcms || 'N/A'}</div>
-                                <div><strong>CSOSN:</strong> {item.tributos?.csosn || 'N/A'}</div>
-                                <div><strong>Base de Cálculo ICMS:</strong> {formatarBrl(item.tributos?.vBC)}</div>
-                                <div><strong>Alíquota ICMS:</strong> {formatarPct(item.tributos?.pICMS)}</div>
-                                <div><strong>Valor do ICMS:</strong> {formatarBrl(item.tributos?.vICMS)}</div>
-                                {item.tributos?.vBCST !== undefined && (
-                                  <div><strong>Base de Cálculo ST:</strong> {formatarBrl(item.tributos.vBCST)}</div>
-                                )}
-                                {item.tributos?.pMVAST !== undefined && (
-                                  <div><strong>MVA ST:</strong> {formatarPct(item.tributos.pMVAST)}</div>
-                                )}
-                                {item.tributos?.vICMSST !== undefined && (
-                                  <div><strong>Valor do ICMS ST:</strong> {formatarBrl(item.tributos.vICMSST)}</div>
-                                )}
-                                {item.tributos?.pRedBC !== undefined && (
-                                  <div><strong>Redução de Base:</strong> {formatarPct(item.tributos.pRedBC)}</div>
-                                )}
-                                {item.tributos?.vCredICMSSN !== undefined && (
-                                  <div><strong>Crédito Simples Nacional:</strong> {formatarBrl(item.tributos.vCredICMSSN)} ({formatarPct(item.tributos.pCredSN)})</div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Bloco 3: IPI, PIS, COFINS & RTC */}
-                            <div style={{ background: '#fff', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                              <strong style={{ fontSize: 12, color: '#6d28d9' }}>Federais & Reforma Tributária</strong>
-                              <div style={{ fontSize: 11.5, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <div><strong>CST IPI:</strong> {item.tributos?.cstIpi || 'N/A'} (Enq: {item.tributos?.cEnq || 'N/A'})</div>
-                                <div><strong>IPI Alíquota / Valor:</strong> {formatarPct(item.tributos?.pIPI)} / {formatarBrl(item.tributos?.vIPI)}</div>
-                                <div><strong>CST PIS:</strong> {item.tributos?.cstPis || 'N/A'} | Alíq: {formatarPct(item.tributos?.pPIS)} | {formatarBrl(item.tributos?.vPIS)}</div>
-                                <div><strong>CST COFINS:</strong> {item.tributos?.cstCofins || 'N/A'} | Alíq: {formatarPct(item.tributos?.pCOFINS)} | {formatarBrl(item.tributos?.vCOFINS)}</div>
-                                {item.tributos?.cClassTrib && (
-                                  <div><strong>cClassTrib (Reforma):</strong> {item.tributos.cClassTrib}</div>
-                                )}
-                                {item.tributos?.vIBS !== undefined && (
-                                  <div><strong>IBS Transição:</strong> {formatarBrl(item.tributos.vIBS)} ({formatarPct(item.tributos.pIBS)})</div>
-                                )}
-                                {item.tributos?.vCBS !== undefined && (
-                                  <div><strong>CBS Transição:</strong> {formatarBrl(item.tributos.vCBS)} ({formatarPct(item.tributos.pCBS)})</div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Bloco 4: Parecer Pericial de Sensibilidade */}
-                            <div style={{ background: '#fffbeb', padding: 10, borderRadius: 8, border: '1px solid #fde68a' }}>
-                              <strong style={{ fontSize: 12, color: '#92400e' }}>Motivos de Sensibilidade Fiscal</strong>
-                              <div style={{ fontSize: 11.5, marginTop: 4 }}>
-                                {item.motivosSensibilidade && item.motivosSensibilidade.length > 0 ? (
-                                  <ul style={{ margin: 0, paddingLeft: 16 }}>
-                                    {item.motivosSensibilidade.map((motivo, mIdx) => {
-                                      const info = MOTIVOS_SENSIBILIDADE_MAP[motivo];
-                                      return (
-                                        <li key={mIdx} style={{ marginBottom: 4 }}>
-                                          <strong>{info?.rotulo || motivo}:</strong>{' '}
-                                          <span style={{ color: '#78350f' }}>{info?.descricao || 'Verificação pericial recomendada.'}</span>
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                ) : (
-                                  <div style={{ color: '#065f46' }}>
-                                    Nenhum gatilho de risco crítico ou particularidade fiscal detectado para este item.
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
+                    {/* 7. Ações / Inspeção */}
+                    <td style={{ textAlign: 'center', verticalAlign: 'middle' }} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={(e) => handleAbrirInspecao(item, e)}
+                        aria-expanded={drawerAberto && itemInspecionado?.index === item.index}
+                        aria-controls="drawer-item-detalhes"
+                        title={`Inspecionar detalhes periciais do item #${item.index}`}
+                        className="btn-inspect inline-flex items-center justify-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-md border border-slate-300 hover:border-blue-600 hover:text-blue-700 bg-white transition-colors"
+                        style={{ minHeight: '44px', minWidth: '78px' }}
+                      >
+                        <span>Inspecionar</span>
+                      </button>
+                    </td>
+                  </tr>
                 );
               })
             )}
@@ -1055,56 +744,219 @@ export default function TabelaItensExtracao({
         </table>
       </div>
 
-      {/* ---------------- RODAPÉ DE RESUMO FINANCEIRO DOS ITENS SELECIONADOS ---------------- */}
-      <div
-        style={{
-          marginTop: 14,
-          padding: '12px 16px',
-          background: '#f8fafc',
-          borderRadius: 10,
-          border: '1px solid var(--line)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
-        <div style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>
-          Total selecionado:{' '}
-          <strong style={{ color: 'var(--ink)', fontSize: 13.5 }}>
-            {resumoSelecionados.quantidade} de {itens.length} itens
-          </strong>{' '}
-          ({resumoSelecionados.totalSensiveisSel} sensíveis)
-        </div>
-
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', fontSize: 12.5 }}>
-          <div>
-            <span style={{ color: 'var(--ink-2)' }}>Total Produtos:</span>{' '}
-            <strong style={{ color: 'var(--brand)', fontSize: 13.5 }}>
-              {formatarBrl(resumoSelecionados.totalValorProd)}
-            </strong>
+      {/* ---------------- ITEM DETAIL DRAWER LATERAL (500px) ---------------- */}
+      <ItemDetailDrawer
+        isOpen={drawerAberto}
+        onClose={handleFecharDrawer}
+        title={itemInspecionado ? `Item #${itemInspecionado.index} · ${itemInspecionado.cProd || 'S/ CÓD'}` : ''}
+        subtitle={itemInspecionado?.xProd || ''}
+        tabs={[
+          { id: 'tributos', label: 'Tributos XML' },
+          { id: 'difal-st', label: 'DIFAL & Base Dupla PR' },
+          { id: 'creditos', label: 'Créditos LC 214' },
+          { id: 'base-legal', label: 'Fundamentação Legal' },
+        ]}
+        activeTabId={drawerTab}
+        onTabChange={setDrawerTab}
+        width="500px"
+        footerActions={
+          <div className="flex items-center gap-2">
+            {onPrecificarItem && itemInspecionado && (
+              <button
+                type="button"
+                onClick={() => {
+                  onPrecificarItem(itemInspecionado);
+                  handleFecharDrawer();
+                }}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700"
+                style={{ minHeight: '40px' }}
+              >
+                Precificar Item
+              </button>
+            )}
+            {onParametrizarItem && itemInspecionado && (
+              <button
+                type="button"
+                onClick={() => {
+                  onParametrizarItem(itemInspecionado);
+                  handleFecharDrawer();
+                }}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-700 hover:bg-blue-800 text-white"
+                style={{ minHeight: '40px' }}
+              >
+                Parametrizar no ERP
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleFecharDrawer}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800"
+              style={{ minHeight: '40px' }}
+            >
+              Fechar
+            </button>
           </div>
-          {resumoSelecionados.totalIcms > 0 && (
-            <div>
-              <span style={{ color: 'var(--ink-2)' }}>ICMS:</span>{' '}
-              <strong style={{ color: '#1d4ed8' }}>{formatarBrl(resumoSelecionados.totalIcms)}</strong>
-            </div>
-          )}
-          {resumoSelecionados.totalIpi > 0 && (
-            <div>
-              <span style={{ color: 'var(--ink-2)' }}>IPI:</span>{' '}
-              <strong style={{ color: '#6d28d9' }}>{formatarBrl(resumoSelecionados.totalIpi)}</strong>
-            </div>
-          )}
-          {(resumoSelecionados.totalPis > 0 || resumoSelecionados.totalCofins > 0) && (
-            <div>
-              <span style={{ color: 'var(--ink-2)' }}>PIS/COFINS:</span>{' '}
-              <strong>{formatarBrl(resumoSelecionados.totalPis + resumoSelecionados.totalCofins)}</strong>
-            </div>
-          )}
-        </div>
-      </div>
+        }
+      >
+        {itemInspecionado && (
+          <div className="space-y-4">
+            {/* Aba 1: Tributos XML */}
+            {drawerTab === 'tributos' && (
+              <div className="space-y-3">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2">
+                    Tributos Destacados na NF-e
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-slate-500 block">Valor Mercadoria:</span>
+                      <strong className="mono tabular-nums">{formatarBrl(itemInspecionado.vProd)}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Qtd / UN:</span>
+                      <strong className="mono">{formatarQtd(itemInspecionado.qCom)} {itemInspecionado.uCom || 'UN'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Base de Cálculo ICMS:</span>
+                      <span className="mono tabular-nums">{formatarBrl(itemInspecionado.tributos?.vBC)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">ICMS Próprio ({formatarPct(itemInspecionado.tributos?.pICMS)}):</span>
+                      <span className="mono tabular-nums font-bold text-blue-700">{formatarBrl(itemInspecionado.tributos?.vICMS)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">PIS ({formatarPct(itemInspecionado.tributos?.pPIS)}):</span>
+                      <span className="mono tabular-nums">{formatarBrl(itemInspecionado.tributos?.vPIS)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">COFINS ({formatarPct(itemInspecionado.tributos?.pCOFINS)}):</span>
+                      <span className="mono tabular-nums">{formatarBrl(itemInspecionado.tributos?.vCOFINS)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">IPI ({formatarPct(itemInspecionado.tributos?.pIPI)}):</span>
+                      <span className="mono tabular-nums">{formatarBrl(itemInspecionado.tributos?.vIPI)}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">ICMS ST:</span>
+                      <span className="mono tabular-nums text-amber-700 font-bold">{formatarBrl(itemInspecionado.tributos?.vICMSST)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Motivos de Sensibilidade */}
+                {itemInspecionado.motivosSensibilidade && itemInspecionado.motivosSensibilidade.length > 0 && (
+                  <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                    <strong className="text-xs text-amber-900 block mb-1">
+                      ⚠️ Alertas e Sensibilidades Identificadas:
+                    </strong>
+                    <ul className="list-disc pl-4 text-xs text-amber-800 space-y-1">
+                      {itemInspecionado.motivosSensibilidade.map((motivo, i) => (
+                        <li key={i}>
+                          <strong>{MOTIVOS_SENSIBILIDADE_MAP[motivo]?.rotulo || motivo}:</strong>{' '}
+                          {MOTIVOS_SENSIBILIDADE_MAP[motivo]?.descricao || ''}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Aba 2: DIFAL & Base Dupla PR */}
+            {drawerTab === 'difal-st' && (
+              <div className="space-y-3">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2">
+                    Apuração de DIFAL Paraná (RICMS/PR Dec. 7.871/17)
+                  </h4>
+                  {diagnosticosDifal?.[itemInspecionado.index] ? (
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between py-1 border-b border-slate-200">
+                        <span className="text-slate-600">Alíquota de Origem:</span>
+                        <strong className="mono">{diagnosticosDifal[itemInspecionado.index].aliquotaOrigem}%</strong>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-slate-200">
+                        <span className="text-slate-600">Alíquota Interna PR:</span>
+                        <strong className="mono">{diagnosticosDifal[itemInspecionado.index].aliquotaDestino}%</strong>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-slate-200">
+                        <span className="text-slate-600">Base Dupla Calculada:</span>
+                        <strong className="mono tabular-nums">
+                          {formatarBrl(diagnosticosDifal[itemInspecionado.index].baseCalculoDifal)}
+                        </strong>
+                      </div>
+                      <div className="flex justify-between py-1 border-b border-slate-200">
+                        <span className="text-slate-600">DIFAL a Recolher:</span>
+                        <strong className="mono tabular-nums text-red-700">
+                          {formatarBrl(diagnosticosDifal[itemInspecionado.index].valorDebitoDifal)}
+                        </strong>
+                      </div>
+                      {diagnosticosDifal[itemInspecionado.index].valorDebitoFecop > 0 && (
+                        <div className="flex justify-between py-1 border-b border-slate-200">
+                          <span className="text-slate-600">FECOP Paraná:</span>
+                          <strong className="mono tabular-nums text-red-700">
+                            {formatarBrl(diagnosticosDifal[itemInspecionado.index].valorDebitoFecop)}
+                          </strong>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500">
+                      Operação interna ou adquirente sem débito de DIFAL apurado para este item.
+                    </p>
+                  )}
+                </div>
+
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-900">
+                  <strong>Trava Decreto 6.048/2024 e 12.828/2026:</strong><br />
+                  Vedada a apropriação cumulativa sem retenção de ICMS-ST para mercadorias sujeitas à substituição tributária interna no Paraná.
+                </div>
+              </div>
+            )}
+
+            {/* Aba 3: Créditos LC 214 */}
+            {drawerTab === 'creditos' && (
+              <div className="space-y-3">
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-2">
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2">
+                    Classificação em 3 Camadas de Crédito
+                  </h4>
+                  <div className="flex justify-between py-1 border-b border-slate-200">
+                    <span className="text-slate-600">1. Destacado no XML:</span>
+                    <strong className="mono tabular-nums">{formatarBrl(itemInspecionado.tributos?.vICMS)}</strong>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-200">
+                    <span className="text-slate-600">2. Admitido pela Regra PR:</span>
+                    <strong className="mono tabular-nums text-blue-700">
+                      {formatarBrl(itemInspecionado.sensivelParaAuditoria ? 0 : itemInspecionado.tributos?.vICMS)}
+                    </strong>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-200">
+                    <span className="text-slate-600">3. Efetivado no Custo (CPC 16):</span>
+                    <strong className="mono tabular-nums text-emerald-700">
+                      {formatarBrl(itemInspecionado.sensivelParaAuditoria ? 0 : itemInspecionado.tributos?.vICMS)}
+                    </strong>
+                  </div>
+                  <p className="text-[11px] text-slate-500 pt-2">
+                    Regra Art. 47 da LC nº 214/2025: Apropriação financeira de créditos de IBS/CBS condicionada à liquidação do fornecedor.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Aba 4: Fundamentação Legal */}
+            {drawerTab === 'base-legal' && (
+              <LegalCitationBlock
+                citations={citacoesItem}
+                currentLevel={nivel}
+                title="Fundamentação Legal do Item"
+                defaultCollapsed={false}
+                calculationMemory={`Base_1 = Valor_Item (${formatarBrl(itemInspecionado.vProd)}) - ICMS_Origem (${formatarBrl(itemInspecionado.tributos?.vICMS)})\nBase_2 = Base_1 / (1 - 0.195)\nDIFAL = (Base_2 * 0.195) - ICMS_Origem`}
+              />
+            )}
+          </div>
+        )}
+      </ItemDetailDrawer>
     </div>
   );
 }

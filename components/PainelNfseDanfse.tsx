@@ -2,13 +2,16 @@
 
 /**
  * Painel Interativo de Auditoria de NFS-e / DPS Padrão Nacional e Gerador de DANFSe
- * Analista Fiscal Portela Contabilidade — Ciclo 6 (Sub-Etapa 19.6)
+ * Analista Fiscal Portela Contabilidade — Ciclo 7 (Sub-Etapa 20.4)
  *
  * Cumpre 100% das diretrizes de WCAG AA e a Ordem Estrita de React Hooks (hookcheck OK).
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
 import type { ResultadoAuditoriaNfse } from '@/lib/extrator-nfse-types';
+import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
+import ProgressiveSection from '@/components/ui/ProgressiveSection';
+import LegalCitationBlock from '@/components/ui/LegalCitationBlock';
 
 interface PainelNfseDanfseProps {
   resultado: ResultadoAuditoriaNfse;
@@ -24,6 +27,8 @@ export function PainelNfseDanfse({
   // --------------------------------------------------------------------------
   // HOOKS NO TOPO ABSOLUTO (OBRIGATÓRIO PARA @scripts/hookcheck.mjs)
   // --------------------------------------------------------------------------
+  const { nivel, isGerencial, isOperacional, isSenior } = useNivelOperacional();
+
   const [stc, setStc] = useState<'0' | '1' | '2'>('0');
   const [canhoto, setCanhoto] = useState<boolean>(true);
   const [gerandoPdf, setGerandoPdf] = useState<boolean>(false);
@@ -43,7 +48,7 @@ export function PainelNfseDanfse({
     };
   }, [pdfUrl]);
 
-  // Handler de geração do DANFSe PDF
+  // Handler de geração do DANFSe PDF (Ação Primária Sólida do Painel)
   const handleGerarDanfse = useCallback(async () => {
     setGerandoPdf(true);
     setErroDanfse(null);
@@ -186,12 +191,14 @@ export function PainelNfseDanfse({
           )}
         </div>
 
+        {/* Ações Rápidas de Laudo Pericial */}
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => handleBaixarLaudoNfse('html')}
             disabled={baixandoRelatorio}
             className="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-semibold rounded-lg border border-emerald-500 shadow-sm transition flex items-center gap-1.5"
+            style={{ minHeight: '44px' }}
             title="Exportar Laudo Pericial completo em HTML com governança e visual corporativo"
           >
             {baixandoRelatorio ? 'Gerando...' : '📄 Laudo HTML'}
@@ -201,6 +208,7 @@ export function PainelNfseDanfse({
             onClick={() => handleBaixarLaudoNfse('txt')}
             disabled={baixandoRelatorio}
             className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-100 text-xs font-semibold rounded-lg border border-slate-500 shadow-sm transition flex items-center gap-1.5"
+            style={{ minHeight: '44px' }}
             title="Exportar Laudo Pericial em TXT estruturado para arquivamento contábil"
           >
             {baixandoRelatorio ? 'Gerando...' : '📝 Laudo TXT'}
@@ -211,6 +219,7 @@ export function PainelNfseDanfse({
               type="button"
               onClick={onVoltarParaUpload}
               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-lg border border-slate-600 transition"
+              style={{ minHeight: '44px' }}
             >
               ← Voltar / Novo Arquivo
             </button>
@@ -219,12 +228,13 @@ export function PainelNfseDanfse({
       </div>
 
       {erroRelatorio && (
-        <div className="bg-red-950/50 border border-red-700 text-red-200 text-xs p-3 rounded-lg flex items-center justify-between">
+        <div className="bg-red-950/50 border border-red-700 text-red-200 text-xs p-3 rounded-lg flex items-center justify-between" role="alert">
           <span>⚠️ {erroRelatorio}</span>
           <button
             type="button"
             onClick={() => setErroRelatorio(null)}
-            className="text-red-300 hover:text-white font-bold ml-2"
+            className="text-red-300 hover:text-white font-bold ml-2 p-1"
+            aria-label="Fechar erro"
           >
             ×
           </button>
@@ -257,135 +267,80 @@ export function PainelNfseDanfse({
           <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold block mb-2">
             Tomador do Serviço (Adquirente)
           </span>
-          {toma ? (
-            <>
-              <p className="font-semibold text-slate-100 text-sm">{toma.xNome || 'Nome não informado'}</p>
-              <p className="text-xs text-slate-300 font-mono mt-0.5">CNPJ/CPF: {toma.cnpj || toma.cpf || '-'}</p>
-              <div className="mt-2 text-xs text-slate-400 border-t border-slate-700/60 pt-2">
-                <p>
-                  {toma.endereco?.xLgr ? (
-                    `${toma.endereco.xLgr}, ${toma.endereco.nro || 'S/N'}`
-                  ) : (
-                    <span className="text-red-400 font-semibold">⚠ Logradouro ausente ou vazio</span>
-                  )}
-                </p>
-                <p>
-                  {toma.endereco?.xMun || toma.endereco?.cMun || 'Município'} - {toma.endereco?.uf || 'UF'}
-                </p>
-              </div>
-            </>
-          ) : (
-            <p className="text-xs text-amber-300 italic">Tomador não identificado nesta operação (Consumidor Final não identificado).</p>
-          )}
-        </div>
-      </div>
-
-      {/* Detalhes do Serviço e Classificação */}
-      <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700">
-        <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold block mb-2">
-          Discriminação do Serviço e Classificação Tributária
-        </span>
-        <div className="flex flex-wrap gap-2 mb-3">
-          <span className="bg-slate-700 text-slate-200 text-xs px-2.5 py-1 rounded font-mono">
-            cTribNac: <strong className="text-blue-300">{serv.cTribNac}</strong>
-          </span>
-          {serv.cNBS && (
-            <span className="bg-slate-700 text-slate-200 text-xs px-2.5 py-1 rounded font-mono">
-              cNBS: <strong className="text-indigo-300">{serv.cNBS}</strong>
-            </span>
-          )}
-          {ref?.cClassTrib && (
-            <span className="bg-slate-700 text-slate-200 text-xs px-2.5 py-1 rounded font-mono">
-              cClassTrib: <strong className="text-emerald-300">{ref.cClassTrib}</strong>
-            </span>
-          )}
-          {ref?.cst && (
-            <span className="bg-slate-700 text-slate-200 text-xs px-2.5 py-1 rounded font-mono">
-              CST IBS/CBS: <strong className="text-amber-300">{ref.cst}</strong>
-            </span>
-          )}
-          {ref?.cib && (
-            <span className="bg-emerald-900/60 text-emerald-200 text-xs px-2.5 py-1 rounded font-mono border border-emerald-600/40">
-              CIB: <strong>{ref.cib}</strong>
-            </span>
-          )}
-        </div>
-        <p className="text-slate-300 text-xs bg-slate-900/60 p-3 rounded-lg border border-slate-700/60 whitespace-pre-wrap leading-relaxed">
-          {serv.xDescServ || 'Sem descrição informada.'}
-        </p>
-      </div>
-
-      {/* Cards Financeiros e Tributários */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-slate-800 p-3 rounded-xl border border-slate-700">
-          <span className="text-xs text-slate-400 block">Valor dos Serviços</span>
-          <span className="text-base font-bold text-slate-100 font-mono">
-            R$ {val.vServ.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </span>
-        </div>
-
-        <div className="bg-slate-800 p-3 rounded-xl border border-slate-700">
-          <span className="text-xs text-slate-400 block">ISSQN Municipal</span>
-          <span className="text-base font-bold text-blue-400 font-mono">
-            R$ {val.vISSQN.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </span>
-        </div>
-
-        <div className="bg-slate-800 p-3 rounded-xl border border-slate-700">
-          <span className="text-xs text-slate-400 block">Retenções Federais</span>
-          <span className="text-base font-bold text-purple-400 font-mono">
-            R$ {(val.vPIS + val.vCOFINS + val.vRetIRRF + val.vRetCSLL).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </span>
-          {val.tpRetPisCofins !== undefined && (
-            <span className="text-[10px] text-purple-300 block">tpRet: {val.tpRetPisCofins}</span>
-          )}
-        </div>
-
-        <div className="bg-slate-800 p-3 rounded-xl border border-slate-700">
-          <span className="text-xs text-slate-400 block">IBS + CBS (Reforma)</span>
-          <span className="text-base font-bold text-emerald-400 font-mono">
-            R$ {((ref?.vIBS || 0) + (ref?.vCBS || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </span>
-          {ref?.vBC !== undefined && (
-            <span className="text-[10px] text-emerald-300 block">BC R$ {ref.vBC.toFixed(2)}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Painel de Alertas de Auditoria Pericial */}
-      <div className="bg-slate-800/90 rounded-xl p-5 border border-slate-700 shadow-md">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-700 pb-3 mb-4">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-slate-100 text-sm uppercase tracking-wide">
-              Auditoria Pericial & Validação Preventiva DF-e
-            </h3>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
-                resultado.validoParaEmissao
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
-              }`}
-            >
-              {resultado.validoParaEmissao ? '✓ Emissão Válida' : '✗ Inconsistências Críticas'}
-            </span>
+          <p className="font-semibold text-slate-100 text-sm">{toma?.xNome || 'Nome não informado'}</p>
+          <p className="text-xs text-slate-300 font-mono mt-0.5">CNPJ/CPF: {toma?.cnpj || toma?.cpf || '-'}</p>
+          {toma?.im && <p className="text-xs text-slate-300 font-mono">Inscrição Municipal: {toma.im}</p>}
+          <div className="mt-2 text-xs text-slate-400 border-t border-slate-700/60 pt-2">
+            <p>
+              {toma?.endereco?.xLgr || 'Logradouro não informado'}, {toma?.endereco?.nro || 'S/N'}
+            </p>
+            <p>
+              {toma?.endereco?.xBairro ? `${toma.endereco.xBairro} • ` : ''}
+              {toma?.endereco?.xMun || toma?.endereco?.cMun || 'Município'} - {toma?.endereco?.uf || 'UF'}
+            </p>
           </div>
+        </div>
+      </div>
 
-          {/* Filtros de Alerta */}
-          <div className="flex gap-1.5 bg-slate-900/80 p-1 rounded-lg border border-slate-700/80 text-xs">
+      {/* Card Principal: Discriminação do Serviço e Valores */}
+      <div className="bg-slate-800/80 rounded-xl p-5 border border-slate-700 shadow-sm space-y-4">
+        <div>
+          <span className="text-xs uppercase tracking-wider text-slate-400 font-semibold block mb-1">
+            Discriminação dos Serviços Prestados
+          </span>
+          <p className="text-slate-200 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap bg-slate-900/60 p-3 rounded-lg border border-slate-700/70">
+            {serv.xDescServ || 'Descrição não detalhada no XML.'}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2">
+          <div className="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60">
+            <span className="text-slate-400 block">Código Trib. Nacional:</span>
+            <strong className="text-blue-300 font-mono">{serv.cTribNac || 'Não inf.'}</strong>
+          </div>
+          <div className="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60">
+            <span className="text-slate-400 block">Código NBS:</span>
+            <strong className="text-blue-300 font-mono">{serv.cNBS || 'Não inf.'}</strong>
+          </div>
+          <div className="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60">
+            <span className="text-slate-400 block">Valor dos Serviços:</span>
+            <strong className="text-emerald-400 font-mono text-sm tabular-nums">
+              R$ {(val.vServ || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </strong>
+          </div>
+          <div className="bg-slate-900/50 p-2.5 rounded-lg border border-slate-700/60">
+            <span className="text-slate-400 block">Valor Líquido:</span>
+            <strong className="text-slate-100 font-mono text-sm tabular-nums">
+              R$ {(val.vLiq || val.vServ || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Alertas Fiscais & Conformidade */}
+      <ProgressiveSection
+        id="alertas-nfse"
+        currentLevel={nivel}
+        minLevel="operacional"
+        title={`Alertas de Auditoria (${(resultado.alertas || []).length})`}
+        subtitle="Inconformidades de preenchimento, schema e cruzamento tributário"
+      >
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 mb-2">
             <button
               type="button"
               onClick={() => setFiltroAlertas('TODOS')}
-              className={`px-2.5 py-1 rounded transition ${
-                filtroAlertas === 'TODOS' ? 'bg-slate-700 text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
+              className={`px-2.5 py-1 rounded text-xs font-medium transition ${
+                filtroAlertas === 'TODOS' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'
               }`}
             >
-              Todos ({resultado.alertas.length})
+              Todos ({(resultado.alertas || []).length})
             </button>
             <button
               type="button"
               onClick={() => setFiltroAlertas('CRITICO')}
-              className={`px-2.5 py-1 rounded transition ${
-                filtroAlertas === 'CRITICO' ? 'bg-red-900/60 text-red-200 font-semibold' : 'text-red-400 hover:text-red-300'
+              className={`px-2.5 py-1 rounded text-xs font-medium transition ${
+                filtroAlertas === 'CRITICO' ? 'bg-red-600 text-white' : 'bg-slate-700 text-slate-300'
               }`}
             >
               Críticos ({totalCriticos})
@@ -393,48 +348,40 @@ export function PainelNfseDanfse({
             <button
               type="button"
               onClick={() => setFiltroAlertas('ATENCAO')}
-              className={`px-2.5 py-1 rounded transition ${
-                filtroAlertas === 'ATENCAO' ? 'bg-amber-900/60 text-amber-200 font-semibold' : 'text-amber-400 hover:text-amber-300'
+              className={`px-2.5 py-1 rounded text-xs font-medium transition ${
+                filtroAlertas === 'ATENCAO' ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-300'
               }`}
             >
               Atenção ({totalAtencao})
             </button>
           </div>
-        </div>
 
-        {alertasFiltrados.length === 0 ? (
-          <div className="text-center py-6 text-slate-400 text-xs">
-            Nenhum alerta apontado com o filtro selecionado.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {alertasFiltrados.map((alerta, idx) => {
-              const ehCritico = alerta.severidade === 'CRITICO';
-              const ehAtencao = alerta.severidade === 'ATENCAO';
-              const borderClass = ehCritico ? 'border-red-500/40 bg-red-950/20' : ehAtencao ? 'border-amber-500/40 bg-amber-950/20' : 'border-blue-500/40 bg-blue-950/20';
-              const textBadge = ehCritico ? 'bg-red-500/30 text-red-200' : ehAtencao ? 'bg-amber-500/30 text-amber-200' : 'bg-blue-500/30 text-blue-200';
-
-              return (
-                <div key={idx} className={`p-3.5 rounded-lg border ${borderClass} text-xs space-y-1`}>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`px-2 py-0.5 rounded font-mono font-bold text-[10px] ${textBadge}`}>
-                      {alerta.severidade}
-                    </span>
-                    <span className="font-mono text-slate-400 text-[11px]">{alerta.codigo}</span>
-                    <strong className="text-slate-100 text-xs">{alerta.titulo}</strong>
-                  </div>
-                  <p className="text-slate-300 leading-relaxed">{alerta.detalhe}</p>
-                  {alerta.baseLegal && (
-                    <p className="text-slate-400 text-[11px] font-mono pt-1">
-                      ⚖ Base Legal: <span className="text-slate-300">{alerta.baseLegal}</span>
-                    </p>
-                  )}
+          {alertasFiltrados.length === 0 ? (
+            <p className="text-slate-500 text-xs">Nenhum alerta apontado com o filtro selecionado.</p>
+          ) : (
+            alertasFiltrados.map((alerta, idx) => (
+              <div
+                key={idx}
+                className={`p-3 rounded-lg border text-xs space-y-1 ${
+                  alerta.severidade === 'CRITICO'
+                    ? 'border-red-300 bg-red-50 text-red-950'
+                    : alerta.severidade === 'ATENCAO'
+                    ? 'border-amber-300 bg-amber-50 text-amber-950'
+                    : 'border-blue-300 bg-blue-50 text-blue-950'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-[10px] uppercase">{alerta.severidade}</span>
+                  <span className="font-mono text-slate-500">{alerta.codigo}</span>
+                  <strong>{alerta.titulo}</strong>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                <p>{alerta.detalhe}</p>
+                {alerta.baseLegal && <p className="font-mono text-[11px] pt-1">⚖ Base: {alerta.baseLegal}</p>}
+              </div>
+            ))
+          )}
+        </div>
+      </ProgressiveSection>
 
       {/* Card de Geração e Pré-Visualização do DANFSe Oficial (RFB em Go) */}
       <div className="bg-slate-800/90 rounded-xl p-5 border border-slate-700 shadow-md space-y-4">
@@ -473,26 +420,29 @@ export function PainelNfseDanfse({
               Exibir Canhoto
             </label>
 
+            {/* AÇÃO PRINCIPAL SÓLIDA DE ALTO CONTRASTE */}
             <button
               type="button"
               disabled={gerandoPdf}
               onClick={handleGerarDanfse}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold shadow transition flex items-center gap-2 ${
+              aria-busy={gerandoPdf}
+              className={`px-5 py-2.5 rounded-lg text-xs sm:text-sm font-bold shadow-md transition flex items-center justify-center gap-2 select-none ${
                 gerandoPdf
                   ? 'bg-blue-800 text-blue-200 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-500 text-white'
               }`}
+              style={{ minHeight: '44px', minWidth: '220px' }}
             >
               {gerandoPdf ? (
                 <>
-                  <svg className="animate-spin h-3.5 w-3.5 text-white" viewBox="0 0 24 24">
+                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
-                  Renderizando DANFSe...
+                  <span>Renderizando DANFSe...</span>
                 </>
               ) : (
-                '📄 Gerar DANFSe Oficial (PDF RFB)'
+                <span>📄 Gerar DANFSe Oficial (PDF)</span>
               )}
             </button>
           </div>
@@ -500,7 +450,7 @@ export function PainelNfseDanfse({
 
         {/* Mensagem de Erro / Orientação se o container Go estiver offline */}
         {erroDanfse && (
-          <div className="p-4 rounded-lg bg-red-950/40 border border-red-700/50 text-xs text-red-200 space-y-1">
+          <div className="p-4 rounded-lg bg-red-950/40 border border-red-700/50 text-xs text-red-200 space-y-1" role="alert">
             <p className="font-semibold text-red-300">Falha ao emitir DANFSe:</p>
             <p>{erroDanfse}</p>
             {orientacaoDanfse && (
@@ -520,23 +470,37 @@ export function PainelNfseDanfse({
               </span>
               <a
                 href={pdfUrl}
-                download={`danfse-${ident.nNFSe || ident.nDPS || 'nacional'}.pdf`}
-                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded transition"
+                download={`DANFSe_${ident.nNFSe || ident.nDPS || 'nacional'}.pdf`}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded transition flex items-center gap-1"
+                style={{ minHeight: '40px' }}
               >
-                💾 Baixar PDF
+                💾 Baixar Arquivo PDF
               </a>
             </div>
 
-            <div className="w-full h-[550px] bg-slate-900 rounded-lg overflow-hidden border border-slate-700 shadow-inner">
-              <iframe
-                src={pdfUrl}
-                title="Pré-visualização Oficial do DANFSe"
-                className="w-full h-full border-0"
-              />
-            </div>
+            <iframe
+              src={pdfUrl}
+              title="Pré-visualização do DANFSe Oficial em PDF"
+              className="w-full h-[650px] rounded-lg border border-slate-700 bg-white"
+            />
           </div>
         )}
       </div>
+
+      {/* Seção Sênior: Custódia Digital & Hash SHA-256 */}
+      <ProgressiveSection
+        id="custodia-nfse"
+        currentLevel={nivel}
+        minLevel="senior"
+        title="Cadeia de Custódia Digital & Hash Criptográfico"
+        subtitle="Rastreabilidade pericial imutável do XML recebido"
+      >
+        <div className="bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-xs space-y-1">
+          <div>SHA-256: <strong className="text-blue-300">{extracao.sha256}</strong></div>
+          <div>Versão Schema: <span className="text-slate-400">{extracao.versaoSchema || 'Padrão Nacional'}</span></div>
+          <div>Tipo: <span className="text-emerald-400">{extracao.tipoDocumento}</span></div>
+        </div>
+      </ProgressiveSection>
     </div>
   );
 }

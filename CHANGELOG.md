@@ -5,6 +5,136 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ---
 
+## [7.1.0] - 2026-11-25 — Fontes Normativas, Demonstrativo DIFAL PR, Precificação Persistente e Cadastro CNPJ RFB
+- **Marco 1 — Catálogo Oficial de Fontes Legais (`lib/fiscal/fontes-normativas.ts`):**
+  - Consolidação estruturada das normas oficiais: RICMS/PR (Decreto nº 7.871/2017 Arts. 3º, 8º § 12, 28, 74, 542 e 545), NPF 052/2018 (registros E310/E316 e códigos PR239999/PR259999), Decretos PR 6.048/2024 e 12.828/2026, Consulta SEFA/PR nº 48/2026, LC nº 214/2025, LC nº 227/2026 (CG-IBS), NT 2026.008 v1.01 (Ato Conjunto RFB/CGIBS nº 10/2026), Resoluções CGSN nº 186/2026 e nº 194/2026 e Convênios ICMS nº 127/2026 e nº 128/2026;
+  - Integração direta nos blocos `LegalCitationBlock` das abas `AuditoriaEntrada.tsx`, `Precificar.tsx` e `Reforma.tsx`.
+- **Marco 2 — Demonstrativo DIFAL Produto a Produto, Somatório e Prazo Legal (`lib/fiscal/difal-pr.ts` + `AuditoriaEntrada.tsx`):**
+  - Apuração item a item (`cProd`, `xProd`, `NCM`, `CFOP`, `destinacao`, `vOperacao`, `aliqInter`, `aliqIntraPR`, `fecop`, `baseDupla`, `valorDifalPrincipal`, `valorFecop`, `valorDifalTotal`, `exigeRecolhimento`, `fundamento`);
+  - Somatório consolidado da nota e somatório acumulado de múltiplas notas na sessão (`totalBaseDifal`, `totalDifalPrincipal`, `totalFecop`, `totalDifalGeral`, `qtdItensTributados`);
+  - Cálculo automático de vencimento e guia/EFD: `GR-PR 1015` (dia 12 do mês subsequente), `DeSTDA/GR-PR` (dia 20 do 2º mês subsequente) e `GNRE` (antes da saída para não inscritos), com inspeção detalhada via `ItemDetailDrawer`.
+- **Marco 3 — Precificação com Alíquotas Customizadas Persistentes (`lib/hooks/useParametrosPrecificacao.ts` + `Precificar.tsx`):**
+  - Persistência segmentada por `empresaId` em `localStorage` (`portela_precificacao_aliquotas_v1`) cobrindo CBS, IBS, IS, ICMS, PIS/COFINS, IPI, DAS, IRPJ/CSLL e Redução IVA, com indicador discreto e botão `Restaurar Alíquotas Padrão` (`min-h-[44px]`).
+- **Marco 4 — Persistência Local Atômica de Empresas + Consulta Oficial por CNPJ (`lib/db/client.ts`, `lib/db/empresas-repository.ts`, `app/api/cnpj/[cnpj]/route.ts`, `CadastroEmpresas.tsx`):**
+  - Store JSON atômico em `data/db/empresas-store.json` (com exclusão de watchers em `next.config.mjs` e `tsconfig.json`) preservando fallback dual-mode com `pg.Pool`;
+  - Consulta pública da Receita Federal via BrasilAPI com fallback automático para CNPJ.ws e ReceitaWS e preenchimento cadastral automático na aba `CadastroEmpresas.tsx`.
+- **Testes Automatizados (50 Suítes):**
+  - Novas suítes determinísticas `tests/difal-demonstrativo-e-fontes.test.mjs`, `tests/precificacao-persistencia-aliquotas.test.mjs` e `tests/empresas-persistencia-e-cnpj.test.mjs` registradas em `scripts/test.mjs`.
+
+---
+
+## [7.0.0] - 2026-11-23 — Ciclo 7 Concluído: Design System Portela, Acessibilidade WCAG AA, Arquitetura em 3 Níveis Operacionais e Release Oficial v7.0.0
+**Período de Execução:** Novembro/2026  
+**Responsável Técnico:** Lead QA Frontend, Auditor de Acessibilidade/Performance e Release Engineer  
+**Status do Ciclo 7:** 7 de 7 Sub-Etapas Concluídas (20.1 a 20.7) | 47 Suítes de Testes Oficiais Aprovadas (100% Passing)
+
+### Sub-Etapa 20.7: Homologação em Navegador Real (CDP), Suíte 47 de Integridade e Fechamento do Ciclo 7 (v7.0.0)
+- **Inspeção e Auditoria em Navegador Real (Chrome DevTools Protocol - CDP):**
+  - Execução de testes no navegador real Chrome Headless (`v158`) com Next.js 16 em modo de produção (`npm run start`) nas resoluções `1920x1080` (Desktop Full HD) e `1366x768` (Notebook Corporativo);
+  - Inspeção exaustiva das 6 abas prioritárias (`Clientes & Perfis`, `Auditoria de Entrada`, `Precificação & Margens`, `Classificar produto`, `Lote CSV` e `Reforma IBS/CBS/IS`);
+  - Geração e persistência do catálogo oficial com 36 screenshots em alta resolução em `docs/ux-audit/screenshots/v7/`, cobrindo as permutações completas de resoluções e níveis operacionais (*Gerencial*, *Operacional* e *Sênior*);
+  - Documentação do relatório pericial de homologação em `docs/ux-audit/04-qa-final-v7.md`.
+- **Comprovação dos Ganhos Ergonômicos e Acessibilidade (vs Sub-Etapa 20.1):**
+  - *Redução de Dead Space*: Cabeçalho estático reduzido de 465px para **100px** (56px header corporativo + 44px abas), liberando **+365px** de espaço útil na primeira dobra em 1366x768;
+  - *Visibilidade de CTA Primário*: 100% dos fluxos possuem exatamente 1 CTA primário sólido e inequívoco visível na primeira dobra ou fixado no rodapé via `StickyActionBar` (0 rolagens necessárias para acionar comandos fundamentais);
+  - *Acessibilidade WCAG 2.1 AA*: Regiões dinâmicas assistidas por `aria-live="polite"` e `role="status"`, seletor de nível estruturado com `role="radiogroup"` / `role="radio"`, alvos interativos touch/click com dimensões mínimas >= 44x44px e tipografia contábil com `font-variant-numeric: tabular-nums; text-align: right;`;
+  - *Performance e Estabilidade*: First Contentful Paint (FCP) de **104ms**, DOM Interactive de **44ms**, Load Event em **159ms**, CLS = 0.00 e zero estouro horizontal indesejado.
+- **Nova Suíte 47 de Testes Automatizados (`tests/ux-release-v7-integridade.test.mjs`):**
+  - Validação programática do contrato do App Shell (`app/page.tsx`), header compacto e `NivelOperacionalSwitcher`;
+  - Validação da integridade dos 3 níveis operacionais (`lib/hooks/useNivelOperacional.ts`) e barrel exports em `components/ui/index.ts`;
+  - Validação de segurança em `next.config.mjs` (ausência de `X-Frame-Options: ALLOWALL`, presença de CSP com `frame-ancestors` e `nosniff`);
+  - Validação estrita de imutabilidade e integridade pericial de `rules/rules.json`.
+- **Atualização de Metadados de Release:**
+  - `package.json` atualizado para `"version": "7.0.0"`;
+  - Documentação consolidada em `README.md` e `CHANGELOG.md`.
+
+### Sub-Etapa 20.6: Refatoração de Classificação Fiscal, Parametrização em Lote e Reforma Tributária em 3 Níveis Operacionais
+- **Classificação Fiscal Individual (`components/Classificar.tsx`):**
+  - Conexão nativa com `useNivelOperacional` e `useEmpresaAtiva` para adaptação dinâmica entre níveis *gerencial*, *operacional* e *sênior*;
+  - `KpiStrip` superior com 4 macro-indicadores em tempo real: NCM Sugerido/Validado, Confiança da Classificação, Alíquotas & Regras (RTC/PR) e Status de Consistência Fiscal com `tabular-nums` e semáforo fiscal;
+  - `ProgressiveSection` (`id="sec-classificacao-legal"`) com `LegalCitationBlock` cobrindo RGI 1 a 6, NESH (IN RFB nº 2.169/2023), LC 214/2025 e RICMS/PR, expandido no nível sênior e colapsável sob demanda nos demais níveis;
+  - `StickyActionBar` fixa no rodapé com 1 CTA primário sólido (`✦ Classificar com IA Especialista` ou `📋 Relatório ERP Resumido`), feedback `aria-live="polite"` e alvos táteis >= 44px.
+- **Parametrização em Lote de ERP (`components/Lote.tsx`):**
+  - Conexão nativa com `useNivelOperacional` e `useEmpresaAtiva`;
+  - `KpiStrip` executivo com Total de Itens, Classificados/NCM Validado, Divergências/Requer IA e Taxa de Prontidão ERP em `tabular-nums`;
+  - Encapsulamento da barra de contexto de saída tributária em `ProgressiveSection` (`id="sec-lote-contexto-saida"`) e fundamentação normativa do SPED/LC 214 em `ProgressiveSection` (`id="sec-lote-fundamentacao"`);
+  - `StickyActionBar` com CTA primário (`⬇️ Baixar CSV para ERP` ou `⚙️ Processar Lote no Motor Fiscal`), ações secundárias de reconciliação assistida por IA (Gemini) e feedback de status com `role="status"` e `aria-live="polite"`.
+- **Reforma Tributária e Tabela cClassTrib (`components/Reforma.tsx`):**
+  - Conexão nativa com `useNivelOperacional`;
+  - `KpiStrip` com 4 indicadores: Classificações cClassTrib, Situações Tributárias CST-IBS/CBS, Imposto Seletivo (Art. 393+) e Alíquotas de Teste 2026 (CBS 0,90% + IBS 0,10%);
+  - Paginação acessível com controle estrito de DOM (25, 50 ou 100 itens por página) eliminando inchaço de nós simultâneos e garantindo alvos mínimos >= 44px;
+  - `ProgressiveSection` (`id="sec-reforma-fundamentos"`) com `LegalCitationBlock` unificando LC 214/2025, LC 227/2025 e normas do Comitê Gestor do IBS;
+  - `StickyActionBar` com CTA primário sólido e feedback reativo de cópia para a área de transferência.
+- **Testes Automatizados & Qualidade (DoD):**
+  - Nova Suíte 46 de Testes (`tests/ux-classificar-lote-reforma-niveis.test.mjs`) validando os contratos de props, paginação, WCAG AA e renderização condicional;
+  - Registro da Suíte 46 no orquestrador `scripts/test.mjs`;
+  - 100% de conformidade com `node scripts/hookcheck.mjs` (components, app e components/ui);
+  - Verificação de tipos via `npm run typecheck` com 0 erros.
+
+### Sub-Etapa 20.5: Refatoração de Precificação e Gestão de Empresas em 3 Níveis Operacionais, KpiStrip, StickyActionBar e ProgressiveSection
+- **Módulo de Precificação e Rentabilidade (`components/Precificar.tsx`):**
+  - Conexão nativa com `useNivelOperacional` para alternância dinâmica de densidade entre níveis *gerencial*, *operacional* e *sênior*;
+  - `KpiStrip` superior com 4 macro-indicadores em tempo real: Preço de Venda Sugerido (vNF), Margem Líquida Realizada, Carga Tributária Efetiva e Regime Mais Vantajoso, com `tabular-nums` e semáforo fiscal consolidado;
+  - Divulgação progressiva: Card 2 (*Rastreabilidade de Entrada, De-Para CFOP e Frete*) encapsulado em `ProgressiveSection` (`minLevel="operacional"`), e Seção 4 (*Transição 2027: Dual-Stack SEFA/PR 48/2026, Simples Híbrido, Mesa de Compras & Combustíveis Ad Rem*) encapsulado em `ProgressiveSection` (`minLevel="senior"`) com expansão pontual sob demanda de 1 clique;
+  - `LegalCitationBlock` unificado para fundamentação normativa (CPC 16 R1, LC 214/2025, RICMS/PR Art. 28 Anexo VIII, SEFA/PR 48/2026 e LC 123/2006);
+  - `StickyActionBar` fixa no rodapé com CTA primário sólido e inequívoco (`Exportar / Aplicar Tabela` ou `Calcular Preço e Margens`), ações secundárias de laudo e planilha, e região `aria-live="polite"`.
+- **Módulo de Cadastro e Gestão de Empresas (`components/CadastroEmpresas.tsx`):**
+  - Adoção de `useNivelOperacional` e integração de `ProgressiveSection`;
+  - Encapsulamento da barra de monitoramento de infraestrutura / sidecars RFB em `ProgressiveSection` (`minLevel="operacional"`);
+  - Encapsulamento de parâmetros fiscais avançados bitemporais (alíquotas efetivas, Simples Híbrido, ROT-ST e Split Payment) em `ProgressiveSection` (`minLevel="senior"`) no formulário de vigência;
+  - Acessibilidade WCAG AA: botões de ação e cards com alvos mínimos >= 44px/48px, suporte completo a navegação por teclado (`Enter` e `Space`), e regiões de feedback com `role="status"` e `aria-live="polite"`.
+- **Testes Automatizados & Qualidade (DoD):**
+  - Nova Suíte 45 de Testes (`tests/ux-precificacao-empresas-niveis.test.mjs`) validando os contratos de props, 3 níveis operacionais, alvos >= 44px e citações legais;
+  - Registro da Suíte 45 no orquestrador `scripts/test.mjs`;
+  - 100% de conformidade com `node scripts/hookcheck.mjs` (components, app e components/ui);
+  - Verificação de tipos via `npm run typecheck` com 0 erros.
+
+### Sub-Etapa 20.4: Refatoração da Aba 5 (Auditoria de Entrada) com Tabela Enxuta de 7 Colunas, ItemDetailDrawer e StickyActionBar
+- **Tabela Enxuta de Itens (`components/TabelaItensExtracao.tsx`):**
+  - Reestruturação da grade para exatamente 7 colunas (`Item / Cód.`, `Descrição / NCM (Siscomex)`, `CFOP / Destinação`, `Vlr. Operação`, `ICMS / ST / DIFAL`, `Crédito Efetivo`, `Ações`);
+  - Formatação e alinhamento de valores com `font-variant-numeric: tabular-nums` e touch targets mínimos de 44px em botões e controles;
+  - Integração do `ItemDetailDrawer` (500px no desktop) com foco gerenciado, tecla `Escape` e 4 abas estruturadas: *Tributos*, *DIFAL & ST*, *Créditos (CPC 16 / Não Cumulatividade)* e *Base Legal & Parecer* (com `LegalCitationBlock`);
+  - Eliminação de botões concorrentes e redundantes em cada linha da tabela.
+- **Painel de Auditoria de Entrada (`components/AuditoriaEntrada.tsx`):**
+  - Conexão nativa com `useNivelOperacional` para adaptação fluida de densidade entre níveis *gerencial*, *operacional* e *sênior*;
+  - `KpiStrip` superior com 4 macro-indicadores em tempo real: Total de Itens/XMLs, Divergências Críticas, Total ICMS/ST/DIFAL e Crédito Efetivo Estimado;
+  - Encapsulamento de camadas avançadas (auditoria RFB, motor RTC bitemporal e detalhes analíticos) em `ProgressiveSection` com expansão local sob demanda;
+  - `StickyActionBar` fixa no rodapé estabelecendo a regra de ouro de exatamente 1 CTA primário sólido e inequívoco por estado de tela (`Importar XML` -> `Executar Orquestração Completa` -> `Exportar Laudo Pericial`), complementada por região `aria-live="polite"`.
+- **Painel NFS-e e DANFSe Nacional (`components/PainelNfseDanfse.tsx`):**
+  - Adaptação completa aos 3 níveis operacionais com alvos de ação >= 44px;
+  - Destaque ao CTA primário sólido de emissão (`Gerar DANFSe Oficial (PDF)`) com feedback `aria-busy` e alto contraste;
+  - Encapsulamento de custódia XML, dados de RPS e auditoria em `ProgressiveSection`.
+- **Testes Automatizados & Qualidade (DoD):**
+  - Nova Suíte 44 de Testes (`tests/ux-auditoria-entrada-niveis.test.mjs`) validando contratos estruturais, WCAG AA, e renderização condicional por nível;
+  - 100% de conformidade com `node scripts/hookcheck.mjs` (components, app e components/ui);
+  - Verificação de tipos via `npm run typecheck` com 0 erros.
+
+### Sub-Etapa 20.3: Hook de Nível Operacional, 6 Componentes UI Reutilizáveis e Refatoração do App Shell
+- **Hook Persistente de Nível Operacional (`lib/hooks/useNivelOperacional.ts`):**
+  - Implementação de `useNivelOperacional` com os tipos `'gerencial' | 'operacional' | 'senior'`;
+  - Persistência em `localStorage` sob a chave `'portela_nivel_operacional_v1'` com fallback gracioso para `'operacional'`;
+  - Sincronização multi-abas e reativa via evento customizado `'nivel_operacional_changed'` e nativo `'storage'`;
+  - Exposição de `{ nivel, setNivel, isGerencial, isOperacional, isSenior, isHydrated }` com declaração estrita de hooks no topo.
+- **6 Componentes Base Reutilizáveis em `components/ui/` com WCAG 2.1 AA:**
+  - `NivelOperacionalSwitcher.tsx`: Controle segmentado acessível (`role="radiogroup"`, `role="radio"`, `aria-checked`), navegação por teclado (Setas, Home, End) e alvos com altura mínima >= 44px;
+  - `KpiStrip.tsx`: Faixa de indicadores com `font-variant-numeric: tabular-nums`, semáforo fiscal combinando cor + ícone SVG + rótulo textual e barra consolidada de diagnóstico de risco opcional;
+  - `StickyActionBar.tsx`: Barra de ação fixa no rodapé da viewport com exatamente 1 CTA primário sólido de alto contraste (alvo >= 44px, `aria-busy`), ações secundárias discretas, resumo contextual e região `aria-live="polite"`;
+  - `ProgressiveSection.tsx`: Seção com divulgação progressiva por nível operacional e suporte à expansão sob demanda pontual de 1 clique (`aria-expanded`, `aria-controls`) sem alterar o nível global da aplicação;
+  - `ItemDetailDrawer.tsx`: Painel lateral retrátil (500px em desktop) com `role="dialog"`, `aria-modal="true"`, foco acessível, fechamento por `Esc` e abas parametrizáveis;
+  - `LegalCitationBlock.tsx`: Bloco semântico de citação e memória de cálculo (RICMS/PR, LC 214/2025, NESH/RGI, Consultas SEFA/PR, ADR003) expandido no nível sênior e colapsável com 1 clique nos demais níveis;
+  - `index.ts`: Barrel export unificado para todo o ecossistema `components/ui`.
+- **Refatoração do App Shell (`app/page.tsx`):**
+  - Substituição do banner inflado por cabeçalho enxuto (~56px) com identidade visual Portela, chip dinâmico da empresa ativa e seletor `NivelOperacionalSwitcher`;
+  - Redução do *dead space* vertical de 465px para ~100px, liberando +365px imediatos para tabelas em 1366x768;
+  - Barra de navegação compacta (~44px) com alvos de clique acessíveis e região global `aria-live="polite"`;
+  - Reserva de altura anti-CLS (`minHeight: 600px`) para mitigar Cumulative Layout Shift durante o carregamento de abas dinâmicas `next/dynamic`.
+- **Testes Automatizados & Qualidade (DoD):**
+  - Nova Suíte 43 de Testes (`tests/ux-fundacao-componentes.test.mjs`) integrada no `scripts/test.mjs`;
+  - 100% de conformidade com `node scripts/hookcheck.mjs` (components, app e components/ui);
+  - Verificação de tipos via `npm run typecheck` com 0 erros.
+
+---
+
 ## [6.0.0] - 2026-11-22 — Ciclo 6 Concluído: Precisão Numérica RFB ADR003, Motores Sidecars RTC, NFS-e Nacional, Orquestrador DAG e Paridade Oficial
 **Período de Execução:** Novembro/2026  
 **Responsável Técnico:** Arquiteto Tributário Sênior & Engenheiro Full-Stack TypeScript  

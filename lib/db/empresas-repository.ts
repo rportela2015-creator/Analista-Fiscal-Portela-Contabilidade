@@ -4,7 +4,14 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { getDbPool, isDatabaseConfigured } from './client';
+import {
+  getDbPool,
+  isDatabaseAccessible,
+  isDatabaseConfigured,
+  markDatabaseOffline,
+  readEmpresasStoreJson,
+  writeEmpresasStoreJsonAtomic,
+} from './client';
 import {
   Empresa,
   PerfilTributario,
@@ -448,6 +455,309 @@ export class InMemoryEmpresasRepository implements EmpresasRepository {
 }
 
 // ============================================================================
+// IMPLEMENTAÇÃO EM ARQUIVO JSON ATÔMICO (MODO NATIVO WINDOWS SEM DOCKER)
+// ============================================================================
+
+export class JsonFileEmpresasRepository implements EmpresasRepository {
+  private readonly storePath?: string;
+  private writeQueue: Promise<unknown> = Promise.resolve();
+
+  constructor(storePath?: string) {
+    this.storePath = storePath;
+  }
+
+  private enqueue<T>(fn: () => Promise<T>): Promise<T> {
+    const next = this.writeQueue.then(fn, fn);
+    this.writeQueue = next.catch(() => undefined);
+    return next;
+  }
+
+  private async carregarEstado(): Promise<{
+    empresas: Empresa[];
+    perfis: Record<string, PerfilTributario[]>;
+  }> {
+    const data = await readEmpresasStoreJson<Empresa, PerfilTributario>(this.storePath);
+    return {
+      empresas: Array.isArray(data.empresas) ? data.empresas : [],
+      perfis: data.perfis && typeof data.perfis === 'object' ? data.perfis : {},
+    };
+  }
+
+  private async persistirEstado(
+    empresas: Empresa[],
+    perfis: Record<string, PerfilTributario[]>
+  ): Promise<void> {
+    await writeEmpresasStoreJsonAtomic<Empresa, PerfilTributario>(
+      {
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        empresas,
+        perfis,
+      },
+      this.storePath
+    );
+  }
+
+  async listar(escritorioId: string = ESCRITORIO_PADRAO_ID): Promise<Empresa[]> {
+    const { empresas, perfis } = await this.carregarEstado();
+    return empresas
+      .filter((emp) => !escritorioId || emp.escritorioId === escritorioId)
+      .map((emp) => ({ ...emp, perfis: perfis[emp.id] || [] }))
+      .sort((a, b) => a.razaoSocial.localeCompare(b.razaoSocial));
+  }
+
+  async buscarPorId(id: string): Promise<Empresa | null> {
+    const { empresas, perfis } = await this.carregarEstado();
+    const emp = empresas.find((e) => e.id === id);
+    if (!emp) return null;
+    return { ...emp, perfis: perfis[emp.id] || [] };
+  }
+
+  async buscarPorCnpj(cnpj: string): Promise<Empresa | null> {
+    const clean = sanitizarCnpj(cnpj);
+    const { empresas, perfis } = await this.carregarEstado();
+    const emp = empresas.find((e) => sanitizarCnpj(e.cnpj) === clean);
+    if (!emp) return null;
+    return { ...emp, perfis: perfis[emp.id] || [] };
+  }
+
+  async criar(input: EmpresaInput): Promise<Empresa> {
+    return this.enqueue(async () => {
+      const { empresas, perfis } = await this.carregarEstado();
+      const cleanCnpj = sanitizarCnpj(input.cnpj);
+      const existente = empresas.find((e) => sanitizarCnpj(e.cnpj) === cleanCnpj);
+      if (existente) {
+        throw new Error(`CNPJ ${cleanCnpj} já cadastrado para a empresa ${existente.razaoSocial}`);
+      }
+
+      const agora = new Date().toISOString();
+      const id = randomUUID();
+      const empresa: Empresa = {
+        id,
+        escritorioId: input.escritorioId || ESCRITORIO_PADRAO_ID,
+        cnpj: cleanCnpj,
+        razaoSocial: input.razaoSocial,
+        nomeFantasia: input.nomeFantasia || null,
+        inscricaoEstadual: input.inscricaoEstadual || null,
+        uf: input.uf || 'PR',
+        municipioIbge: input.municipioIbge || null,
+        ativo: input.ativo !== false,
+        metadata: input.metadata || null,
+        criadoEm: agora,
+        atualizadoEm: agora,
+        perfis: [],
+      };
+
+      const perfisLista: PerfilTributario[] = [];
+      if (input.perfilInicial) {
+        const pInput = input.perfilInicial;
+        const novoPerfil: PerfilTributario = {
+          id: randomUUID(),
+          empresaId: id,
+          escritorioId: empresa.escritorioId,
+          regimeTributario: pInput.regimeTributario,
+          vigenciaInicio: pInput.vigenciaInicio,
+          vigenciaFim: pInput.vigenciaFim || null,
+          aliquotasEfetivas: pInput.aliquotasEfetivas || {},
+          simplesOptanteHibrido2027: Boolean(pInput.simplesOptanteHibrido2027),
+          beneficiosParana: pInput.beneficiosParana || {
+            diferimentoParcialArt28: true,
+            optanteRotSt: false,
+            reducoesBcAtivas: [],
+          },
+          reformaTributaria: pInput.reformaTributaria || {
+            optanteSplitPayment2026: false,
+            creditoPresumidoIbsCbs: false,
+          },
+          observacoes: pInput.observacoes,
+          criadoEm: agora,
+          atualizadoEm: agora,
+        };
+        perfisLista.push(novoPerfil);
+      }
+
+      empresas.push({ ...empresa, perfis: undefined });
+      perfis[id] = perfisLista;
+      await this.persistirEstado(empresas, perfis);
+
+      return { ...empresa, perfis: perfisLista };
+    });
+  }
+
+  async atualizar(id: string, dados: Partial<EmpresaInput>): Promise<Empresa | null> {
+    return this.enqueue(async () => {
+      const { empresas, perfis } = await this.carregarEstado();
+      const idx = empresas.findIndex((e) => e.id === id);
+      if (idx < 0) return null;
+
+      const emp = { ...empresas[idx] };
+      const agora = new Date().toISOString();
+      if (dados.razaoSocial !== undefined) emp.razaoSocial = dados.razaoSocial;
+      if (dados.nomeFantasia !== undefined) emp.nomeFantasia = dados.nomeFantasia;
+      if (dados.inscricaoEstadual !== undefined) emp.inscricaoEstadual = dados.inscricaoEstadual;
+      if (dados.uf !== undefined) emp.uf = dados.uf;
+      if (dados.municipioIbge !== undefined) emp.municipioIbge = dados.municipioIbge;
+      if (dados.ativo !== undefined) emp.ativo = dados.ativo;
+      if (dados.metadata !== undefined) emp.metadata = dados.metadata;
+      emp.atualizadoEm = agora;
+
+      empresas[idx] = emp;
+      await this.persistirEstado(empresas, perfis);
+      return { ...emp, perfis: perfis[id] || [] };
+    });
+  }
+
+  async adicionarPerfil(empresaId: string, input: PerfilTributarioInput): Promise<PerfilTributario> {
+    return this.enqueue(async () => {
+      const { empresas, perfis } = await this.carregarEstado();
+      const emp = empresas.find((e) => e.id === empresaId);
+      if (!emp) throw new Error(`Empresa ${empresaId} não encontrada`);
+
+      const lista = perfis[empresaId] || [];
+      const validacao = validarSobreposicaoVigencias(
+        lista,
+        input,
+        Boolean(input.encerrarAnteriorAutomaticamente)
+      );
+
+      if (!validacao.valido) {
+        throw new Error(validacao.erro || 'Conflito de sobreposição temporal de vigência.');
+      }
+
+      const atualizados = validacao.perfisAjustados ? [...validacao.perfisAjustados] : [...lista];
+      const agora = new Date().toISOString();
+      const novoPerfil: PerfilTributario = {
+        id: randomUUID(),
+        empresaId,
+        escritorioId: emp.escritorioId,
+        regimeTributario: input.regimeTributario,
+        vigenciaInicio: input.vigenciaInicio,
+        vigenciaFim: input.vigenciaFim || null,
+        aliquotasEfetivas: input.aliquotasEfetivas || {},
+        simplesOptanteHibrido2027: Boolean(input.simplesOptanteHibrido2027),
+        beneficiosParana: input.beneficiosParana || {
+          diferimentoParcialArt28: true,
+          optanteRotSt: false,
+          reducoesBcAtivas: [],
+        },
+        reformaTributaria: input.reformaTributaria || {
+          optanteSplitPayment2026: false,
+          creditoPresumidoIbsCbs: false,
+        },
+        observacoes: input.observacoes,
+        criadoEm: agora,
+        atualizadoEm: agora,
+      };
+
+      atualizados.push(novoPerfil);
+      atualizados.sort((a, b) => b.vigenciaInicio.localeCompare(a.vigenciaInicio));
+      perfis[empresaId] = atualizados;
+
+      await this.persistirEstado(empresas, perfis);
+      return novoPerfil;
+    });
+  }
+
+  async listarPerfis(empresaId: string): Promise<PerfilTributario[]> {
+    const { perfis } = await this.carregarEstado();
+    return [...(perfis[empresaId] || [])];
+  }
+
+  async buscarPerfilVigente(empresaId: string, dataISO: string): Promise<PerfilTributario | null> {
+    const perfis = await this.listarPerfis(empresaId);
+    return resolverPerfilVigenteNaData(perfis, dataISO);
+  }
+}
+
+// ============================================================================
+// WRAPPER DUAL-MODE (PostgreSQL quando acessível + fallback JSON atômico)
+// ============================================================================
+
+export class DualModeEmpresasRepository implements EmpresasRepository {
+  constructor(
+    private readonly pgRepo: PostgresEmpresasRepository,
+    private readonly jsonRepo: JsonFileEmpresasRepository
+  ) {}
+
+  private async executarComFallback<T>(
+    opPg: () => Promise<T>,
+    opJson: () => Promise<T>
+  ): Promise<T> {
+    if (!isDatabaseAccessible()) {
+      return opJson();
+    }
+    try {
+      return await opPg();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isConnError =
+        /ECONNREFUSED|ETIMEDOUT|ENOTFOUND|ECONNRESET|timeout|terminating connection|connect/i.test(msg);
+      if (isConnError) {
+        markDatabaseOffline();
+        return opJson();
+      }
+      throw err;
+    }
+  }
+
+  listar(escritorioId?: string): Promise<Empresa[]> {
+    return this.executarComFallback(
+      () => this.pgRepo.listar(escritorioId),
+      () => this.jsonRepo.listar(escritorioId)
+    );
+  }
+
+  buscarPorId(id: string): Promise<Empresa | null> {
+    return this.executarComFallback(
+      () => this.pgRepo.buscarPorId(id),
+      () => this.jsonRepo.buscarPorId(id)
+    );
+  }
+
+  buscarPorCnpj(cnpj: string): Promise<Empresa | null> {
+    return this.executarComFallback(
+      () => this.pgRepo.buscarPorCnpj(cnpj),
+      () => this.jsonRepo.buscarPorCnpj(cnpj)
+    );
+  }
+
+  criar(input: EmpresaInput): Promise<Empresa> {
+    return this.executarComFallback(
+      () => this.pgRepo.criar(input),
+      () => this.jsonRepo.criar(input)
+    );
+  }
+
+  atualizar(id: string, dados: Partial<EmpresaInput>): Promise<Empresa | null> {
+    return this.executarComFallback(
+      () => this.pgRepo.atualizar(id, dados),
+      () => this.jsonRepo.atualizar(id, dados)
+    );
+  }
+
+  adicionarPerfil(empresaId: string, input: PerfilTributarioInput): Promise<PerfilTributario> {
+    return this.executarComFallback(
+      () => this.pgRepo.adicionarPerfil(empresaId, input),
+      () => this.jsonRepo.adicionarPerfil(empresaId, input)
+    );
+  }
+
+  listarPerfis(empresaId: string): Promise<PerfilTributario[]> {
+    return this.executarComFallback(
+      () => this.pgRepo.listarPerfis(empresaId),
+      () => this.jsonRepo.listarPerfis(empresaId)
+    );
+  }
+
+  buscarPerfilVigente(empresaId: string, dataISO: string): Promise<PerfilTributario | null> {
+    return this.executarComFallback(
+      () => this.pgRepo.buscarPerfilVigente(empresaId, dataISO),
+      () => this.jsonRepo.buscarPerfilVigente(empresaId, dataISO)
+    );
+  }
+}
+
+// ============================================================================
 // HELPERS DE MAPEAMENTO SQL
 // ============================================================================
 
@@ -517,20 +827,30 @@ function mapRowToPerfil(row: Record<string, unknown>): PerfilTributario {
 
 let singletonRepo: EmpresasRepository | null = null;
 let inMemoryInstance: InMemoryEmpresasRepository | null = null;
+let jsonFileInstance: JsonFileEmpresasRepository | null = null;
 
 export function getEmpresasRepository(): EmpresasRepository {
   if (singletonRepo) return singletonRepo;
 
+  if (!jsonFileInstance) {
+    jsonFileInstance = new JsonFileEmpresasRepository();
+  }
+
   if (isDatabaseConfigured()) {
-    singletonRepo = new PostgresEmpresasRepository();
+    singletonRepo = new DualModeEmpresasRepository(
+      new PostgresEmpresasRepository(),
+      jsonFileInstance
+    );
   } else {
-    if (!inMemoryInstance) {
-      inMemoryInstance = new InMemoryEmpresasRepository();
-    }
-    singletonRepo = inMemoryInstance;
+    singletonRepo = jsonFileInstance;
   }
 
   return singletonRepo;
+}
+
+export function resetEmpresasRepositorySingletonForTests(): void {
+  singletonRepo = null;
+  jsonFileInstance = null;
 }
 
 export function getInMemoryEmpresasRepositoryForTests(): InMemoryEmpresasRepository {

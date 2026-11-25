@@ -15,6 +15,7 @@ const nextConfig = {
     '*': [
       './services/**',
       './data/raw/**',
+      './data/db/**',
       './db/**',
       './colab/**',
       './**/.git/**',
@@ -28,6 +29,7 @@ const nextConfig = {
         ignored: [
           '**/services/**',
           '**/data/raw/**',
+          '**/data/db/**',
           '**/db/**',
           '**/colab/**',
           '**/.git/**',

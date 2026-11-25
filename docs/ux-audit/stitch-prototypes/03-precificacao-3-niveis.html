@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analista Fiscal Portela — Protótipo: Precificação & Margens (3 Níveis)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Portela Design System Tokens */
+      --color-brand-primary: #1e3a8a;
+      --color-brand-primary-hover: #1e40af;
+      --color-brand-primary-light: #eff6ff;
+      --color-brand-accent: #0284c7;
+      
+      --color-bg-canvas: #f8fafc;
+      --color-bg-card: #ffffff;
+      --color-bg-subtle: #f1f5f9;
+      --color-border: #e2e8f0;
+      --color-border-hover: #cbd5e1;
+
+      --color-text-main: #0f172a;
+      --color-text-muted: #64748b;
+      --color-text-subtle: #94a3b8;
+
+      --color-success: #16a34a;
+      --color-success-bg: #dcfce7;
+      --color-warning: #d97706;
+      --color-warning-bg: #fef3c7;
+      --color-danger: #dc2626;
+      --color-danger-bg: #fee2e2;
+      --color-info: #0284c7;
+      --color-info-bg: #e0f2fe;
+
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-drawer: -4px 0 24px rgba(0, 0, 0, 0.15);
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+
+      --header-height: 56px;
+      --nav-height: 44px;
+      --sticky-bar-height: 64px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--color-bg-canvas);
+      color: var(--color-text-main);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: calc(var(--sticky-bar-height) + 24px);
+    }
+
+    .tabular-nums {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* HEADER COMPACTO (56px) */
+    .app-header {
+      height: var(--header-height);
+      background-color: var(--color-bg-card);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-brand-primary);
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    /* Seletor 3 Níveis */
+    .level-switcher {
+      display: flex;
+      background-color: var(--color-bg-subtle);
+      padding: 3px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+    }
+
+    .level-btn {
+      border: none;
+      background: transparent;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .level-btn.active {
+      background-color: var(--color-bg-card);
+      color: var(--color-brand-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .level-badge-tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: var(--radius-full);
+      background: var(--color-brand-primary-light);
+      color: var(--color-brand-primary);
+    }
+
+    /* NAV TABS (44px) */
+    .app-nav {
+      height: var(--nav-height);
+      background-color: var(--color-bg-card);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 8px;
+    }
+
+    .nav-tab {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .nav-tab:hover {
+      color: var(--color-text-main);
+    }
+
+    .nav-tab.active {
+      color: var(--color-brand-primary);
+      border-bottom-color: var(--color-brand-primary);
+    }
+
+    /* MAIN CONTAINER */
+    .main-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+
+    /* MODO GERENCIAL */
+    .view-gerencial {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .kpi-grid-gerencial {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .kpi-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-card.highlight {
+      border-left: 4px solid var(--color-brand-primary);
+    }
+
+    .kpi-card.success {
+      border-left: 4px solid var(--color-success);
+    }
+
+    .kpi-card.warning {
+      border-left: 4px solid var(--color-warning);
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 700;
+      margin: 6px 0 2px 0;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    /* Gráfico de Comparação de Regimes */
+    .regime-comparison-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chart-bars-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .chart-bar-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 140px;
+      align-items: center;
+      gap: 16px;
+      font-size: 13px;
+    }
+
+    .bar-track {
+      background: #e2e8f0;
+      height: 18px;
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width 0.4s ease;
+    }
+
+    /* MODO OPERACIONAL (Default) */
+    .view-operacional {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Formulário de Premissas Compacto */
+    .assumptions-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr) auto;
+      gap: 16px;
+      align-items: end;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .input-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .input-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+    }
+
+    .input-box {
+      height: 38px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 0 12px;
+      font-size: 13px;
+      background: #ffffff;
+      color: var(--color-text-main);
+      font-family: inherit;
+    }
+
+    .input-box:focus {
+      outline: none;
+      border-color: var(--color-brand-primary);
+      box-shadow: 0 0 0 2px var(--color-brand-primary-light);
+    }
+
+    /* TABELA DE FORMAÇÃO DE PREÇO (CPC 16) */
+    .table-container {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .pricing-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .pricing-table th {
+      background-color: #f8fafc;
+      padding: 12px 14px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      border-bottom: 1px solid var(--color-border);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pricing-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: middle;
+    }
+
+    .pricing-table tr:hover {
+      background-color: #f8fafc;
+    }
+
+    .badge-tag {
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-success { background: var(--color-success-bg); color: var(--color-success); }
+    .badge-warning { background: var(--color-warning-bg); color: var(--color-warning); }
+    .badge-danger  { background: var(--color-danger-bg);  color: var(--color-danger); }
+    .badge-neutral { background: var(--color-bg-subtle);  color: var(--color-text-muted); }
+    .badge-accent  { background: var(--color-brand-primary-light); color: var(--color-brand-primary); }
+
+    .btn-simulate {
+      background: #ffffff;
+      border: 1px solid var(--color-border-hover);
+      color: var(--color-brand-primary);
+      padding: 5px 10px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-simulate:hover {
+      background: var(--color-brand-primary-light);
+      border-color: var(--color-brand-primary);
+    }
+
+    /* MODO SÊNIOR / PERICIAL */
+    .view-senior {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .expert-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .expert-card-header {
+      padding: 14px 20px;
+      background: #f8fafc;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .expert-card-body {
+      padding: 20px;
+      font-size: 12px;
+    }
+
+    .dual-stack-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .stack-box {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      background: #ffffff;
+    }
+
+    .stack-box.active-regime {
+      border-color: var(--color-brand-primary);
+      background: var(--color-brand-primary-light);
+    }
+
+    .stack-title {
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* STICKY ACTION BAR */
+    .sticky-action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--sticky-bar-height);
+      background-color: var(--color-bg-card);
+      border-top: 1px solid var(--color-border);
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 50;
+    }
+
+    .bar-summary {
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .bar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-solid-primary {
+      background-color: var(--color-brand-primary);
+      color: white;
+      border: none;
+      padding: 0 20px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-solid-primary:hover {
+      background-color: var(--color-brand-primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: #ffffff;
+      color: var(--color-text-main);
+      border: 1px solid var(--color-border);
+      padding: 0 16px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--color-bg-subtle);
+    }
+
+    /* DRAWER DE SIMULAÇÃO */
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(2px);
+      z-index: 90;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .drawer-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
+    .simulation-drawer {
+      position: fixed;
+      top: 0;
+      right: -520px;
+      width: 500px;
+      max-width: 90vw;
+      height: 100vh;
+      background: #ffffff;
+      box-shadow: var(--shadow-drawer);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .simulation-drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8fafc;
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .drawer-close {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--color-text-muted);
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+    }
+
+    .drawer-content {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .calc-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+    }
+
+    .calc-row.total {
+      border-top: 1px solid var(--color-border);
+      margin-top: 6px;
+      padding-top: 8px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. HEADER COMPACTO (56px) -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="logo-badge">FP</div>
+      <div>
+        <div class="brand-title">Analista Fiscal Portela</div>
+        <div class="brand-sub">Comércio de Alimentos Pinheiro Ltda • Formação de Preço & Gestão de Margem</div>
+      </div>
+    </div>
+
+    <!-- Seletor 3 Níveis -->
+    <div class="level-switcher" role="tablist" aria-label="Nível de Detalhamento Operacional">
+      <button class="level-btn" id="btn-gerencial" onclick="setLevel('gerencial')">
+        <span>Gerencial</span>
+      </button>
+      <button class="level-btn active" id="btn-operacional" onclick="setLevel('operacional')">
+        <span>Operacional</span>
+        <span class="level-badge-tag">Padrão</span>
+      </button>
+      <button class="level-btn" id="btn-senior" onclick="setLevel('senior')">
+        <span>Sênior / Pericial</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. NAV TABS (44px) -->
+  <nav class="app-nav">
+    <div class="nav-tab">Painel Geral</div>
+    <div class="nav-tab">NCM & Classificação</div>
+    <div class="nav-tab">Regras & Matriz</div>
+    <div class="nav-tab">Reforma Tributária</div>
+    <div class="nav-tab">Auditoria de Entrada</div>
+    <div class="nav-tab active">Precificação & Margens</div>
+    <div class="nav-tab">NFS-e & DPS</div>
+    <div class="nav-tab">Laudo Pericial</div>
+  </nav>
+
+  <!-- 3. CONTAINER PRINCIPAL -->
+  <main class="main-container">
+
+    <!-- ==================== MODO GERENCIAL ==================== -->
+    <section id="view-gerencial" class="view-gerencial">
+      <!-- 4 Macro KPIs Financeiros -->
+      <div class="kpi-grid-gerencial">
+        <div class="kpi-card highlight">
+          <div class="kpi-label">Preço Médio Sugerido</div>
+          <div class="kpi-value tabular-nums" style="color: var(--color-brand-primary);">R$ 145,00</div>
+          <div class="kpi-sub">Markup multiplicador: 1.757x</div>
+        </div>
+        <div class="kpi-card success">
+          <div class="kpi-label">Margem Líquida Real</div>
+          <div class="kpi-value tabular-nums" style="color: var(--color-success);">18,4%</div>
+          <div class="kpi-sub">R$ 26,68 líquido por unidade vendida</div>
+        </div>
+        <div class="kpi-card warning">
+          <div class="kpi-label">Carga Tributária Efetiva</div>
+          <div class="kpi-value tabular-nums" style="color: var(--color-warning);">31,2%</div>
+          <div class="kpi-sub">ICMS + PIS/COFINS + IRPJ/CSLL (Lucro Real)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Regime Tributário Ótimo</div>
+          <div class="kpi-value" style="font-size: 18px; font-weight: 700; color: #1e3a8a;">Lucro Real</div>
+          <div class="kpi-sub">Economia estimada: <strong>R$ 14.200/ano</strong> vs Presumido</div>
+        </div>
+      </div>
+
+      <!-- Gráfico de Comparação de Regimes Tributários -->
+      <div class="regime-comparison-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <strong style="font-size: 14px;">Comparativo de Margem Líquida por Regime Tributário</strong>
+            <div style="font-size: 12px; color: var(--color-text-muted);">Simulação baseada no mix de vendas e créditos de entrada homologados</div>
+          </div>
+          <button class="btn-simulate" onclick="openDrawer('Mix Global - Comparativo de Regimes')">Ver Premissas do Cálculo</button>
+        </div>
+
+        <div class="chart-bars-container">
+          <div class="chart-bar-row">
+            <div><strong>Lucro Real (Atual)</strong><br><span style="font-size: 11px; color: var(--color-text-muted);">Crédito PIS/COFINS 9,25%</span></div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 74%; background-color: var(--color-brand-primary);" title="Margem 18.4%"></div>
+            </div>
+            <div style="text-align: right;"><strong class="tabular-nums">18,4%</strong> <span style="font-size: 11px; color: var(--color-success);">(Ótimo)</span></div>
+          </div>
+
+          <div class="chart-bar-row">
+            <div><strong>Lucro Presumido</strong><br><span style="font-size: 11px; color: var(--color-text-muted);">Sem crédito cumulativo 3,65%</span></div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 61%; background-color: var(--color-warning);" title="Margem 15.2%"></div>
+            </div>
+            <div style="text-align: right;"><strong class="tabular-nums">15,2%</strong> <span style="font-size: 11px; color: var(--color-danger);">(-3,2 p.p.)</span></div>
+          </div>
+
+          <div class="chart-bar-row">
+            <div><strong>Simples Nacional (Anexo I)</strong><br><span style="font-size: 11px; color: var(--color-text-muted);">Faixa 5 (R$ 3,6M/ano)</span></div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 53%; background-color: var(--color-danger);" title="Margem 13.1%"></div>
+            </div>
+            <div style="text-align: right;"><strong class="tabular-nums">13,1%</strong> <span style="font-size: 11px; color: var(--color-danger);">(-5,3 p.p.)</span></div>
+          </div>
+
+          <div class="chart-bar-row">
+            <div><strong>Cenário 2027 (Reforma IBS/CBS)</strong><br><span style="font-size: 11px; color: var(--color-text-muted);">Alíquota Padrão 26,5% Não-Cumulativa</span></div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: 79%; background-color: var(--color-success);" title="Margem 19.8%"></div>
+            </div>
+            <div style="text-align: right;"><strong class="tabular-nums">19,8%</strong> <span style="font-size: 11px; color: var(--color-success);">(+1,4 p.p.)</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== MODO OPERACIONAL (Default) ==================== -->
+    <section id="view-operacional" class="view-operacional">
+      <!-- Premissas Rápidas de Cálculo -->
+      <div class="assumptions-card">
+        <div class="input-field">
+          <label class="input-label">Custo Aquisição (R$)</label>
+          <input type="text" class="input-box tabular-nums" value="82,50">
+        </div>
+        <div class="input-field">
+          <label class="input-label">Frete / Seguro (R$)</label>
+          <input type="text" class="input-box tabular-nums" value="5,00">
+        </div>
+        <div class="input-field">
+          <label class="input-label">Crédito ICMS Entrada (%)</label>
+          <input type="text" class="input-box tabular-nums" value="12,0%">
+        </div>
+        <div class="input-field">
+          <label class="input-label">DIFAL PR Entrada (%)</label>
+          <input type="text" class="input-box tabular-nums" value="7,5%">
+        </div>
+        <div class="input-field">
+          <label class="input-label">Margem Líquida Alvo (%)</label>
+          <input type="text" class="input-box tabular-nums" value="18,0%">
+        </div>
+        <button class="btn-solid-primary" style="height: 38px; padding: 0 16px;" onclick="alert('Recalculando tabela com novas premissas...')">
+          Recalcular Preços
+        </button>
+      </div>
+
+      <!-- Tabela Enxuta de Formação de Preço (CPC 16 / NBC TG 16 R1) -->
+      <div class="table-container">
+        <table class="pricing-table">
+          <thead>
+            <tr>
+              <th>Produto / Código</th>
+              <th style="text-align: right;">Custo Líquido</th>
+              <th style="text-align: right;">Despesas Var. (5%)</th>
+              <th style="text-align: right;">Tributos Venda (31,2%)</th>
+              <th style="text-align: right;">Preço Sugerido</th>
+              <th style="text-align: right;">Margem Líquida</th>
+              <th style="text-align: center; width: 120px;">Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>Feijão Carioca 1kg (Fardo c/ 10)</strong><br>
+                <span style="font-size: 11px; color: var(--color-text-muted);">NCM 0713.33.99 • Cesta Básica PR</span>
+              </td>
+              <td style="text-align: right;" class="tabular-nums">R$ 38,50</td>
+              <td style="text-align: right;" class="tabular-nums">R$ 2,75</td>
+              <td style="text-align: right;" class="tabular-nums">R$ 5,50 (10%)</td>
+              <td style="text-align: right; font-weight: 700; color: var(--color-brand-primary);" class="tabular-nums">R$ 55,00</td>
+              <td style="text-align: right;" class="tabular-nums"><span class="badge-tag badge-success">R$ 8,25 (15%)</span></td>
+              <td style="text-align: center;">
+                <button class="btn-simulate" onclick="openDrawer('Feijão Carioca')">Simular</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <strong>Óleo de Soja 900ml (Caixa c/ 20)</strong><br>
+                <span style="font-size: 11px; color: var(--color-text-muted);">NCM 1507.90.11 • ICMS 12% PR</span>
+              </td>
+              <td style="text-align: right;" class="tabular-nums">R$ 87,50</td>
+              <td style="text-align: right;" class="tabular-nums">R$ 6,50</td>
+              <td style="text-align: right;" class="tabular-nums">R$ 39,26 (30,2%)</td>
+              <td style="text-align: right; font-weight: 700; color: var(--color-brand-primary);" class="tabular-nums">R$ 130,00</td>
+              <td style="text-align: right;" class="tabular-nums"><span class="badge-tag badge-success">R$ 24,00 (18,5%)</span></td>
+              <td style="text-align: center;">
+                <button class="btn-simulate" onclick="openDrawer('Óleo de Soja')">Simular</button>
+              </td>
+            </tr>
+            <tr style="background-color: #fffbeb;">
+              <td>
+                <strong>Bebida Láctea Morango (Pack c/ 12)</strong><br>
+                <span style="font-size: 11px; color: #b45309;">NCM 2202.99.00 • DIFAL Base Dupla PR</span>
+              </td>
+              <td style="text-align: right;" class="tabular-nums">R$ 42,80</td>
+              <td style="text-align: right;" class="tabular-nums">R$ 3,60</td>
+              <td style="text-align: right;" class="tabular-nums">R$ 24,48 (34,0%)</td>
+              <td style="text-align: right; font-weight: 700; color: #b45309;" class="tabular-nums">R$ 72,00</td>
+              <td style="text-align: right;" class="tabular-nums"><span class="badge-tag badge-warning">R$ 9,36 (13,0%)</span></td>
+              <td style="text-align: center;">
+                <button class="btn-simulate" onclick="openDrawer('Bebida Láctea Morango')">Simular</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== MODO SÊNIOR / PERICIAL ==================== -->
+    <section id="view-senior" class="view-senior">
+      <!-- Simulação Dual-Stack 2027 (Legado vs Reforma LC 214/2025) -->
+      <div class="expert-card">
+        <div class="expert-card-header">
+          <span>Transição Dual-Stack 2027 (Legado PIS/COFINS/ICMS vs IBS/CBS)</span>
+          <span class="badge-tag badge-accent">Art. 8º e 47 da LC 214/2025</span>
+        </div>
+        <div class="expert-card-body">
+          <div class="dual-stack-grid">
+            <div class="stack-box">
+              <div class="stack-title">
+                <span>1. Sistema Atual (Legado 2026)</span>
+                <span class="badge-tag badge-neutral">Cumulativo / Misto</span>
+              </div>
+              <p style="margin-bottom: 8px;">Estrutura fragmentada com créditos parciais e glosas interestaduais:</p>
+              <ul style="padding-left: 18px; line-height: 1.8;">
+                <li>ICMS 19,5% (Paraná) com cálculo "por dentro"</li>
+                <li>PIS/COFINS 9,25% (Lucro Real Não-Cumulativo)</li>
+                <li>DIFAL com Base Dupla (Dec. 7.871/17) gerando custo financeiro imediato</li>
+                <li><strong>Custo Tributário Total Embutido: R$ 45,24 por unidade</strong></li>
+              </ul>
+            </div>
+
+            <div class="stack-box active-regime">
+              <div class="stack-title">
+                <span style="color: var(--color-brand-primary);">2. Sistema Reforma (2027 - 2033)</span>
+                <span class="badge-tag badge-success">Não-Cumulatividade Plena</span>
+              </div>
+              <p style="margin-bottom: 8px;">Princípio do Destino e Creditamento Integral na Liquidação:</p>
+              <ul style="padding-left: 18px; line-height: 1.8;">
+                <li>IBS + CBS Alíquota de Teste 2027: <strong>0,9% CBS + 0,1% IBS</strong></li>
+                <li>Fim da Base Dupla e Guerra Fiscal do DIFAL</li>
+                <li>Split Payment automático: crédito compensável em D+1 após quitação</li>
+                <li><strong>Ganho de Margem Operacional: +1,4% para produtos alimentícios</strong></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mesa de Compras PR & Custo de Oportunidade Financeiro -->
+      <div class="expert-card">
+        <div class="expert-card-header">
+          <span>Mesa de Compras PR: Custo Aterrissado + CDI 100% sobre Estoque</span>
+          <span class="badge-tag badge-neutral">Giro de 45 Dias</span>
+        </div>
+        <div class="expert-card-body">
+          <p style="margin-bottom: 8px;">
+            Auditoria de capital de giro imobilizado em estoque regulador (CDI projetado de 10,75% a.a.):
+          </p>
+          <pre class="tabular-nums" style="background: #0f172a; color: #38bdf8; padding: 12px; border-radius: 6px; font-size: 11px; overflow-x: auto;">
+Custo_Mercadoria_Entrada: R$ 82,50
+(+) Frete Interestadual com Radar Combustíveis Ad Rem (LC 192/2022): R$ 5,00
+(-) Crédito ICMS PR / PIS / COFINS Homologado: -R$ 13,86
+(=) Custo Aterrissado Contábil (CPC 16): R$ 73,64
+(+) Custo Financeiro de Carregamento (45 dias a 100% CDI): R$ 0,98
+(=) Custo Base Efetivo para Formação de Preço: R$ 74,62</pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 4. STICKY ACTION BAR -->
+  <footer class="sticky-action-bar">
+    <div class="bar-summary">
+      <div><strong>Tabela Ativa:</strong> Tabela Geral Atacado PR</div>
+      <div style="color: var(--color-text-muted);">•</div>
+      <div>Margem Líquida Média: <strong class="tabular-nums" style="color: var(--color-success);">18,4%</strong></div>
+      <div style="color: var(--color-text-muted);">•</div>
+      <div>3 Produtos Simulados</div>
+    </div>
+    <div class="bar-actions">
+      <button class="btn-secondary" onclick="alert('Exportando Tabela de Preços (Excel e PDF)...')">
+        Exportar Planilha
+      </button>
+      <button class="btn-solid-primary" onclick="alert('Parâmetros salvos e sincronizados com o ERP!')">
+        Salvar Parâmetros e Atualizar ERP
+      </button>
+    </div>
+  </footer>
+
+  <!-- 5. SIMULATION DRAWER (500px) -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <aside class="simulation-drawer" id="sim-drawer">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title" id="drawer-product-title">Simulação Detalhada de Preço</div>
+        <div style="font-size: 11px; color: var(--color-text-muted);">Memória de Cálculo Unitária • CPC 16</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+    </div>
+    <div class="drawer-content">
+      <h4 style="font-size: 13px; margin-bottom: 12px;">Composição do Preço de Venda</h4>
+      
+      <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+        <div class="calc-row"><span>Custo de Aquisição Bruto</span> <strong class="tabular-nums">R$ 82,50</strong></div>
+        <div class="calc-row"><span>(-) Crédito ICMS 12%</span> <span class="tabular-nums" style="color: var(--color-success);">- R$ 9,90</span></div>
+        <div class="calc-row"><span>(-) Crédito PIS/COFINS 9,25%</span> <span class="tabular-nums" style="color: var(--color-success);">- R$ 7,63</span></div>
+        <div class="calc-row"><span>(+) Frete e Carga Ad Rem</span> <span class="tabular-nums">+ R$ 5,00</span></div>
+        <div class="calc-row total"><span>(=) Custo Líquido Unitário</span> <strong class="tabular-nums">R$ 69,97</strong></div>
+      </div>
+
+      <div style="background: #f8fafc; border: 1px solid var(--color-border); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+        <div class="calc-row"><span>Despesas Comerciais / Comissão (5%)</span> <span class="tabular-nums">R$ 7,25</span></div>
+        <div class="calc-row"><span>ICMS Débito Venda (19,5% PR)</span> <span class="tabular-nums">R$ 28,28</span></div>
+        <div class="calc-row"><span>PIS/COFINS Débito Venda (9,25%)</span> <span class="tabular-nums">R$ 13,41</span></div>
+        <div class="calc-row"><span>Margem Líquida Alvo (18%)</span> <strong class="tabular-nums" style="color: var(--color-success);">R$ 26,10</strong></div>
+        <div class="calc-row total"><span>Preço Final Recomendado</span> <strong class="tabular-nums" style="color: var(--color-brand-primary); font-size: 16px;">R$ 145,00</strong></div>
+      </div>
+
+      <button class="btn-solid-primary" style="width: 100%; justify-content: center;" onclick="alert('Preço R$ 145,00 aplicado com sucesso!')">
+        Aplicar Preço de R$ 145,00
+      </button>
+    </div>
+  </aside>
+
+  <!-- JS INTERATIVIDADE -->
+  <script>
+    let currentLevel = 'operacional';
+
+    function setLevel(level) {
+      currentLevel = level;
+      
+      // Update buttons
+      document.getElementById('btn-gerencial').classList.toggle('active', level === 'gerencial');
+      document.getElementById('btn-operacional').classList.toggle('active', level === 'operacional');
+      document.getElementById('btn-senior').classList.toggle('active', level === 'senior');
+
+      // Update views
+      document.getElementById('view-gerencial').style.display = (level === 'gerencial') ? 'flex' : 'none';
+      document.getElementById('view-operacional').style.display = (level === 'operacional' || level === 'senior') ? 'flex' : 'none';
+      document.getElementById('view-senior').style.display = (level === 'senior') ? 'flex' : 'none';
+    }
+
+    function openDrawer(title) {
+      document.getElementById('drawer-product-title').innerText = title;
+      document.getElementById('drawer-overlay').classList.add('active');
+      document.getElementById('sim-drawer').classList.add('open');
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawer-overlay').classList.remove('active');
+      document.getElementById('sim-drawer').classList.remove('open');
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeDrawer();
+      }
+    });
+
+    // Initialize default view
+    setLevel('operacional');
+  </script>
+</body>
+</html>

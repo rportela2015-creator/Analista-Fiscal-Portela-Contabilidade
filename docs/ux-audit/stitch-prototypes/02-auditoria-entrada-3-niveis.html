@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analista Fiscal Portela — Protótipo: Auditoria de Entrada (3 Níveis)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Portela Design System Tokens */
+      --color-brand-primary: #1e3a8a;
+      --color-brand-primary-hover: #1e40af;
+      --color-brand-primary-light: #eff6ff;
+      --color-brand-accent: #0284c7;
+      
+      --color-bg-canvas: #f8fafc;
+      --color-bg-card: #ffffff;
+      --color-bg-subtle: #f1f5f9;
+      --color-border: #e2e8f0;
+      --color-border-hover: #cbd5e1;
+
+      --color-text-main: #0f172a;
+      --color-text-muted: #64748b;
+      --color-text-subtle: #94a3b8;
+
+      --color-success: #16a34a;
+      --color-success-bg: #dcfce7;
+      --color-warning: #d97706;
+      --color-warning-bg: #fef3c7;
+      --color-danger: #dc2626;
+      --color-danger-bg: #fee2e2;
+      --color-info: #0284c7;
+      --color-info-bg: #e0f2fe;
+
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-drawer: -4px 0 24px rgba(0, 0, 0, 0.15);
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-full: 9999px;
+
+      --header-height: 56px;
+      --nav-height: 44px;
+      --sticky-bar-height: 64px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--color-bg-canvas);
+      color: var(--color-text-main);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: calc(var(--sticky-bar-height) + 24px);
+    }
+
+    .tabular-nums {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* HEADER COMPACTO (56px) */
+    .app-header {
+      height: var(--header-height);
+      background-color: var(--color-bg-card);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-brand-primary);
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    /* Seletor 3 Níveis */
+    .level-switcher {
+      display: flex;
+      background-color: var(--color-bg-subtle);
+      padding: 3px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+    }
+
+    .level-btn {
+      border: none;
+      background: transparent;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .level-btn.active {
+      background-color: var(--color-bg-card);
+      color: var(--color-brand-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .level-badge-tag {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: var(--radius-full);
+      background: var(--color-brand-primary-light);
+      color: var(--color-brand-primary);
+    }
+
+    /* NAV TABS (44px) */
+    .app-nav {
+      height: var(--nav-height);
+      background-color: var(--color-bg-card);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 8px;
+    }
+
+    .nav-tab {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-decoration: none;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .nav-tab:hover {
+      color: var(--color-text-main);
+    }
+
+    .nav-tab.active {
+      color: var(--color-brand-primary);
+      border-bottom-color: var(--color-brand-primary);
+    }
+
+    .nav-pill-badge {
+      margin-left: 6px;
+      padding: 2px 6px;
+      font-size: 10px;
+      border-radius: var(--radius-full);
+      background-color: var(--color-danger-bg);
+      color: var(--color-danger);
+      font-weight: 700;
+    }
+
+    /* MAIN CONTAINER */
+    .main-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+
+    /* MODO GERENCIAL */
+    .view-gerencial {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .kpi-grid-gerencial {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .kpi-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .kpi-card.highlight {
+      border-left: 4px solid var(--color-brand-primary);
+    }
+
+    .kpi-card.warning {
+      border-left: 4px solid var(--color-warning);
+    }
+
+    .kpi-card.danger {
+      border-left: 4px solid var(--color-danger);
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 700;
+      margin: 6px 0 2px 0;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    /* Barra de Risco Visual */
+    .risk-breakdown-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+
+    .risk-bar {
+      height: 12px;
+      border-radius: var(--radius-full);
+      display: flex;
+      overflow: hidden;
+      margin: 12px 0;
+      background: #e2e8f0;
+    }
+
+    .risk-bar-segment {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    .risk-legend {
+      display: flex;
+      gap: 24px;
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* MODO OPERACIONAL (Default) */
+    .view-operacional {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .strip-summary {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+
+    .strip-stats {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .strip-stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge-tag {
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-success { background: var(--color-success-bg); color: var(--color-success); }
+    .badge-warning { background: var(--color-warning-bg); color: var(--color-warning); }
+    .badge-danger  { background: var(--color-danger-bg);  color: var(--color-danger); }
+    .badge-neutral { background: var(--color-bg-subtle);  color: var(--color-text-muted); }
+
+    /* TABELA ENXUTA (7 Colunas) */
+    .table-container {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .lean-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .lean-table th {
+      background-color: #f8fafc;
+      padding: 12px 14px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      border-bottom: 1px solid var(--color-border);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .lean-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: middle;
+    }
+
+    .lean-table tr:hover {
+      background-color: #f8fafc;
+    }
+
+    .lean-table tr.selected {
+      background-color: var(--color-brand-primary-light);
+    }
+
+    .btn-inspect {
+      background: #ffffff;
+      border: 1px solid var(--color-border-hover);
+      color: var(--color-brand-primary);
+      padding: 5px 10px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-inspect:hover {
+      background: var(--color-brand-primary-light);
+      border-color: var(--color-brand-primary);
+    }
+
+    /* MODO SÊNIOR / PERICIAL */
+    .view-senior {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .expert-accordion {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .accordion-header {
+      padding: 12px 16px;
+      background: #f8fafc;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .accordion-body {
+      padding: 16px;
+      font-size: 12px;
+      background: #ffffff;
+    }
+
+    .dag-pipeline-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 10px 0;
+    }
+
+    .dag-node {
+      padding: 6px 12px;
+      background: var(--color-brand-primary-light);
+      border: 1px solid var(--color-brand-accent);
+      color: var(--color-brand-primary);
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .dag-arrow {
+      color: var(--color-text-subtle);
+      font-weight: bold;
+    }
+
+    /* STICKY ACTION BAR */
+    .sticky-action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--sticky-bar-height);
+      background-color: var(--color-bg-card);
+      border-top: 1px solid var(--color-border);
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 50;
+    }
+
+    .bar-summary {
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .bar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-solid-primary {
+      background-color: var(--color-brand-primary);
+      color: white;
+      border: none;
+      padding: 0 20px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-solid-primary:hover {
+      background-color: var(--color-brand-primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: #ffffff;
+      color: var(--color-text-main);
+      border: 1px solid var(--color-border);
+      padding: 0 16px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--color-bg-subtle);
+    }
+
+    /* ITEM DETAIL DRAWER (500px) */
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(2px);
+      z-index: 90;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .drawer-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
+    .detail-drawer {
+      position: fixed;
+      top: 0;
+      right: -520px;
+      width: 500px;
+      max-width: 90vw;
+      height: 100vh;
+      background: #ffffff;
+      box-shadow: var(--shadow-drawer);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .detail-drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8fafc;
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .drawer-close {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--color-text-muted);
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+    }
+
+    .drawer-close:hover {
+      background: #e2e8f0;
+      color: var(--color-text-main);
+    }
+
+    .drawer-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--color-border);
+      background: #ffffff;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .drawer-tab {
+      padding: 10px 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+    }
+
+    .drawer-tab.active {
+      color: var(--color-brand-primary);
+      border-bottom-color: var(--color-brand-primary);
+    }
+
+    .drawer-content {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .memory-block {
+      background: #f8fafc;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-size: 12px;
+      margin-bottom: 14px;
+    }
+
+    .memory-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+    }
+
+    .memory-row.total {
+      border-top: 1px dashed var(--color-border);
+      margin-top: 4px;
+      padding-top: 6px;
+      font-weight: 700;
+    }
+
+    .legal-card {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      font-size: 11px;
+      color: #92400e;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. HEADER COMPACTO (56px) -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="logo-badge">FP</div>
+      <div>
+        <div class="brand-title">Analista Fiscal Portela</div>
+        <div class="brand-sub">Comércio de Alimentos Pinheiro Ltda • CNPJ 12.345.678/0001-90</div>
+      </div>
+    </div>
+
+    <!-- Seletor de 3 Níveis -->
+    <div class="level-switcher" role="tablist" aria-label="Nível de Detalhamento Operacional">
+      <button class="level-btn" id="btn-gerencial" onclick="setLevel('gerencial')">
+        <span>Gerencial</span>
+      </button>
+      <button class="level-btn active" id="btn-operacional" onclick="setLevel('operacional')">
+        <span>Operacional</span>
+        <span class="level-badge-tag">Padrão</span>
+      </button>
+      <button class="level-btn" id="btn-senior" onclick="setLevel('senior')">
+        <span>Sênior / Pericial</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. NAV TABS (44px) -->
+  <nav class="app-nav">
+    <div class="nav-tab">Painel Geral</div>
+    <div class="nav-tab">NCM & Classificação</div>
+    <div class="nav-tab">Regras & Matriz</div>
+    <div class="nav-tab">Reforma Tributária</div>
+    <div class="nav-tab active">
+      Auditoria de Entrada
+      <span class="nav-pill-badge">2 Glosas</span>
+    </div>
+    <div class="nav-tab">Precificação & Margens</div>
+    <div class="nav-tab">NFS-e & DPS</div>
+    <div class="nav-tab">Laudo Pericial</div>
+  </nav>
+
+  <!-- 3. CONTAINER PRINCIPAL -->
+  <main class="main-container">
+
+    <!-- ==================== MODO GERENCIAL ==================== -->
+    <section id="view-gerencial" class="view-gerencial">
+      <!-- 4 Macro KPIs -->
+      <div class="kpi-grid-gerencial">
+        <div class="kpi-card highlight">
+          <div class="kpi-label">Conformidade Global</div>
+          <div class="kpi-value tabular-nums" style="color: var(--color-brand-primary);">92.4%</div>
+          <div class="kpi-sub">12 de 14 itens em conformidade estrita</div>
+        </div>
+        <div class="kpi-card danger">
+          <div class="kpi-label">Glosas Fiscais Detectadas</div>
+          <div class="kpi-value tabular-nums" style="color: var(--color-danger);">2</div>
+          <div class="kpi-sub">Crédito indevido e NCM divergente</div>
+        </div>
+        <div class="kpi-card warning">
+          <div class="kpi-label">Risco Financeiro Estimado</div>
+          <div class="kpi-value tabular-nums" style="color: var(--color-warning);">R$ 3.420,00</div>
+          <div class="kpi-sub">Passível de autuação SEFA/PR</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Ação Recomendada</div>
+          <div class="kpi-value" style="font-size: 16px; font-weight: 700; color: #1e3a8a;">Reter Crédito</div>
+          <div class="kpi-sub">Autorizar dossiê com 2 ressalvas nos itens 4 e 9</div>
+        </div>
+      </div>
+
+      <!-- Barra de Risco Visual -->
+      <div class="risk-breakdown-card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <strong style="font-size: 14px;">Diagnóstico de Risco da NF-e 000.123.456</strong>
+          <button class="btn-inspect" onclick="openDrawer('Item 04 - Arroz Tipo 1', 'NCM Divergente')">Ver Detalhes do Risco</button>
+        </div>
+        <div class="risk-bar">
+          <div class="risk-bar-segment" style="width: 85.7%; background-color: var(--color-success);" title="85.7% Regular (12 itens)"></div>
+          <div class="risk-bar-segment" style="width: 7.15%; background-color: var(--color-warning);" title="7.15% Alerta DIFAL (1 item)"></div>
+          <div class="risk-bar-segment" style="width: 7.15%; background-color: var(--color-danger);" title="7.15% Glosa Fiscal (1 item)"></div>
+        </div>
+        <div class="risk-legend">
+          <div class="legend-item"><span class="legend-dot" style="background: var(--color-success);"></span> 12 Itens 100% Regulares (R$ 41.250,00)</div>
+          <div class="legend-item"><span class="legend-dot" style="background: var(--color-warning);"></span> 1 Item Alerta de Alíquota (R$ 3.900,00)</div>
+          <div class="legend-item"><span class="legend-dot" style="background: var(--color-danger);"></span> 1 Item Glosa de Crédito PIS/COFINS (R$ 3.600,00)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== MODO OPERACIONAL (Default) ==================== -->
+    <section id="view-operacional" class="view-operacional">
+      <!-- Faixa de Resumo / Filtros Rápidos -->
+      <div class="strip-summary">
+        <div class="strip-stats">
+          <div class="strip-stat-item">
+            <span style="color: var(--color-text-muted);">NF-e:</span>
+            <strong>000.123.456-PR</strong>
+          </div>
+          <div class="strip-stat-item">
+            <span style="color: var(--color-text-muted);">Fornecedor:</span>
+            <span>Atacadista Central de Cereais S/A</span>
+          </div>
+          <div class="strip-stat-item">
+            <span style="color: var(--color-text-muted);">Valor Total:</span>
+            <strong class="tabular-nums">R$ 48.750,00</strong>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <span class="badge-tag badge-success">12 Regulares</span>
+          <span class="badge-tag badge-warning">1 Alerta</span>
+          <span class="badge-tag badge-danger">1 Glosa</span>
+        </div>
+      </div>
+
+      <!-- Tabela Enxuta de 7 Colunas -->
+      <div class="table-container">
+        <table class="lean-table">
+          <thead>
+            <tr>
+              <th style="width: 40px; text-align: center;"><input type="checkbox" checked title="Selecionar todos"></th>
+              <th style="width: 48px;">#</th>
+              <th>Descrição do Item</th>
+              <th>NCM + Validação</th>
+              <th>CFOP / CST</th>
+              <th style="text-align: right;">Valor Total</th>
+              <th style="text-align: center; width: 140px;">Status / Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="text-align: center;"><input type="checkbox" checked></td>
+              <td class="tabular-nums" style="color: var(--color-text-muted);">01</td>
+              <td><strong>Feijão Carioca Pacote 1kg</strong><br><span style="font-size: 11px; color: var(--color-text-muted);">Cód: 789123456001 • Un: FD c/ 10</span></td>
+              <td><span class="tabular-nums">0713.33.99</span> <span class="badge-tag badge-success">Siscomex OK</span></td>
+              <td><span class="badge-tag badge-neutral">5.102</span> <span class="badge-tag badge-neutral">CST 000</span></td>
+              <td style="text-align: right;" class="tabular-nums">R$ 4.250,00</td>
+              <td style="text-align: center;">
+                <button class="btn-inspect" onclick="openDrawer('Item 01 - Feijão Carioca', 'Regular')">Inspecionar</button>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align: center;"><input type="checkbox" checked></td>
+              <td class="tabular-nums" style="color: var(--color-text-muted);">02</td>
+              <td><strong>Óleo de Soja Refinado 900ml</strong><br><span style="font-size: 11px; color: var(--color-text-muted);">Cód: 789123456002 • Un: CX c/ 20</span></td>
+              <td><span class="tabular-nums">1507.90.11</span> <span class="badge-tag badge-success">Siscomex OK</span></td>
+              <td><span class="badge-tag badge-neutral">5.102</span> <span class="badge-tag badge-neutral">CST 000</span></td>
+              <td style="text-align: right;" class="tabular-nums">R$ 8.900,00</td>
+              <td style="text-align: center;">
+                <button class="btn-inspect" onclick="openDrawer('Item 02 - Óleo de Soja', 'Regular')">Inspecionar</button>
+              </td>
+            </tr>
+            <tr style="background-color: #fffbeb;">
+              <td style="text-align: center;"><input type="checkbox" checked></td>
+              <td class="tabular-nums" style="color: var(--color-text-muted);">04</td>
+              <td><strong>Bebida Láctea Fermentada Morango 1L</strong><br><span style="font-size: 11px; color: #b45309;">Divergência: Alíquota interna PR vs Iogurte</span></td>
+              <td><span class="tabular-nums" style="font-weight: 700; color: #b45309;">2202.99.00</span> <span class="badge-tag badge-warning">Alerta NESH</span></td>
+              <td><span class="badge-tag badge-neutral">6.102</span> <span class="badge-tag badge-warning">CST 010 ST</span></td>
+              <td style="text-align: right; font-weight: 700;" class="tabular-nums">R$ 3.900,00</td>
+              <td style="text-align: center;">
+                <button class="btn-inspect" style="border-color: #f59e0b; color: #b45309;" onclick="openDrawer('Item 04 - Bebida Láctea', 'Divergência DIFAL')">Inspecionar</button>
+              </td>
+            </tr>
+            <tr style="background-color: #fef2f2;">
+              <td style="text-align: center;"><input type="checkbox" checked></td>
+              <td class="tabular-nums" style="color: var(--color-text-muted);">09</td>
+              <td><strong>Suco de Laranja Pasteurizado 1L</strong><br><span style="font-size: 11px; color: #dc2626;">Glosa: Crédito PIS/COFINS vedado (CST 70 não dá direito a crédito)</span></td>
+              <td><span class="tabular-nums" style="font-weight: 700; color: #dc2626;">2009.12.00</span> <span class="badge-tag badge-danger">Glosa R$ 334,80</span></td>
+              <td><span class="badge-tag badge-neutral">5.102</span> <span class="badge-tag badge-danger">CST 070</span></td>
+              <td style="text-align: right; font-weight: 700;" class="tabular-nums">R$ 3.600,00</td>
+              <td style="text-align: center;">
+                <button class="btn-inspect" style="border-color: #ef4444; color: #dc2626;" onclick="openDrawer('Item 09 - Suco de Laranja', 'Glosa Fiscal PIS/COFINS')">Inspecionar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== MODO SÊNIOR / PERICIAL ==================== -->
+    <section id="view-senior" class="view-senior">
+      <!-- Orquestrador DAG RFB -->
+      <div class="expert-accordion">
+        <div class="accordion-header">
+          <span>Orquestrador DAG RFB (Pipeline de Auditoria Pericial - 7 Fases)</span>
+          <span class="badge-tag badge-success">Executado em 240ms</span>
+        </div>
+        <div class="accordion-body">
+          <div class="dag-pipeline-bar">
+            <div class="dag-node">1. Parser XML (NT 004/007)</div>
+            <span class="dag-arrow">→</span>
+            <div class="dag-node">2. Validação NCM Siscomex</div>
+            <span class="dag-arrow">→</span>
+            <div class="dag-node">3. Cesta Básica / Isenções PR</div>
+            <span class="dag-arrow">→</span>
+            <div class="dag-node">4. Cálculo Base Dupla RICMS/PR</div>
+            <span class="dag-arrow">→</span>
+            <div class="dag-node">5. Split Payment LC 214</div>
+            <span class="dag-arrow">→</span>
+            <div class="dag-node">6. Divergência RTC v6.0</div>
+            <span class="dag-arrow">→</span>
+            <div class="dag-node" style="background: #dcfce7; border-color: #16a34a; color: #16a34a;">7. Laudo Pericial JSON</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memória Técnica Pericial Centavo a Centavo -->
+      <div class="expert-accordion">
+        <div class="accordion-header">
+          <span>Memória Técnica de Paridade RFB (DecimalHalfEven & Base Dupla PR)</span>
+          <span class="badge-tag badge-neutral">RICMS/PR Dec. 7.871/17 art. 3º</span>
+        </div>
+        <div class="accordion-body">
+          <p style="margin-bottom: 8px;"><strong>Fórmula Base Dupla Aplicada (Item 04 - DIFAL interestadual SP → PR):</strong></p>
+          <pre class="tabular-nums" style="background: #0f172a; color: #38bdf8; padding: 12px; border-radius: 6px; font-size: 11px; overflow-x: auto;">
+Base_1 = Valor_Item (R$ 3.900,00) - ICMS_Origem_12% (R$ 468,00) = R$ 3.432,00
+Base_2 = Base_1 / (1 - Alíquota_Interna_PR_19,5%) = R$ 3.432,00 / 0,805 = R$ 4.263,3540...
+ICMS_Destino_Calculado = R$ 4.263,35 * 19,5% = R$ 831,35
+DIFAL_PR_Devido = ICMS_Destino (R$ 831,35) - ICMS_Origem (R$ 468,00) = R$ 363,35
+Arredondamento RFB Paridade: DecimalHalfEven (Zero Drift comprovado)</pre>
+        </div>
+      </div>
+
+      <!-- Custódia & Hash de Auditoria -->
+      <div class="expert-accordion">
+        <div class="accordion-header">
+          <span>Cadeia de Custódia Digital & Hash SHA-256</span>
+          <span class="badge-tag badge-neutral">Audit-Trail Imutável</span>
+        </div>
+        <div class="accordion-body">
+          <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <span>Chave NF-e: <strong class="tabular-nums">4126 1112 3456 7800 0190 5500 1000 1234 5610 9876 5432</strong></span>
+            <span>Digest SHA-256: <strong class="tabular-nums">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</strong></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 4. STICKY ACTION BAR -->
+  <footer class="sticky-action-bar">
+    <div class="bar-summary">
+      <div><strong>14 Itens Selecionados</strong> (NF-e 000.123.456)</div>
+      <div style="color: var(--color-text-muted);">•</div>
+      <div class="tabular-nums">Total NF-e: <strong>R$ 48.750,00</strong></div>
+      <div style="color: var(--color-text-muted);">•</div>
+      <div style="color: var(--color-danger); font-weight: 600;">Risco Identificado: R$ 3.420,00</div>
+    </div>
+    <div class="bar-actions">
+      <button class="btn-secondary" onclick="alert('Exportando Relatório de Auditoria PDF com cabeçalho institucional Portela...')">
+        Exportar PDF
+      </button>
+      <button class="btn-solid-primary" onclick="alert('Dossiê Auditado com Sucesso! 12 itens homologados, 2 com notas de glosa registradas no Laudo.')">
+        Auditar 14 Itens Selecionados
+      </button>
+    </div>
+  </footer>
+
+  <!-- 5. ITEM DETAIL DRAWER (500px) -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+  <aside class="detail-drawer" id="item-drawer" aria-label="Painel de Detalhes do Item">
+    <div class="drawer-header">
+      <div>
+        <div class="drawer-title" id="drawer-item-title">Item 04 - Bebida Láctea</div>
+        <div style="font-size: 11px; color: var(--color-text-muted);" id="drawer-item-sub">NCM 2202.99.00 • CFOP 6.102 • CST 010</div>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()" title="Fechar (Esc)">&times;</button>
+    </div>
+
+    <div class="drawer-tabs">
+      <div class="drawer-tab active" onclick="switchDrawerTab('tab-tributos')">Tributos & Alíquotas</div>
+      <div class="drawer-tab" onclick="switchDrawerTab('tab-difal')">DIFAL PR</div>
+      <div class="drawer-tab" onclick="switchDrawerTab('tab-lc214')">Créditos LC 214/25</div>
+      <div class="drawer-tab" onclick="switchDrawerTab('tab-erp')">Lançamento ERP</div>
+    </div>
+
+    <div class="drawer-content">
+      <!-- Tab: Tributos -->
+      <div id="tab-tributos" class="drawer-tab-pane">
+        <h4 style="font-size: 13px; margin-bottom: 10px;">Desdobramento de Impostos do Item</h4>
+        <div class="memory-block">
+          <div class="memory-row"><span>Valor Mercadoria</span> <strong class="tabular-nums">R$ 3.900,00</strong></div>
+          <div class="memory-row"><span>ICMS Próprio (12% SP)</span> <span class="tabular-nums">R$ 468,00</span></div>
+          <div class="memory-row"><span>Base Dupla DIFAL PR (19,5%)</span> <span class="tabular-nums">R$ 4.263,35</span></div>
+          <div class="memory-row"><span>DIFAL a Recolher</span> <span class="tabular-nums" style="color: var(--color-warning);">R$ 363,35</span></div>
+          <div class="memory-row"><span>PIS (1,65%)</span> <span class="tabular-nums">R$ 64,35</span></div>
+          <div class="memory-row"><span>COFINS (7,60%)</span> <span class="tabular-nums">R$ 296,40</span></div>
+          <div class="memory-row total"><span>Carga Tributária Total</span> <strong class="tabular-nums">R$ 1.192,10 (30,5%)</strong></div>
+        </div>
+
+        <div class="legal-card">
+          <strong>Fundamentação Legal:</strong><br>
+          Art. 3º, inciso XIV do RICMS/PR (Decreto nº 7.871/2017) e Consulta SEFA/PR nº 48/2026 sobre enquadramento de bebidas adicionadas de leite.
+        </div>
+      </div>
+
+      <!-- Tab: DIFAL -->
+      <div id="tab-difal" class="drawer-tab-pane" style="display: none;">
+        <h4 style="font-size: 13px; margin-bottom: 10px;">Cálculo Detalhado do DIFAL PR</h4>
+        <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px;">
+          Diferencial de Alíquota interestadual calculado conforme Lei Complementar 190/2022 com exclusão do imposto de origem e inclusão por dentro da alíquota interna do Paraná (19,5% FECOP incluso).
+        </p>
+        <div class="memory-block">
+          <div class="memory-row"><span>Alíquota Interestadual (SP)</span> <span>12,0%</span></div>
+          <div class="memory-row"><span>Alíquota Interna PR</span> <span>19,5% (17,5% + 2% FECOP)</span></div>
+          <div class="memory-row total"><span>Guia GNRE Estimada</span> <strong class="tabular-nums" style="color: var(--color-warning);">R$ 363,35</strong></div>
+        </div>
+      </div>
+
+      <!-- Tab: LC 214 -->
+      <div id="tab-lc214" class="drawer-tab-pane" style="display: none;">
+        <h4 style="font-size: 13px; margin-bottom: 10px;">Enquadramento na Reforma Tributária (IBS / CBS)</h4>
+        <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px;">
+          Análise preliminar de impacto conforme Lei Complementar 214/2025:
+        </p>
+        <div class="memory-block">
+          <div class="memory-row"><span>Cesta Básica Nacional (Art. 8º)</span> <span class="badge-tag badge-warning">Não Elegível (Bebida Aromatizada)</span></div>
+          <div class="memory-row"><span>Split Payment (Art. 47)</span> <span>Retenção Automática na Liquidação</span></div>
+          <div class="memory-row total"><span>Aproveitamento Crédito IBS/CBS</span> <strong class="tabular-nums" style="color: var(--color-success);">100% Condicionado à Quitação</strong></div>
+        </div>
+      </div>
+
+      <!-- Tab: ERP -->
+      <div id="tab-erp" class="drawer-tab-pane" style="display: none;">
+        <h4 style="font-size: 13px; margin-bottom: 10px;">Parâmetros para Lançamento Fiscal no ERP</h4>
+        <div class="memory-block">
+          <div class="memory-row"><span>CFOP Entrada</span> <strong class="tabular-nums">2.102 (Compra p/ Comercialização)</strong></div>
+          <div class="memory-row"><span>CST ICMS Entrada</span> <strong class="tabular-nums">000 (Tributada Integralmente)</strong></div>
+          <div class="memory-row"><span>CST PIS/COFINS</span> <strong class="tabular-nums">50 (Direito a Crédito Alíquota Básica)</strong></div>
+          <div class="memory-row"><span>Conta Contábil Débito</span> <span class="tabular-nums">1.1.03.01 (Estoques Mercadorias)</span></div>
+          <div class="memory-row"><span>Conta Contábil Crédito</span> <span class="tabular-nums">2.1.01.01 (Fornecedores Nacionais)</span></div>
+        </div>
+        <button class="btn-secondary" style="width: 100%; height: 38px; justify-content: center;" onclick="alert('Código de integração gerado para Domínio Sistemas!')">
+          Copiar Lançamento p/ Domínio Sistemas
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- JS INTERATIVIDADE -->
+  <script>
+    let currentLevel = 'operacional';
+
+    function setLevel(level) {
+      currentLevel = level;
+      
+      // Update buttons
+      document.getElementById('btn-gerencial').classList.toggle('active', level === 'gerencial');
+      document.getElementById('btn-operacional').classList.toggle('active', level === 'operacional');
+      document.getElementById('btn-senior').classList.toggle('active', level === 'senior');
+
+      // Update views
+      document.getElementById('view-gerencial').style.display = (level === 'gerencial') ? 'flex' : 'none';
+      document.getElementById('view-operacional').style.display = (level === 'operacional' || level === 'senior') ? 'flex' : 'none';
+      document.getElementById('view-senior').style.display = (level === 'senior') ? 'flex' : 'none';
+    }
+
+    // Drawer Logic
+    function openDrawer(title, status) {
+      document.getElementById('drawer-item-title').innerText = title;
+      document.getElementById('drawer-item-sub').innerText = 'Status: ' + status + ' • Validação Auditoria Portela';
+      document.getElementById('drawer-overlay').classList.add('active');
+      document.getElementById('item-drawer').classList.add('open');
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawer-overlay').classList.remove('active');
+      document.getElementById('item-drawer').classList.remove('open');
+    }
+
+    function switchDrawerTab(tabId) {
+      document.querySelectorAll('.drawer-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.drawer-tab-pane').forEach(p => p.style.display = 'none');
+
+      const targetPane = document.getElementById(tabId);
+      if (targetPane) targetPane.style.display = 'block';
+
+      event.target.classList.add('active');
+    }
+
+    // Keyboard ESC listener to close drawer
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeDrawer();
+      }
+    });
+
+    // Initialize default view
+    setLevel('operacional');
+  </script>
+</body>
+</html>

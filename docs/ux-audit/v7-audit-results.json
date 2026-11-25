@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-11-23T19:45:37.424Z",
+  "resolutions": {
+    "1920x1080": {
+      "width": 1920,
+      "height": 1080,
+      "tabs": {
+        "empresas": {},
+        "auditoria-entrada": {},
+        "precificar": {},
+        "classificar": {},
+        "lote": {},
+        "reforma": {}
+      }
+    },
+    "1366x768": {
+      "width": 1366,
+      "height": 768,
+      "tabs": {
+        "empresas": {},
+        "auditoria-entrada": {},
+        "precificar": {},
+        "classificar": {},
+        "lote": {},
+        "reforma": {}
+      }
+    }
+  },
+  "performance": {
+    "loadTime": 159,
+    "domInteractive": 44,
+    "fcp": 104
+  }
+}

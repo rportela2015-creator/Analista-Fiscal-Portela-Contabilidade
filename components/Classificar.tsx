@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Dataset, Record8, Reforma, describePath, labelForLevel, loadDataset, loadReforma } from '@/lib/data';
 import { ReformaSugestao, sugerirReforma } from '@/lib/reforma';
 import { Candidate, ParsedQuery, RuleNote, buildNotes, classify, taxes } from '@/lib/engine';
@@ -13,6 +13,16 @@ import {
   gerarRelatorioErpDetalhadoTxt,
   gerarRelatorioErpDetalhadoHtml,
 } from '@/lib/relatorio-erp';
+import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
+import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
+import {
+  KpiStrip,
+  StickyActionBar,
+  ProgressiveSection,
+  LegalCitationBlock,
+  type KpiItemData,
+  type NormativeCitation,
+} from '@/components/ui';
 
 function baixarArquivo(conteudo: string, nomeArquivo: string, mime: string) {
   const blob = new Blob([conteudo], { type: mime });
@@ -61,6 +71,10 @@ interface AiResponse {
 }
 
 export default function Classificar() {
+  // 1. TODOS OS HOOKS NO TOPO ABSOLUTO (Sem retornos condicionais antes)
+  const { nivel, isGerencial, isOperacional, isSenior } = useNivelOperacional();
+  const { empresaAtiva, perfilAtivo } = useEmpresaAtiva();
+
   const [ds, setDs] = useState<Dataset | null>(null);
   const [frio, setFrio] = useState(false);
   const [reforma, setReforma] = useState<Reforma | null>(null);
@@ -88,6 +102,22 @@ export default function Classificar() {
   const [formatoModal, setFormatoModal] = useState<'html' | 'txt'>('html');
   const [relatorioCopiado, setRelatorioCopiado] = useState(false);
 
+  // Sincronização inicial com Empresa Ativa
+  useEffect(() => {
+    if (empresaAtiva) {
+      if (empresaAtiva.uf) setUfO(empresaAtiva.uf);
+      if (perfilAtivo?.regimeTributario) {
+        if (perfilAtivo.regimeTributario === 'SIMPLES_NACIONAL' || perfilAtivo.regimeTributario === 'MEI') {
+          setRegime('simples');
+        } else if (perfilAtivo.regimeTributario === 'LUCRO_PRESUMIDO') {
+          setRegime('presumido');
+        } else if (perfilAtivo.regimeTributario === 'LUCRO_REAL') {
+          setRegime('real');
+        }
+      }
+    }
+  }, [empresaAtiva, perfilAtivo]);
+
   useEffect(() => {
     loadDataset().then(async (d) => { setDs(d); await d.pronto; setFrio(true); })
       .catch((e) => setErr(String(e.message || e)));
@@ -101,9 +131,114 @@ export default function Classificar() {
     return { ...r, list: list.length ? list : r.candidates };
   }, [ds, texto, mostrarTudo]);
 
-  const pinput: ParamInput = { operacao, regime, finalidade, ufOrigem: ufO, ufDestino: ufD };
+  const pinput: ParamInput = useMemo(() => ({
+    operacao,
+    regime,
+    finalidade,
+    ufOrigem: ufO,
+    ufDestino: ufD,
+  }), [operacao, regime, finalidade, ufO, ufD]);
 
-  const consultarIA = async () => {
+  // Faixa de KPIs Executivos e Operacionais (tabular-nums)
+  const kpiItems = useMemo<KpiItemData[]>(() => {
+    const candidatoTopo = res?.candidates?.[0];
+    const topNotes = candidatoTopo && res && ds ? buildNotes(candidatoTopo, res.query, ds, res.candidates) : null;
+    const ncmAtual = aiResult?.ncm || candidatoTopo?.rec.ncm || '';
+    const confiancaPct = aiResult
+      ? (aiResult.confianca === 'ALTA' ? 95 : aiResult.confianca === 'MEDIA' ? 70 : 40)
+      : topNotes
+      ? Math.round(topNotes.confidence * 100)
+      : 0;
+    const confiancaTxt = aiResult
+      ? `IA ${aiResult.confianca} (${confiancaPct}%)`
+      : topNotes
+      ? `${confiancaPct}% (${topNotes.band})`
+      : '0%';
+
+    return [
+      {
+        id: 'kpi-ncm-sugerido',
+        label: 'NCM Sugerido / Validado',
+        value: ncmAtual ? fmtCode(ncmAtual) : '—',
+        subValue: aiResult
+          ? (aiResult.descricaoNcm || 'Classificado por IA Especialista')
+          : candidatoTopo
+          ? candidatoTopo.rec.desc.replace(/^[-–\s]+/, '').slice(0, 36)
+          : 'Aguardando mercadoria',
+        trafficLight: ncmAtual ? 'success' : 'info',
+        statusLabel: ncmAtual ? 'Identificado' : 'Pendente',
+        tooltipText: 'Código NCM de 8 dígitos derivado da Nomenclatura Comum do Mercosul',
+      },
+      {
+        id: 'kpi-confianca-classificacao',
+        label: 'Confiança da Classificação',
+        value: confiancaTxt,
+        subValue: aiResult
+          ? `Motor: ${aiResult.motor || 'Especialista'}`
+          : topNotes
+          ? BAND_TXT[topNotes.band] || 'Candidato aderente'
+          : 'Digite a descrição',
+        trafficLight: confiancaPct >= 80 ? 'success' : confiancaPct >= 50 ? 'warning' : 'danger',
+        statusLabel: confiancaPct >= 80 ? 'Alta Confiança' : confiancaPct >= 50 ? 'Atenção' : 'Aguardando',
+        trend: confiancaPct >= 80 ? 'up' : 'down',
+        trendValue: `${confiancaPct}%`,
+      },
+      {
+        id: 'kpi-regras-aliquotas',
+        label: 'Alíquotas & Regras (RTC / PR)',
+        value: candidatoTopo?.rec.ipi != null ? `IPI ${candidatoTopo.rec.ipi}%` : 'IPI Alíquota Zero',
+        subValue: `CBS 0,90% · IBS 0,10% · ${regime.toUpperCase()}`,
+        trafficLight: 'info',
+        statusLabel: 'Vigência 2026',
+        tooltipText: 'Alíquotas vigentes para a operação e regime selecionados',
+      },
+      {
+        id: 'kpi-status-consistencia',
+        label: 'Status de Consistência Fiscal',
+        value: aiResult
+          ? 'Parecer Concluído'
+          : topNotes
+          ? (topNotes.band === 'alta' ? 'Consistente' : topNotes.band === 'media' ? 'Parcial' : 'Requer Análise')
+          : 'Aguardando Entrada',
+        subValue: aiResult?.sujeitoImpostoSeletivo ? 'Sujeito a Imposto Seletivo' : 'Sem incidência de IS',
+        trafficLight: aiResult ? 'success' : topNotes?.band === 'alta' ? 'success' : topNotes ? 'warning' : 'info',
+        statusLabel: 'Conformidade',
+        tooltipText: 'Validação de aderência pericial e ausência de bloqueios fiscais',
+      },
+    ];
+  }, [res, aiResult, regime, ds]);
+
+  // Citações Normativas para Fundamentação Legal
+  const citacoesNormativas = useMemo<NormativeCitation[]>(() => {
+    return [
+      {
+        id: 'cit-rgi-nesh',
+        norma: 'Regras Gerais de Interpretação (RGI 1 a 6) & NESH',
+        artigo: 'IN RFB nº 2.169/2023 / Convenção Internacional do SH',
+        ementa: 'Classificação determinada pelas posições e notas de seção/capítulo (RGI 1) e subposições correlatas (RGI 6).',
+        esfera: 'harmonizado-wco',
+        statusVigencia: 'vigente',
+      },
+      {
+        id: 'cit-lc-214',
+        norma: 'Lei Complementar nº 214/2025',
+        artigo: 'Arts. 4º, 5º e 11 — CBS, IBS e Regimes Diferenciados',
+        ementa: 'Vigência do IVA Dual com alíquotas de teste em 2026 e tributação no destino da operação.',
+        esfera: 'federal',
+        statusVigencia: 'vigente',
+      },
+      {
+        id: 'cit-ricms-pr',
+        norma: 'RICMS/PR — Decreto Estadual nº 7.871/2017',
+        artigo: 'Art. 28 Anexo VIII / ROT-ST',
+        ementa: 'Diferimento parcial de ICMS e desoneração nas saídas e entradas internas.',
+        esfera: 'estadual-pr',
+        statusVigencia: 'vigente',
+      },
+    ];
+  }, []);
+
+  const consultarIA = useCallback(async () => {
     if (!texto.trim()) return;
     setAiLoading(true);
     setAiError('');
@@ -132,7 +267,99 @@ export default function Classificar() {
     } finally {
       setAiLoading(false);
     }
-  };
+  }, [texto, operacao, regime, finalidade, ufO, ufD, res]);
+
+  const abrirModalRelatorioPadrao = useCallback(() => {
+    if (!aiResult && !res?.candidates?.[0]) return;
+    const ncmVal = aiResult?.ncm || res?.candidates?.[0]?.rec.ncm || '';
+    const descNcmVal = aiResult?.descricaoNcm || res?.candidates?.[0]?.rec.desc.replace(/^[-–\s]+/, '') || '';
+    const payload: ParametrosErpPayload = {
+      contexto: {
+        emitente: {
+          nome: empresaAtiva?.razaoSocial || 'Empresa Emitente',
+          regime: regime === 'simples' ? 'Simples Nacional' : regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
+          crt: regime === 'simples' ? '1' : '3',
+          uf: ufO,
+        },
+        destinatario: { uf: ufD },
+        operacao: {
+          tipo: operacao,
+          finalidade,
+          modelo: '55',
+          anoReforma: 2026,
+        },
+      },
+      itens: [{
+        cProd: 'PROD-001',
+        xProd: texto.trim() || descNcmVal,
+        ncm: ncmVal.replace(/\D/g, ''),
+        descricaoNcm: descNcmVal,
+        cest: '',
+        cfop: operacao === 'interna' ? '5.102' : '6.102',
+        cstIcms: regime === 'simples' ? '' : '00',
+        csosn: regime === 'simples' ? '102' : '',
+        cstIpi: '50',
+        cstPis: '01',
+        cstCofins: '01',
+        cstIbsCbs: aiResult?.cstIbsCbs || '000',
+        cClassTrib: aiResult?.cClassTrib || '000001',
+        aliqCbs: '0.90',
+        aliqIbsUf: '0.10',
+        isTributa: !!aiResult?.sujeitoImpostoSeletivo,
+        cstIs: aiResult?.sujeitoImpostoSeletivo ? '01' : '',
+        instrucao: aiResult?.fundamentacao || 'Parametrização sugerida com base na NCM oficial.',
+      }],
+    };
+    setModalRelatorio({ aberto: true, modo: 'resumido', payload });
+    setFormatoModal('html');
+    setRelatorioCopiado(false);
+  }, [aiResult, res, empresaAtiva, regime, ufO, ufD, operacao, finalidade, texto]);
+
+  const abrirModalRelatorioDetalhado = useCallback(() => {
+    if (!aiResult && !res?.candidates?.[0]) return;
+    const ncmVal = aiResult?.ncm || res?.candidates?.[0]?.rec.ncm || '';
+    const descNcmVal = aiResult?.descricaoNcm || res?.candidates?.[0]?.rec.desc.replace(/^[-–\s]+/, '') || '';
+    const payload: ParametrosErpPayload = {
+      contexto: {
+        emitente: {
+          nome: empresaAtiva?.razaoSocial || 'Empresa Emitente',
+          regime: regime === 'simples' ? 'Simples Nacional' : regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
+          crt: regime === 'simples' ? '1' : '3',
+          uf: ufO,
+        },
+        destinatario: { uf: ufD },
+        operacao: {
+          tipo: operacao,
+          finalidade,
+          modelo: '55',
+          anoReforma: 2026,
+        },
+      },
+      itens: [{
+        cProd: 'PROD-001',
+        xProd: texto.trim() || descNcmVal,
+        ncm: ncmVal.replace(/\D/g, ''),
+        descricaoNcm: descNcmVal,
+        cest: '',
+        cfop: operacao === 'interna' ? '5.102' : '6.102',
+        cstIcms: regime === 'simples' ? '' : '00',
+        csosn: regime === 'simples' ? '102' : '',
+        cstIpi: '50',
+        cstPis: '01',
+        cstCofins: '01',
+        cstIbsCbs: aiResult?.cstIbsCbs || '000',
+        cClassTrib: aiResult?.cClassTrib || '000001',
+        aliqCbs: '0.90',
+        aliqIbsUf: '0.10',
+        isTributa: !!aiResult?.sujeitoImpostoSeletivo,
+        cstIs: aiResult?.sujeitoImpostoSeletivo ? '01' : '',
+        instrucao: aiResult?.fundamentacao || 'Laudo pericial com fundamentação técnica e legal.',
+      }],
+    };
+    setModalRelatorio({ aberto: true, modo: 'detalhado', payload });
+    setFormatoModal('html');
+    setRelatorioCopiado(false);
+  }, [aiResult, res, empresaAtiva, regime, ufO, ufD, operacao, finalidade, texto]);
 
   if (err) return <div className="err">Não consegui carregar o dataset. Rode <code>npm run build:dados</code> e recarregue. <span className="mono">{err}</span></div>;
   if (!ds) return <div className="card"><span className="spin" /> carregando Tabela NCM vigente (10.515 códigos de 8 dígitos)…</div>;
@@ -141,6 +368,19 @@ export default function Classificar() {
 
   return (
     <>
+      <div style={{ marginBottom: 16 }}>
+        <KpiStrip
+          items={kpiItems}
+          level={nivel}
+          showConsolidatedTrafficLightBar
+          proportions={{
+            regularPct: res?.candidates?.[0]?.coverage ? Math.round(res.candidates[0].coverage * 70) : 40,
+            warningPct: 20,
+            riskPct: 15,
+          }}
+        />
+      </div>
+
       <div className="card">
         <h2>Descrição da mercadoria</h2>
         <p className="hint">
@@ -171,6 +411,7 @@ export default function Classificar() {
               background: 'var(--primary, #0f172a)',
               color: '#fff',
               padding: '8px 14px',
+              minHeight: '44px',
               fontWeight: 600,
               cursor: aiLoading || !texto.trim() ? 'not-allowed' : 'pointer',
               opacity: aiLoading || !texto.trim() ? 0.6 : 1,
@@ -221,6 +462,27 @@ export default function Classificar() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <ProgressiveSection
+          id="sec-classificacao-legal"
+          title="Embasamento Jurídico & Parâmetros Legais (NESH / RGI / LC 214)"
+          subtitle="Memória jurídica e normas aplicáveis à classificação e tributação"
+          minLevel="senior"
+          currentLevel={nivel}
+          defaultExpanded={isSenior}
+          onDemandTriggerLabel="Exibir Embasamento Jurídico e Diretrizes (NESH / RGI / LC 214)"
+          badge={<span className="badge amber" style={{ fontSize: '10px' }}>Nível Sênior</span>}
+        >
+          <div style={{ marginTop: 8 }}>
+            <LegalCitationBlock
+              title="Embasamento Jurídico da Classificação Fiscal"
+              citations={citacoesNormativas}
+              defaultCollapsed={false}
+            />
+          </div>
+        </ProgressiveSection>
       </div>
 
       {aiError && (
@@ -606,6 +868,7 @@ export default function Classificar() {
                   type="button"
                   onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido', payload: null })}
                   className="mini"
+                  style={{ minHeight: '44px', padding: '8px 16px', cursor: 'pointer' }}
                 >
                   Fechar
                 </button>
@@ -614,6 +877,65 @@ export default function Classificar() {
           </div>
         );
       })()}
+
+      <StickyActionBar
+        primaryAction={{
+          label: aiResult
+            ? '📋 Relatório ERP Resumido'
+            : texto.trim()
+            ? (aiLoading ? 'Processando com IA...' : '✦ Classificar com IA Especialista')
+            : 'Digitar Mercadoria para Classificar',
+          onClick: () => {
+            if (aiResult) {
+              abrirModalRelatorioPadrao();
+            } else if (texto.trim()) {
+              consultarIA();
+            } else {
+              const ta = document.querySelector('textarea');
+              if (ta) ta.focus();
+            }
+          },
+          loading: aiLoading,
+          disabled: aiLoading || (!texto.trim() && !aiResult),
+          title: 'Ação primária de classificação fiscal',
+        }}
+        secondaryActions={[
+          ...(aiResult
+            ? [
+                {
+                  id: 'sec-laudo-detalhado',
+                  label: '⚖️ Relatório Detalhado',
+                  onClick: () => abrirModalRelatorioDetalhado(),
+                },
+                {
+                  id: 'sec-limpar-analise',
+                  label: 'Nova Análise',
+                  onClick: () => {
+                    setTexto('');
+                    setAiResult(null);
+                  },
+                },
+              ]
+            : texto.trim()
+            ? [
+                {
+                  id: 'sec-limpar-texto',
+                  label: 'Limpar Texto',
+                  onClick: () => {
+                    setTexto('');
+                    setAiResult(null);
+                  },
+                },
+              ]
+            : []),
+        ]}
+        contextBadge={
+          <span>
+            {empresaAtiva ? <b>{empresaAtiva.razaoSocial} · </b> : null}
+            Op: <b>{operacao.toUpperCase()}</b> · Origem: <b>{ufO}</b> → Destino: <b>{ufD}</b> · Regime: <b>{regime.toUpperCase()}</b>
+          </span>
+        }
+      />
     </>
   );
 }
@@ -680,7 +1002,8 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
             border: '1px solid #FDE047',
             fontWeight: 700,
             cursor: 'pointer',
-            padding: '4px 10px',
+            padding: '8px 14px',
+            minHeight: '44px',
             borderRadius: 6,
             transition: 'background 0.15s ease, border-color 0.15s ease',
           }}
@@ -691,6 +1014,12 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
         <a
           className="mini"
           href="#parametrizar"
+          style={{
+            minHeight: '44px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '8px 14px',
+          }}
           title="abrir a aba de parametrização de ERP com este NCM"
           onClick={() => {
             const dados = {

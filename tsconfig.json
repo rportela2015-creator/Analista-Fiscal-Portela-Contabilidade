@@ -39,6 +39,7 @@
     "node_modules",
     "services/**",
     "data/raw/**",
+    "data/db/**",
     "db/**",
     "colab/**",
     "**/.git/**"

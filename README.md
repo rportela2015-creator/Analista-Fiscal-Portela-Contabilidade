@@ -1,15 +1,16 @@
-# Analista Fiscal Portela Contabilidade · v6.0.0
+# Analista Fiscal Portela Contabilidade · v7.0.0
 
-[![Versão](https://img.shields.io/badge/versão-6.0.0-blue.svg)](CHANGELOG.md)
+[![Versão](https://img.shields.io/badge/versão-7.0.0-blue.svg)](CHANGELOG.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
+[![WCAG AA](https://img.shields.io/badge/A11y-WCAG%202.1%20AA-success.svg)](docs/ux-audit/04-qa-final-v7.md)
 [![Ollama](https://img.shields.io/badge/Ollama-Local%20GPU%20RX%20580-orange.svg)](https://ollama.com/)
 [![Docker Sidecars](https://img.shields.io/badge/Docker-RFB%20RTC%20Sidecars-2496ED.svg)](docker-compose.yml)
-[![Tests](https://img.shields.io/badge/Tests-42%2F42%20Suítes%20(100%25)-brightgreen.svg)](#testes-e-garantia-de-qualidade)
+[![Tests](https://img.shields.io/badge/Tests-47%2F47%20Suítes%20(100%25)-brightgreen.svg)](#testes-e-garantia-de-qualidade)
 
-Plataforma integrada de **Inteligência Artificial Soberana, Auditoria Pericial Fiscal, Conciliação com Motores Oficiais da RFB (RTC & DANFSe) e Formação Científica de Preços** desenvolvida para a **Portela Contabilidade**.
+Plataforma integrada de **Inteligência Artificial Soberana, Auditoria Pericial Fiscal, Conciliação com Motores Oficiais da RFB (RTC & DANFSe), Formação Científica de Preços e Design System em 3 Níveis Operacionais** desenvolvida para a **Portela Contabilidade**.
 
-O sistema combina a precisão determinística do vocabulário oficial do Siscomex (10.515 NCMs vigentes) com o motor pericial local via Ollama na GPU AMD Radeon RX 580 (Vulkan / ROCm), fallback em nuvem para Google Gemini Cloud (3.8-flash / 3.6-flash), auditoria de entrada de NF-e (Modelo 55), auditoria de NFS-e / DPS Nacional (NT 004/007/008/009), geração oficial de DANFSe (Go/Echo), orquestrador causal DAG em 6 etapas, persistência relacional multi-tenant bitemporal no PostgreSQL 17 e motor de precificação multi-regime fundamentado no Marco Legal Brasileiro (NBC TG 16/CPC 16, RIR/2018, LC 87/96, RICMS/PR e Reforma Tributária do Consumo EC 132/2023, LC 214/2025 e LC 227/2025).
+O sistema combina a precisão determinística do vocabulário oficial do Siscomex (10.515 NCMs vigentes) com o motor pericial local via Ollama na GPU AMD Radeon RX 580 (Vulkan / ROCm), fallback em nuvem para Google Gemini Cloud (3.8-flash / 3.6-flash), auditoria de entrada de NF-e (Modelo 55), auditoria de NFS-e / DPS Nacional (NT 004/007/008/009), geração oficial de DANFSe (Go/Echo), orquestrador causal DAG em 6 etapas, persistência relacional multi-tenant bitemporal no PostgreSQL 17, motor de precificação multi-regime (CPC 16 / RICMS-PR / LC 214/2025) e interface corporativa em 3 Níveis Operacionais (*Gerencial*, *Operacional* e *Sênior*) com acessibilidade total WCAG 2.1 AA.
 
 > **Aviso de Conformidade Fiscal:** O aplicativo opera como ferramenta pericial de apoio à tomada de decisão contábil e tributária fundamentada. Todas as classificações fiscais, De-Para de CFOP e formações de preço trazem as notas legais, fundamentações normativas e memórias de cálculo auditáveis.
 
@@ -186,7 +187,12 @@ O projeto adota uma política rigorosa de **Definition of Done (DoD)** com teste
   ```bash
   npm test
   ```
-  Executa todas as 42 suítes oficiais de testes automatizados:
+  Executa todas as 47 suítes oficiais de testes automatizados:
+  - `tests/ux-release-v7-integridade.test.mjs`: Integridade do Ciclo 7, App Shell, 3 níveis operacionais, CSP anti-clickjacking e imutabilidade de `rules.json` (v7.0.0).
+  - `tests/ux-classificar-lote-reforma-niveis.test.mjs`: Testes dos 3 níveis em Classificação, Parametrização em Lote e Reforma Tributária.
+  - `tests/ux-precificacao-empresas-niveis.test.mjs`: Testes dos 3 níveis em Precificação & Margens e Cadastro de Empresas.
+  - `tests/ux-auditoria-entrada-niveis.test.mjs`: Testes da grade de 7 colunas, ItemDetailDrawer e StickyActionBar na Auditoria de Entrada.
+  - `tests/ux-fundacao-componentes.test.mjs`: Testes dos 6 componentes base do Design System Portela e hook `useNivelOperacional`.
   - `tests/paridade-rfb-relatorio.test.mjs`: Auditoria de paridade RFB vs. Local e Laudo Pericial Unificado (v6.0.0).
   - `tests/auditoria-nfse-danfse.test.mjs`: Auditoria pericial de NFS-e/DPS Nacional e geração de DANFSe.
   - `tests/orquestrador-fiscal-dag.test.mjs`: Orquestrador fiscal causal DAG em 6 etapas.

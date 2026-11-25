@@ -24,6 +24,13 @@ import {
 } from '@/lib/custos';
 import { RegimeTributario, DestinacaoMercadoria } from '@/lib/marco-legal';
 import { auditarDifalNotaEntrada } from '@/lib/engine/difal-pr';
+import {
+  apurarDemonstrativoDifalEntradaPR,
+  consolidarMultiplasNotasDifalPR,
+  type ItemDemonstrativoDifalPR,
+  type DemonstrativoConsolidadoDifalPR,
+} from '@/lib/fiscal/difal-pr';
+import { obterFontesNormativasPorAba } from '@/lib/fiscal/fontes-normativas';
 import type { DiagnosticoDifalEntrada, ResumoDifalNfeEntrada } from '@/lib/types/motor-tributario';
 import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
 import { formatarCnpj } from '@/lib/fiscal/perfil-tributario';
@@ -32,6 +39,15 @@ import type { StatusExtincaoDebitoFornecedor } from '@/lib/fiscal/credito-tribut
 import { detectarTipoXmlFiscal } from '@/lib/extrator-nfse';
 import type { ResultadoAuditoriaNfse } from '@/lib/extrator-nfse-types';
 import { PainelNfseDanfse } from './PainelNfseDanfse';
+import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
+import {
+  KpiStrip,
+  StickyActionBar,
+  ProgressiveSection,
+  LegalCitationBlock,
+  ItemDetailDrawer,
+  type KpiItemData,
+} from '@/components/ui';
 
 /* =========================================================================
  * CONTRATOS DE TIPOS PARA A ETAPA 2 (M2 ↔ M3)
@@ -45,6 +61,11 @@ export type {
 };
 
 export { montarAuditRequestPayload };
+
+function formatarBrl(val?: number): string {
+  if (val === undefined || val === null || isNaN(val)) return 'R$ 0,00';
+  return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 
 
 
@@ -108,7 +129,8 @@ export function adaptAuditResultForERP(
 export default function AuditoriaEntrada() {
   // ---- Hooks chamados estritamente no topo para cumprir scripts/hookcheck.mjs ----
 
-  // 0. Sincronização com Empresa Ativa
+  // 0. Nível Operacional e Empresa Ativa
+  const { nivel, isGerencial, isOperacional, isSenior } = useNivelOperacional();
   const { empresaAtiva, perfilAtivo } = useEmpresaAtiva();
 
   // 1. Configuração e Arquivo de Entrada
@@ -150,11 +172,15 @@ export default function AuditoriaEntrada() {
     modo: 'resumido' | 'detalhado';
   }>({ aberto: false, modo: 'resumido' });
 
-  // 6. Estados de Apuração Bitemporal de DIFAL, FECOP & Antecipação PR (Sub-Etapa 18.3)
+  // 6. Estados de Apuração Bitemporal de DIFAL, FECOP & Antecipação PR (Sub-Etapa 18.3 + Marco 2)
   const [crtDestinatario, setCrtDestinatario] = useState<'1' | '2' | '3' | '4'>('3');
   const [destinacaoPadrao, setDestinacaoPadrao] = useState<'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado'>('comercializacao');
   const [incluirIbsCbsBcIcms, setIncluirIbsCbsBcIcms] = useState<boolean>(true);
   const [destinacaoPorItem, setDestinacaoPorItem] = useState<Record<string | number, 'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado'>>({});
+  const [contribuinteInscritoPR, setContribuinteInscritoPR] = useState<boolean>(true);
+  const [expandirDemonstrativoDifal, setExpandirDemonstrativoDifal] = useState<boolean>(true);
+  const [itemDifalSelecionado, setItemDifalSelecionado] = useState<ItemDemonstrativoDifalPR | null>(null);
+  const [notasDifalSessao, setNotasDifalSessao] = useState<DemonstrativoConsolidadoDifalPR[]>([]);
 
   React.useEffect(() => {
     const novoCrt = regime.toLowerCase().includes('simples') ? '1' : regime.toLowerCase().includes('mei') ? '4' : '3';
@@ -580,6 +606,100 @@ export default function AuditoriaEntrada() {
     });
   }, [extractedInvoice, crtDestinatario, destinacaoPadrao, destinacaoPorItem, incluirIbsCbsBcIcms]);
 
+  // ─── Marco 2: Demonstrativo Produto a Produto, Somatório e Prazo DIFAL PR ───
+  const demonstrativoDifalPR = React.useMemo<DemonstrativoConsolidadoDifalPR | null>(() => {
+    if (!extractedInvoice || !extractedInvoice.itens || extractedInvoice.itens.length === 0) return null;
+    return apurarDemonstrativoDifalEntradaPR(extractedInvoice, {
+      crtDestinatario: Number(crtDestinatario) as any,
+      inscritoEstadualPR: contribuinteInscritoPR,
+      destinacaoPadrao,
+      destinacaoPorItem,
+      incluirIbsCbsBcIcms,
+    });
+  }, [extractedInvoice, crtDestinatario, contribuinteInscritoPR, destinacaoPadrao, destinacaoPorItem, incluirIbsCbsBcIcms]);
+
+  React.useEffect(() => {
+    if (!demonstrativoDifalPR) return;
+    const chave =
+      demonstrativoDifalPR.chaveNota ||
+      `${demonstrativoDifalPR.numeroNota || 'SN'}-${demonstrativoDifalPR.dataEmissao}-${demonstrativoDifalPR.somatorio.qtdItensAnalisados}`;
+    setNotasDifalSessao((prev) => {
+      const idx = prev.findIndex((n) => {
+        const k = n.chaveNota || `${n.numeroNota || 'SN'}-${n.dataEmissao}-${n.somatorio.qtdItensAnalisados}`;
+        return k === chave;
+      });
+      if (idx >= 0) {
+        const atual = prev[idx];
+        if (
+          atual.somatorio.totalDifalGeral === demonstrativoDifalPR.somatorio.totalDifalGeral &&
+          atual.perfilContribuinte === demonstrativoDifalPR.perfilContribuinte &&
+          atual.prazoRecolhimento.dataVencimento === demonstrativoDifalPR.prazoRecolhimento.dataVencimento
+        ) {
+          return prev;
+        }
+        const copia = [...prev];
+        copia[idx] = demonstrativoDifalPR;
+        return copia;
+      }
+      return [...prev, demonstrativoDifalPR];
+    });
+  }, [demonstrativoDifalPR]);
+
+  const somatorioConsolidadoNotas = React.useMemo(() => {
+    return consolidarMultiplasNotasDifalPR(notasDifalSessao);
+  }, [notasDifalSessao]);
+
+  const citacoesNormativasAuditoria = React.useMemo(() => {
+    return obterFontesNormativasPorAba('auditoria');
+  }, []);
+
+  // ─── 4 KPIs Executivos e Operacionais para KpiStrip (Design System) ──────
+  const kpiItems = React.useMemo<KpiItemData[]>(() => {
+    const totalItens = extractedInvoice?.itens?.length || 0;
+    const itensSens = extractedInvoice?.itens?.filter((i) => i.sensivelParaAuditoria)?.length || 0;
+    const confPct = totalItens > 0 ? (((totalItens - itensSens) / totalItens) * 100).toFixed(1) : '100.0';
+    const difalTotal =
+      (apuracaoDifalNota?.resumoDifalNota?.totalDifalGeral || 0) +
+      (apuracaoDifalNota?.resumoDifalNota?.totalFecopGeral || 0);
+    const creditoTotal =
+      resultadoOrquestracao?.etapas?.creditos?.camadas?.totalCreditoEfetivadoCusto?.total || 0;
+
+    return [
+      {
+        id: 'kpi-conf',
+        label: 'Conformidade Geral',
+        value: `${confPct}%`,
+        subValue: `${totalItens - itensSens} de ${totalItens} itens regulares`,
+        trafficLight: itensSens > 0 ? 'warning' : 'success',
+        statusLabel: itensSens > 0 ? 'Atenção' : 'Conforme',
+      },
+      {
+        id: 'kpi-difal',
+        label: 'Débito DIFAL + FECOP PR',
+        value: formatarBrl(difalTotal),
+        subValue: 'Dec. 7.871/17 (Base Dupla)',
+        trafficLight: difalTotal > 0 ? 'danger' : 'info',
+        statusLabel: difalTotal > 0 ? 'Recolhimento' : 'Isento',
+      },
+      {
+        id: 'kpi-alertas',
+        label: 'Itens com Glosa / Risco',
+        value: itensSens,
+        subValue: itensSens === 1 ? '1 item com ressalva' : `${itensSens} itens com ressalva`,
+        trafficLight: itensSens > 0 ? 'danger' : 'success',
+        statusLabel: itensSens > 0 ? 'Trava ST' : 'Regular',
+      },
+      {
+        id: 'kpi-credito',
+        label: 'Crédito Efetivado CMV',
+        value: formatarBrl(creditoTotal),
+        subValue: 'CPC 16 / Split Payment',
+        trafficLight: 'info',
+        statusLabel: 'Aproveitável',
+      },
+    ];
+  }, [extractedInvoice, apuracaoDifalNota, resultadoOrquestracao]);
+
   const handleAlterarDestinacaoItem = (
     index: number,
     novaDestinacao: 'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado'
@@ -823,11 +943,37 @@ export default function AuditoriaEntrada() {
             </div>
           </div>
 
+          {/* Faixa de KPIs Executivos e Operacionais (Design System Portela) */}
+          <div style={{ marginTop: 14 }}>
+            <KpiStrip
+              items={kpiItems}
+              level={nivel}
+              density={isGerencial ? 'spacious' : 'compact'}
+              showConsolidatedTrafficLightBar
+              proportions={{
+                regularPct: extractedInvoice.itens.length > 0
+                  ? Math.round(((extractedInvoice.itens.length - (extractedInvoice.itens.filter((i) => i.sensivelParaAuditoria).length)) / extractedInvoice.itens.length) * 100)
+                  : 100,
+                warningPct: extractedInvoice.itens.length > 0
+                  ? Math.round(((extractedInvoice.itens.filter((i) => i.sensivelParaAuditoria).length) / extractedInvoice.itens.length) * 100)
+                  : 0,
+                riskPct: 0,
+              }}
+            />
+          </div>
+
           {/* =========================================================================
-           * PAINEL INTEGRADO DA ORQUESTRAÇÃO FISCAL DAG (SUB-ETAPA 19.5)
+           * PAINEL INTEGRADO DA ORQUESTRAÇÃO FISCAL DAG (SUB-ETAPA 19.5 & 20.4)
            * ========================================================================= */}
           {resultadoOrquestracao && (
-            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <ProgressiveSection
+              id="sec-orquestracao-dag"
+              title="Orquestrador Fiscal DAG & Paridade RFB RTC"
+              subtitle="Validação de schema XML, motor oficial RFB RTC, créditos em 3 camadas e comparativo 4 regimes"
+              currentLevel={nivel}
+              minLevel="operacional"
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {/* BLOCO 1: STATUS RFB RTC & VALIDAÇÃO XML */}
               <div
                 className="card"
@@ -1133,7 +1279,8 @@ export default function AuditoriaEntrada() {
                 </div>
               </div>
             </div>
-          )}
+          </ProgressiveSection>
+        )}
 
           {/* Resumo Analítico de Custo e Tributos da NF-e (Etapa 3 / CPC 16 R1) */}
           {consolidadoCPC16 && (
@@ -1340,6 +1487,7 @@ export default function AuditoriaEntrada() {
                   borderRadius: 6,
                   background: '#f1f5f9',
                   border: '1px solid #e2e8f0',
+                  minHeight: '44px',
                 }}
                 title="Conforme Consulta Tributária SEFA/PR nº 48/2026, opta-se por incluir ou não os novos tributos (IBS/CBS/IS) na Base de Cálculo do ICMS durante a transição 2026."
               >
@@ -1350,6 +1498,32 @@ export default function AuditoriaEntrada() {
                 />
                 <span>
                   <strong>Consulta SEFA/PR nº 48/2026:</strong> Incluir IBS/CBS/IS na BC do ICMS
+                </span>
+              </label>
+
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: '11.5px',
+                  color: '#475569',
+                  cursor: 'pointer',
+                  padding: '6px 8px',
+                  borderRadius: 6,
+                  background: '#f1f5f9',
+                  border: '1px solid #e2e8f0',
+                  minHeight: '44px',
+                }}
+                title="Contribuinte com Inscrição Estadual ativa no PR recolhe via GR-PR 1015 (dia 12) ou DeSTDA; não inscrito recolhe via GNRE antes da saída."
+              >
+                <input
+                  type="checkbox"
+                  checked={contribuinteInscritoPR}
+                  onChange={(e) => setContribuinteInscritoPR(e.target.checked)}
+                />
+                <span>
+                  <strong>Contribuinte Inscrito no CAD/ICMS-PR:</strong> {contribuinteInscritoPR ? 'Sim (GR-PR 1015 / DeSTDA)' : 'Não Inscrito (GNRE antecipada)'}
                 </span>
               </label>
             </div>
@@ -1488,32 +1662,175 @@ export default function AuditoriaEntrada() {
                 </div>
               </div>
 
-              {/* Obrigações Acessórias e Prazos */}
-              {apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota && (
+              {/* Obrigações Acessórias, Prazo Legal & Guia / EFD (Marco 2) */}
+              {demonstrativoDifalPR && (
                 <div
                   style={{
                     marginTop: 10,
-                    padding: '8px 12px',
+                    padding: '10px 12px',
                     borderRadius: 6,
                     background: '#ffffff',
-                    border: '1px solid #fed7aa',
+                    border: demonstrativoDifalPR.exigeRecolhimento ? '1px solid #fed7aa' : '1px solid #bbf7d0',
                     fontSize: '11.5px',
-                    color: '#7c2d12',
+                    color: demonstrativoDifalPR.exigeRecolhimento ? '#7c2d12' : '#166534',
                     display: 'flex',
                     flexWrap: 'wrap',
                     gap: 14,
                     alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center' }}>
+                    <div>
+                      <strong>Prazo Legal / Vencimento:</strong>{' '}
+                      <span className="mono" style={{ fontWeight: 700 }}>
+                        {demonstrativoDifalPR.prazoRecolhimento.dataVencimentoFormatada}
+                      </span>{' '}
+                      ({demonstrativoDifalPR.prazoRecolhimento.regraPrazo})
+                    </div>
+                    <div>
+                      <strong>Guia / Código:</strong>{' '}
+                      <span className="badge blue mono">{demonstrativoDifalPR.prazoRecolhimento.guia}</span>
+                    </div>
+                    {demonstrativoDifalPR.prazoRecolhimento.codigosEfd.length > 0 && (
+                      <div>
+                        <strong>Códigos EFD:</strong>{' '}
+                        <span className="mono">{demonstrativoDifalPR.prazoRecolhimento.codigosEfd.join(' / ')}</span>
+                      </div>
+                    )}
+                    <div>
+                      <strong>Itens Tributados DIFAL:</strong>{' '}
+                      <span className="mono tabular-nums">
+                        {demonstrativoDifalPR.somatorio.qtdItensTributados} / {demonstrativoDifalPR.somatorio.qtdItensAnalisados}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setExpandirDemonstrativoDifal((v) => !v)}
+                    aria-expanded={expandirDemonstrativoDifal}
+                    className="mini min-h-[44px]"
+                    style={{ minHeight: '44px', padding: '6px 12px', fontWeight: 600 }}
+                  >
+                    {expandirDemonstrativoDifal ? '▲ Ocultar Demonstrativo Produto a Produto' : '▼ Exibir Demonstrativo Produto a Produto'}
+                  </button>
+                </div>
+              )}
+
+              {/* Somatório Consolidado de Múltiplas Notas Auditadas na Sessão */}
+              {notasDifalSessao.length > 1 && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: '10px 12px',
+                    borderRadius: 6,
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    fontSize: '12px',
+                    color: '#1e3a8a',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 16,
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                   }}
                 >
                   <div>
-                    <strong>Vencimento Legal:</strong> {apuracaoDifalNota.resumoDifalNota.prazoPrincipal || 'Até o dia 12 do mês subsequente'}
+                    <strong>📚 Somatório Consolidado da Sessão ({somatorioConsolidadoNotas.qtdNotas} notas):</strong>
                   </div>
-                  <div>
-                    <strong>Obrigações / EFD:</strong> {(apuracaoDifalNota.resumoDifalNota.obrigacoesAcessorias || []).join(' · ') || 'Outros Débitos — Reg. E111'}
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }} className="tabular-nums">
+                    <span>Base Dupla Total: <b>{formatarBrl(somatorioConsolidadoNotas.totalBaseDifal)}</b></span>
+                    <span>DIFAL Principal: <b>{formatarBrl(somatorioConsolidadoNotas.totalDifalPrincipal)}</b></span>
+                    <span>FECOP: <b>{formatarBrl(somatorioConsolidadoNotas.totalFecop)}</b></span>
+                    <span>DIFAL Geral: <b>{formatarBrl(somatorioConsolidadoNotas.totalDifalGeral)}</b></span>
+                    <span>Itens Tributados: <b>{somatorioConsolidadoNotas.qtdItensTributados}</b></span>
                   </div>
-                  <div>
-                    <strong>Guia Oficial:</strong> {(apuracaoDifalNota.resumoDifalNota.guiasNecessarias || []).join(', ') || 'GR-PR'}
-                  </div>
+                </div>
+              )}
+
+              {/* Tabela Expansível: Demonstrativo Produto a Produto DIFAL PR (Marco 2) */}
+              {demonstrativoDifalPR && expandirDemonstrativoDifal && (
+                <div style={{ marginTop: 12, overflowX: 'auto', background: '#ffffff', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                  <table style={{ width: '100%', fontSize: '11.5px', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #cbd5e1', color: '#334155', textAlign: 'left' }}>
+                        <th style={{ padding: '8px' }}>Cód.</th>
+                        <th style={{ padding: '8px' }}>Produto</th>
+                        <th style={{ padding: '8px' }}>NCM</th>
+                        <th style={{ padding: '8px' }}>CFOP</th>
+                        <th style={{ padding: '8px' }}>Destinação</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Vlr. Oper.</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Alíq. Inter</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Intra PR / FECOP</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Base Dupla</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>DIFAL Princ.</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>FECOP</th>
+                        <th style={{ padding: '8px', textAlign: 'right' }}>Total DIFAL</th>
+                        <th style={{ padding: '8px' }}>Status</th>
+                        <th style={{ padding: '8px' }}>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {demonstrativoDifalPR.itens.map((it) => (
+                        <tr key={`${it.nItem}-${it.cProd}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td className="mono" style={{ padding: '6px 8px' }}>{it.cProd}</td>
+                          <td style={{ padding: '6px 8px', maxWidth: 200 }}>{it.xProd}</td>
+                          <td className="mono" style={{ padding: '6px 8px' }}>{it.NCM}</td>
+                          <td className="mono" style={{ padding: '6px 8px' }}>{it.CFOP || '—'}</td>
+                          <td style={{ padding: '6px 8px' }}>{it.destinacao}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">{formatarBrl(it.vOperacao)}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">{it.aliqInter.toFixed(1)}%</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">
+                            {it.aliqIntraPR.toFixed(1)}% / {it.fecop.toFixed(1)}%
+                          </td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">{formatarBrl(it.baseDupla)}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">{formatarBrl(it.valorDifalPrincipal)}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">{formatarBrl(it.valorFecop)}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: it.exigeRecolhimento ? '#c2410c' : '#475569' }} className="tabular-nums">
+                            {formatarBrl(it.valorDifalTotal)}
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>
+                            <span className={`badge ${it.exigeRecolhimento ? 'amber' : 'green'}`} style={{ fontSize: '10px' }}>
+                              {it.exigeRecolhimento ? 'Tributado' : 'Dispensado'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '6px 8px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setItemDifalSelecionado(it)}
+                              className="mini min-h-[44px]"
+                              style={{ minHeight: '44px', padding: '4px 10px', fontSize: '11px' }}
+                            >
+                              Inspecionar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: '#fff7ed', borderTop: '2px solid #fdba74', fontWeight: 700, color: '#9a3412' }}>
+                        <td colSpan={8} style={{ padding: '8px' }}>
+                          SOMATÓRIO CONSOLIDADO ({demonstrativoDifalPR.somatorio.qtdItensTributados} de {demonstrativoDifalPR.somatorio.qtdItensAnalisados} itens tributados)
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'right' }} className="tabular-nums">
+                          {formatarBrl(demonstrativoDifalPR.somatorio.totalBaseDifal)}
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'right' }} className="tabular-nums">
+                          {formatarBrl(demonstrativoDifalPR.somatorio.totalDifalPrincipal)}
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'right' }} className="tabular-nums">
+                          {formatarBrl(demonstrativoDifalPR.somatorio.totalFecop)}
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'right' }} className="tabular-nums">
+                          {formatarBrl(demonstrativoDifalPR.somatorio.totalDifalGeral)}
+                        </td>
+                        <td colSpan={2} style={{ padding: '8px' }}>
+                          {demonstrativoDifalPR.prazoRecolhimento.guia}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
               )}
 
@@ -1971,6 +2288,150 @@ export default function AuditoriaEntrada() {
             />
           </div>
         </div>
+      )}
+
+      {/* Fundamentação Normativa Consolidada da Auditoria de Entrada (Marco 1) */}
+      <div style={{ marginTop: 20 }}>
+        <LegalCitationBlock
+          citations={citacoesNormativasAuditoria}
+          currentLevel={nivel}
+          title="Fundamentação Normativa — Auditoria de Entrada (RICMS/PR, NPF 052/2018, SEFA/PR 48/2026 & LC 214/2025)"
+          defaultCollapsed={!isSenior}
+        />
+      </div>
+
+      {/* Drawer Lateral de Detalhe Pericial do DIFAL por Produto (Marco 2) */}
+      <ItemDetailDrawer
+        isOpen={Boolean(itemDifalSelecionado)}
+        onClose={() => setItemDifalSelecionado(null)}
+        title={itemDifalSelecionado ? `DIFAL Item #${itemDifalSelecionado.nItem} — ${itemDifalSelecionado.cProd}` : 'Detalhes DIFAL'}
+        subtitle={itemDifalSelecionado ? `${itemDifalSelecionado.xProd} · NCM ${itemDifalSelecionado.NCM}` : undefined}
+      >
+        {itemDifalSelecionado && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
+                <div><b>CFOP:</b> <span className="mono">{itemDifalSelecionado.CFOP || '—'}</span></div>
+                <div><b>Destinação:</b> {itemDifalSelecionado.destinacao}</div>
+                <div><b>Valor Operação:</b> <span className="tabular-nums">{formatarBrl(itemDifalSelecionado.vOperacao)}</span></div>
+                <div><b>Base Dupla PR:</b> <span className="tabular-nums">{formatarBrl(itemDifalSelecionado.baseDupla)}</span></div>
+                <div><b>DIFAL Principal:</b> <span className="tabular-nums">{formatarBrl(itemDifalSelecionado.valorDifalPrincipal)}</span></div>
+                <div><b>FECOP ({itemDifalSelecionado.fecop}%):</b> <span className="tabular-nums">{formatarBrl(itemDifalSelecionado.valorFecop)}</span></div>
+              </div>
+              <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #e2e8f0', fontSize: 13 }}>
+                <b>Total DIFAL a Recolher:</b>{' '}
+                <span className="tabular-nums" style={{ fontWeight: 800, color: itemDifalSelecionado.exigeRecolhimento ? '#c2410c' : '#15803d' }}>
+                  {formatarBrl(itemDifalSelecionado.valorDifalTotal)}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <strong style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Fundamentação Legal:</strong>
+              <p style={{ margin: 0, fontSize: 12, color: '#334155', lineHeight: 1.5 }}>{itemDifalSelecionado.fundamento}</p>
+              {itemDifalSelecionado.motivoDispensa && (
+                <p style={{ margin: '6px 0 0', fontSize: 12, color: '#15803d', fontWeight: 600 }}>
+                  Motivo da Dispensa: {itemDifalSelecionado.motivoDispensa}
+                </p>
+              )}
+            </div>
+
+            {itemDifalSelecionado.codigosEfd.length > 0 && (
+              <div>
+                <strong style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Códigos EFD ICMS/IPI (NPF 052/2018):</strong>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {itemDifalSelecionado.codigosEfd.map((cod) => (
+                    <span key={cod} className="badge blue mono" style={{ fontSize: 11 }}>{cod}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <strong style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Memória de Cálculo:</strong>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 11.5, color: '#334155', lineHeight: 1.5 }}>
+                {itemDifalSelecionado.memoriaCalculo.map((m, i) => (
+                  <li key={i}>{m}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </ItemDetailDrawer>
+
+      {/* ---------------- STICKY ACTION BAR PERSISTENTE (WCAG AA) ---------------- */}
+      {extractedInvoice && (
+        <StickyActionBar
+          visible={Boolean(extractedInvoice)}
+          screenState={resultadoOrquestracao || auditResult ? 'audited' : 'staged'}
+          summary={{
+            itemCount: extractedInvoice.itens?.length || 0,
+            selectedCount: selectedIndices.size,
+            totalValueBrl: extractedInvoice.resumoFinanceiro?.vNF || (extractedInvoice as any).totais?.vNF || 0,
+            riskCount: extractedInvoice.itens?.filter((i) => selectedIndices.has(i.index) && i.sensivelParaAuditoria).length || 0,
+          }}
+          primaryAction={
+            resultadoOrquestracao || auditResult
+              ? {
+                  label: 'Exportar Laudo Pericial (HTML)',
+                  onClick: () => handleDownloadReport('html'),
+                  loading: pdfLoading,
+                  loadingText: 'Gerando Laudo...',
+                }
+              : {
+                  label: 'Executar Orquestração Completa',
+                  onClick: handleExecutarOrquestracaoCompleta,
+                  loading: isOrquestrando,
+                  loadingText: 'Orquestrando DAG...',
+                  disabled: !file,
+                }
+          }
+          secondaryActions={
+            resultadoOrquestracao || auditResult
+              ? [
+                  {
+                    id: 'laudo-txt',
+                    label: 'Laudo TXT',
+                    onClick: () => handleDownloadReport('txt'),
+                    variant: 'outline',
+                  },
+                  {
+                    id: 'enviar-precificacao',
+                    label: 'Enviar p/ Precificação',
+                    onClick: handleEnviarCustoEfetivoParaPrecificacao,
+                    variant: 'outline',
+                  },
+                  {
+                    id: 'novo-arquivo',
+                    label: 'Novo Arquivo',
+                    onClick: handleResetToUpload,
+                    variant: 'ghost',
+                  },
+                ]
+              : [
+                  {
+                    id: 'auditar-ia-selecionados',
+                    label: 'Auditar Selecionados (IA)',
+                    onClick: handleAuditSubmit,
+                    disabled: isAuditing || selectedIndices.size === 0,
+                    variant: 'outline',
+                  },
+                  {
+                    id: 'novo-arquivo-staged',
+                    label: 'Novo Arquivo',
+                    onClick: handleResetToUpload,
+                    variant: 'ghost',
+                  },
+                ]
+          }
+          statusMessage={
+            isOrquestrando
+              ? 'Executando Orquestrador DAG RFB...'
+              : isAuditing
+              ? 'Executando auditoria pericial por IA...'
+              : undefined
+          }
+        />
       )}
     </div>
   );

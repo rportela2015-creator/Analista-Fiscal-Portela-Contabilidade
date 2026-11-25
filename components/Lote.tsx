@@ -10,6 +10,16 @@ import {
   gerarParametrizacaoErpResumida,
   exportarLoteErpCSV,
 } from '@/lib/lote-erp';
+import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
+import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
+import {
+  KpiStrip,
+  StickyActionBar,
+  ProgressiveSection,
+  LegalCitationBlock,
+  type KpiItemData,
+  type NormativeCitation,
+} from '@/components/ui';
 
 interface ItemEntradaBruto {
   id: number;
@@ -62,6 +72,9 @@ const esc = (s: string) => `"${(s ?? '').replace(/"/g, '""')}"`;
 
 export default function Lote() {
   // 1. TODOS OS HOOKS NO TOPO ABSOLUTO (Sem retornos condicionais antes)
+  const { nivel, isGerencial, isOperacional, isSenior } = useNivelOperacional();
+  const { empresaAtiva, perfilAtivo } = useEmpresaAtiva();
+
   const [ds, setDs] = useState<Dataset | null>(null);
   const [reforma, setReforma] = useState<Reforma | null>(null);
   const [itensEntrada, setItensEntrada] = useState<ItemEntradaBruto[]>([]);
@@ -84,6 +97,22 @@ export default function Lote() {
   const [mensagemStatus, setMensagemStatus] = useState<string | null>(null);
   const [filtroTexto, setFiltroTexto] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sincronização inicial com Empresa Ativa
+  useEffect(() => {
+    if (empresaAtiva) {
+      if (empresaAtiva.uf) setUfOrigem(empresaAtiva.uf);
+      if (perfilAtivo?.regimeTributario) {
+        if (perfilAtivo.regimeTributario === 'SIMPLES_NACIONAL' || perfilAtivo.regimeTributario === 'MEI') {
+          setRegimeSaida('simples');
+        } else if (perfilAtivo.regimeTributario === 'LUCRO_PRESUMIDO') {
+          setRegimeSaida('presumido');
+        } else if (perfilAtivo.regimeTributario === 'LUCRO_REAL') {
+          setRegimeSaida('real');
+        }
+      }
+    }
+  }, [empresaAtiva, perfilAtivo]);
 
   // Efeito 1: Carrega Dataset NCM Siscomex
   useEffect(() => {
@@ -414,38 +443,134 @@ export default function Lote() {
     );
   }, [linhasProcessadas, filtroTexto]);
 
+  // Faixa de KPIs Executivos e Operacionais (tabular-nums)
+  const kpiItems = useMemo<KpiItemData[]>(() => {
+    const totalItens = linhasProcessadas.length || itensEntrada.length || 0;
+    const prontosNcm = resumo?.prontosNcm ?? 0;
+    const requerAtencao = (resumo?.requerIaNcm ?? 0) + (resumo?.requerIaErp ?? 0);
+    const taxaProntidao = totalItens > 0 ? Math.round(((totalItens - requerAtencao) / totalItens) * 100) : 0;
+
+    return [
+      {
+        id: 'kpi-lote-total',
+        label: 'Total de Itens do Lote',
+        value: totalItens > 0 ? `${totalItens} itens` : '0 itens',
+        subValue: nomeArquivo ? `Arquivo: ${nomeArquivo}` : 'Aguardando importação',
+        trafficLight: totalItens > 0 ? 'info' : 'info',
+        statusLabel: 'Volume',
+        tooltipText: 'Quantidade total de mercadorias no arquivo ou lote colado',
+      },
+      {
+        id: 'kpi-lote-classificados',
+        label: 'Classificados / NCM Validado',
+        value: totalItens > 0 ? `${prontosNcm} itens` : '0 itens',
+        subValue: totalItens > 0 ? `${Math.round((prontosNcm / totalItens) * 100)}% aderência > 85%` : 'Aguardando processamento',
+        trafficLight: prontosNcm === totalItens && totalItens > 0 ? 'success' : prontosNcm > 0 ? 'warning' : 'info',
+        statusLabel: prontosNcm === totalItens && totalItens > 0 ? '100% Validado' : 'Parcial',
+        trend: prontosNcm > 0 ? 'up' : 'down',
+        trendValue: `${Math.round((prontosNcm / Math.max(1, totalItens)) * 100)}%`,
+      },
+      {
+        id: 'kpi-lote-divergencias',
+        label: 'Divergências / Requer IA',
+        value: requerAtencao > 0 ? `${requerAtencao} pendente(s)` : '0 pendências',
+        subValue: requerAtencao > 0
+          ? `${resumo?.requerIaNcm || 0} NCM fraco · ${resumo?.requerIaErp || 0} ERP pendente`
+          : 'Nenhum conflito detectado',
+        trafficLight: requerAtencao === 0 && totalItens > 0 ? 'success' : requerAtencao > 0 ? 'warning' : 'info',
+        statusLabel: requerAtencao === 0 && totalItens > 0 ? 'Regular' : 'Ação Necessária',
+      },
+      {
+        id: 'kpi-lote-prontidao',
+        label: 'Taxa de Prontidão ERP',
+        value: totalItens > 0 ? `${taxaProntidao}%` : '0%',
+        subValue: `Regime: ${regimeSaida.toUpperCase()} · Ano: ${anoCalendario}`,
+        trafficLight: taxaProntidao >= 90 ? 'success' : taxaProntidao >= 60 ? 'warning' : 'danger',
+        statusLabel: taxaProntidao >= 90 ? 'Pronto para Faturamento' : 'Incompleto',
+        trend: taxaProntidao >= 90 ? 'up' : 'down',
+        tooltipText: 'Percentual de itens prontos com CST, CFOP, alíquotas e códigos fiscais consolidados',
+      },
+    ];
+  }, [linhasProcessadas, itensEntrada, resumo, nomeArquivo, regimeSaida, anoCalendario]);
+
+  // Citações Normativas para o Lote
+  const citacoesNormativas = useMemo<NormativeCitation[]>(() => {
+    return [
+      {
+        id: 'cit-lote-confaz',
+        norma: 'Ajuste SINIEF 07/2005 & Guia Prático EFD ICMS/IPI',
+        artigo: 'Registro 0200 — Tabela de Identificação do Item',
+        ementa: 'Obrigatoriedade de NCM de 8 dígitos, CEST e codificação uniforme para a escrituração fiscal digital.',
+        esfera: 'federal',
+        statusVigencia: 'vigente',
+      },
+      {
+        id: 'cit-lote-reforma',
+        norma: 'Lei Complementar nº 214/2025',
+        artigo: 'Art. 11 e Anexo I — Classificação Tributária cClassTrib',
+        ementa: 'Definição da situação tributária da operação para apuração do IBS e CBS na saída.',
+        esfera: 'federal',
+        statusVigencia: 'vigente',
+      },
+    ];
+  }, []);
+
   return (
-    <div className="card">
-      {/* Cabeçalho do Módulo */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h2 style={{ margin: 0 }}>Aba 2 · Parametrização em Lote de ERP (CSV Inteligente)</h2>
-          <p className="hint" style={{ margin: '4px 0 0 0' }}>
-            Classificação automatizada com validação Descrição x NCM (corte de 85%), parametrização determinística de saída e <b>Codificação Assistida por IA</b> para o ERP.
-          </p>
-        </div>
-        {linhasProcessadas.length > 0 && (
-          <a
-            className="btn"
-            style={{ textDecoration: 'none', background: '#16a34a', borderColor: '#15803d' }}
-            href={`data:text/csv;charset=utf-8,${encodeURIComponent(exportarLoteErpCSV(linhasProcessadas))}`}
-            download={`lote-parametrizacao-erp-${contextoAtual.regimeSaida}-${contextoAtual.anoCalendario}.csv`}
-          >
-            ⬇️ Baixar CSV Resumido para ERP ({linhasProcessadas.length} itens)
-          </a>
-        )}
+    <>
+      <div style={{ marginBottom: 16 }}>
+        <KpiStrip
+          items={kpiItems}
+          level={nivel}
+          showConsolidatedTrafficLightBar
+          proportions={{
+            regularPct: resumo ? Math.round((resumo.prontosNcm / Math.max(1, resumo.total)) * 70) : 40,
+            warningPct: 20,
+            riskPct: 15,
+          }}
+        />
       </div>
 
-      {/* BARRA DE CONFIGURAÇÃO DE SAÍDA (RECALCULA TUDO INSTANTANEAMENTE) */}
-      <div
-        style={{
-          marginTop: 16,
-          padding: '14px 16px',
-          background: 'var(--bg-elevated, #f8fafc)',
-          borderRadius: 8,
-          border: '1px solid var(--border-color, #e2e8f0)',
-        }}
-      >
+      <div className="card">
+        {/* Cabeçalho do Módulo */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h2 style={{ margin: 0 }}>Aba 2 · Parametrização em Lote de ERP (CSV Inteligente)</h2>
+            <p className="hint" style={{ margin: '4px 0 0 0' }}>
+              Classificação automatizada com validação Descrição x NCM (corte de 85%), parametrização determinística de saída e <b>Codificação Assistida por IA</b> para o ERP.
+            </p>
+          </div>
+          {linhasProcessadas.length > 0 && (
+            <a
+              className="btn"
+              style={{ textDecoration: 'none', background: '#16a34a', borderColor: '#15803d', minHeight: '44px', display: 'inline-flex', alignItems: 'center' }}
+              href={`data:text/csv;charset=utf-8,${encodeURIComponent(exportarLoteErpCSV(linhasProcessadas))}`}
+              download={`lote-parametrizacao-erp-${contextoAtual.regimeSaida}-${contextoAtual.anoCalendario}.csv`}
+            >
+              ⬇️ Baixar CSV Resumido para ERP ({linhasProcessadas.length} itens)
+            </a>
+          )}
+        </div>
+
+        {/* BARRA DE CONFIGURAÇÃO DE SAÍDA (RECALCULA TUDO INSTANTANEAMENTE) */}
+        <div style={{ marginTop: 16 }}>
+          <ProgressiveSection
+            id="sec-lote-contexto-saida"
+            title="Contexto Tributário de Saída para o Lote"
+            subtitle="Regime de apuração, UFs de origem/destino e ano-calendário da transição"
+            minLevel="operacional"
+            currentLevel={nivel}
+            defaultExpanded={isOperacional || isSenior}
+            onDemandTriggerLabel="Configurar Contexto Tributário de Saída (Regime / UFs / Ano)"
+          >
+            <div
+              style={{
+                marginTop: 8,
+                padding: '14px 16px',
+                background: 'var(--bg-elevated, #f8fafc)',
+                borderRadius: 8,
+                border: '1px solid var(--border-color, #e2e8f0)',
+              }}
+            >
         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           ⚙️ Contexto de Saída da Mercadoria (Regime Tributário & Fisco)
         </div>
@@ -539,6 +664,8 @@ export default function Lote() {
           </div>
         </div>
       </div>
+    </ProgressiveSection>
+  </div>
 
       {/* ÁREA DE CARGA DE DADOS (ARQUIVO OU TEXTO COLADO) */}
       <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -557,7 +684,7 @@ export default function Lote() {
           className="btn ghost"
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          style={{ border: '1px dashed #3b82f6', color: '#1d4ed8' }}
+          style={{ border: '1px dashed #3b82f6', color: '#1d4ed8', minHeight: '44px' }}
         >
           📂 Selecionar Planilha CSV / TSV
         </button>
@@ -567,6 +694,7 @@ export default function Lote() {
           type="button"
           onClick={executarParametrizacaoLote}
           disabled={!itensEntrada.length || processando || !ds}
+          style={{ minHeight: '44px' }}
         >
           {processando ? (
             <>
@@ -581,6 +709,7 @@ export default function Lote() {
           <button
             className="mini"
             type="button"
+            style={{ minHeight: '44px', padding: '8px 14px' }}
             onClick={() => {
               setItensEntrada([]);
               setLinhasProcessadas([]);
@@ -602,7 +731,12 @@ export default function Lote() {
       />
       {pasteTexto.trim().length > 0 && (
         <div style={{ marginTop: 6 }}>
-          <button className="mini" type="button" onClick={() => processarTextoEntrada(pasteTexto, 'colado')}>
+          <button
+            className="mini"
+            type="button"
+            style={{ minHeight: '44px', padding: '8px 14px' }}
+            onClick={() => processarTextoEntrada(pasteTexto, 'colado')}
+          >
             Usar texto colado ({pasteTexto.split(/\n/).filter(Boolean).length} linhas)
           </button>
         </div>
@@ -611,9 +745,14 @@ export default function Lote() {
       {/* Mensagem de Status */}
       {mensagemStatus && (
         <div
+          role="status"
+          aria-live="polite"
           style={{
             marginTop: 10,
             padding: '8px 12px',
+            minHeight: '44px',
+            display: 'flex',
+            alignItems: 'center',
             background: '#f0f9ff',
             color: '#0369a1',
             borderRadius: 6,
@@ -808,6 +947,111 @@ export default function Lote() {
           </div>
         </div>
       )}
+
+      {/* FUNDAMENTAÇÃO NORMATIVA DO LOTE */}
+      <div style={{ marginTop: 14 }}>
+        <ProgressiveSection
+          id="sec-lote-fundamentacao"
+          title="Embasamento Legal do Lote & Obrigações Acessórias (SPED / LC 214)"
+          subtitle="Critérios de escrituração do Registro 0200 e matriz de tributação de saída"
+          minLevel="senior"
+          currentLevel={nivel}
+          defaultExpanded={isSenior}
+          onDemandTriggerLabel="Visualizar Fundamentação Legal do Lote (SPED / LC 214)"
+          badge={<span className="badge amber" style={{ fontSize: '10px' }}>Nível Sênior</span>}
+        >
+          <div style={{ marginTop: 8 }}>
+            <LegalCitationBlock
+              title="Dispositivos Normativos para Parametrização em Lote"
+              citations={citacoesNormativas}
+              defaultCollapsed={false}
+            />
+          </div>
+        </ProgressiveSection>
+      </div>
     </div>
-  );
+
+    <StickyActionBar
+      primaryAction={{
+        label: linhasProcessadas.length > 0
+          ? `⬇️ Baixar CSV para ERP (${linhasProcessadas.length} itens)`
+          : itensEntrada.length > 0
+          ? (processando ? 'Processando Lote...' : '⚙️ Processar Lote no Motor Fiscal')
+          : 'Importar Arquivo CSV / Colar Itens',
+        onClick: () => {
+          if (linhasProcessadas.length > 0) {
+            const csvContent = exportarLoteErpCSV(linhasProcessadas);
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `lote-parametrizacao-erp-${contextoAtual.regimeSaida}-${contextoAtual.anoCalendario}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } else if (itensEntrada.length > 0) {
+            executarParametrizacaoLote();
+          } else {
+            fileInputRef.current?.click();
+          }
+        },
+        loading: processando || processandoIaNcm || processandoIaErp,
+        disabled: processando || processandoIaNcm || processandoIaErp,
+        title: 'Ação primária de processamento em lote',
+      }}
+      secondaryActions={[
+        ...(linhasProcessadas.length > 0
+          ? [
+              ...(resumo?.requerIaNcm
+                ? [
+                    {
+                      id: 'sec-ia-ncm',
+                      label: `✦ Resolver ${resumo.requerIaNcm} NCMs (IA)`,
+                      onClick: () => classificarNcmsComIa(),
+                      disabled: processandoIaNcm,
+                    },
+                  ]
+                : []),
+              ...(resumo?.requerIaErp
+                ? [
+                    {
+                      id: 'sec-ia-erp',
+                      label: `✦ Codificar ${resumo.requerIaErp} ERP (IA)`,
+                      onClick: () => codificarErpComIa(),
+                      disabled: processandoIaErp,
+                    },
+                  ]
+                : []),
+              {
+                id: 'sec-reprocessar',
+                label: 'Reprocessar Lote',
+                onClick: () => executarParametrizacaoLote(),
+                disabled: processando,
+              },
+            ]
+          : itensEntrada.length > 0
+          ? [
+              {
+                id: 'sec-limpar-itens',
+                label: 'Limpar Itens',
+                onClick: () => {
+                  setItensEntrada([]);
+                  setNomeArquivo('');
+                  setPasteTexto('');
+                  setLinhasProcessadas([]);
+                },
+              },
+            ]
+          : []),
+      ]}
+      contextBadge={
+        <span>
+          {empresaAtiva ? <b>{empresaAtiva.razaoSocial} · </b> : null}
+          Regime: <b>{regimeSaida.toUpperCase()}</b> · Ano: <b>{anoCalendario}</b> · Origem: <b>{ufOrigem}</b> → Destino: <b>{ufDestino}</b>
+        </span>
+      }
+      statusMessage={mensagemStatus || undefined}
+    />
+  </>
+);
 }
