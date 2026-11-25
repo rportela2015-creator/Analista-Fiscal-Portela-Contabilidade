@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-25T13:59:56.689Z",
+  "empresas": [
+    {
+      "id": "6fb292c5-e224-4582-bc11-4373c5a76add",
+      "escritorioId": "00000000-0000-4000-8000-000000000001",
+      "cnpj": "78251600000110",
+      "razaoSocial": "CENTRO DE FORMACAO DE CONDUTORES PIONEIRA LTDA",
+      "nomeFantasia": null,
+      "inscricaoEstadual": null,
+      "uf": "PR",
+      "municipioIbge": "4120606",
+      "ativo": true,
+      "metadata": {
+        "situacaoCadastral": "ATIVA",
+        "porte": "MICRO EMPRESA",
+        "naturezaJuridica": "Sociedade Empresária Limitada",
+        "endereco": {
+          "logradouro": "RUA MAL DEODORO",
+          "numero": "1100",
+          "complemento": "SALA",
+          "bairro": "CENTRO",
+          "cep": "84400000",
+          "municipio": "PRUDENTOPOLIS",
+          "municipioIbge": "4120606",
+          "uf": "PR"
+        },
+        "cnaePrincipal": {
+          "codigo": "8599601",
+          "descricao": "Formação de condutores"
+        },
+        "cnaesSecundarios": [],
+        "simplesNacional": {
+          "optanteSimples": true,
+          "dataOpcaoSimples": "2007-07-01",
+          "dataExclusaoSimples": null,
+          "optanteMei": false,
+          "dataOpcaoMei": null,
+          "dataExclusaoMei": null
+        },
+        "regimeTributarioSugerido": "SIMPLES_NACIONAL",
+        "fonteReceita": "brasilapi",
+        "consultadoEm": "2026-11-25T13:59:51.929Z"
+      },
+      "criadoEm": "2026-11-25T13:59:56.688Z",
+      "atualizadoEm": "2026-11-25T13:59:56.688Z"
+    }
+  ],
+  "perfis": {
+    "6fb292c5-e224-4582-bc11-4373c5a76add": [
+      {
+        "id": "e81d3590-99c4-4e8a-8d99-ab53b26acfa8",
+        "empresaId": "6fb292c5-e224-4582-bc11-4373c5a76add",
+        "escritorioId": "00000000-0000-4000-8000-000000000001",
+        "regimeTributario": "SIMPLES_NACIONAL",
+        "vigenciaInicio": "2026-11-25",
+        "vigenciaFim": null,
+        "aliquotasEfetivas": {
+          "icmsEfetivo": 3.5,
+          "pisEfetivo": 0.38,
+          "cofinsEfetivo": 1.6,
+          "faixaSimples": 3,
+          "fatorR": 0.28
+        },
+        "simplesOptanteHibrido2027": false,
+        "beneficiosParana": {
+          "diferimentoParcialArt28": true,
+          "optanteRotSt": false,
+          "reducoesBcAtivas": []
+        },
+        "reformaTributaria": {
+          "optanteSplitPayment2026": false,
+          "creditoPresumidoIbsCbs": false
+        },
+        "criadoEm": "2026-11-25T13:59:56.688Z",
+        "atualizadoEm": "2026-11-25T13:59:56.688Z"
+      }
+    ]
+  }
+}
