@@ -193,6 +193,35 @@ export default function CadastroEmpresas() {
     }
   }, [carregarEmpresas]);
 
+  useEffect(() => {
+    const aplicarCnpjRapido = (termo: string) => {
+      const limpo = termo.trim();
+      if (!limpo) return;
+      setFormCnpj(limpo);
+    };
+
+    try {
+      const salvo = sessionStorage.getItem('portela_quick_search_cnpj');
+      if (salvo) {
+        aplicarCnpjRapido(salvo);
+        sessionStorage.removeItem('portela_quick_search_cnpj');
+      }
+    } catch { /* sem storage */ }
+
+    const handleNavegarAba = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ tab?: string; query?: string }>).detail;
+      if (detail?.tab === 'empresas' && detail?.query) {
+        aplicarCnpjRapido(detail.query);
+        try {
+          sessionStorage.removeItem('portela_quick_search_cnpj');
+        } catch { /* sem storage */ }
+      }
+    };
+
+    window.addEventListener('navegar-aba', handleNavegarAba);
+    return () => window.removeEventListener('navegar-aba', handleNavegarAba);
+  }, []);
+
   const empresaAtiva = useMemo(() => {
     return empresas.find((e) => e.id === empresaAtivaId) || null;
   }, [empresas, empresaAtivaId]);
@@ -463,8 +492,8 @@ export default function CadastroEmpresas() {
               padding: '3px 8px',
               borderRadius: 4,
               background: dbStatus.conectado ? 'var(--accent-emerald-glow)' : 'var(--accent-amber-subtle)',
-              color: dbStatus.conectado ? '#6ee7b7' : '#fcd34d',
-              border: `1px solid ${dbStatus.conectado ? '#059669' : '#d97706'}`,
+              color: dbStatus.conectado ? 'var(--ok)' : 'var(--warn)',
+              border: `1px solid ${dbStatus.conectado ? 'var(--border-emerald-glow)' : 'rgba(245, 158, 11, 0.35)'}`,
             }}
           >
             DB: {dbStatus.modo}
@@ -475,8 +504,8 @@ export default function CadastroEmpresas() {
           className="card-infra-status"
           aria-label="Status dos Serviços e Persistência"
           style={{
-            background: 'var(--panel)',
-            border: '1px solid var(--line)',
+            background: 'var(--bg-surface-card)',
+            border: '1px solid var(--border-medium)',
             borderRadius: 8,
             padding: '14px 18px',
             display: 'flex',
@@ -505,36 +534,38 @@ export default function CadastroEmpresas() {
                 padding: '3px 8px',
                 borderRadius: 4,
                 background: dbStatus.conectado ? 'var(--accent-emerald-glow)' : 'var(--accent-amber-subtle)',
-                color: dbStatus.conectado ? '#6ee7b7' : '#fcd34d',
-                border: `1px solid ${dbStatus.conectado ? '#059669' : '#d97706'}`,
+                color: dbStatus.conectado ? 'var(--ok)' : 'var(--warn)',
+                border: `1px solid ${dbStatus.conectado ? 'var(--border-emerald-glow)' : 'rgba(245, 158, 11, 0.35)'}`,
               }}
             >
               DB: {dbStatus.modo}
             </span>
 
             <span
+              className="tabular-nums"
               style={{
                 fontSize: 11,
                 fontWeight: 600,
                 padding: '3px 8px',
                 borderRadius: 4,
                 background: sidecarsStatus.simples ? 'var(--accent-emerald-glow)' : 'var(--accent-crimson-subtle)',
-                color: sidecarsStatus.simples ? '#6ee7b7' : '#fca5a5',
-                border: `1px solid ${sidecarsStatus.simples ? '#059669' : '#dc2626'}`,
+                color: sidecarsStatus.simples ? 'var(--ok)' : 'var(--bad)',
+                border: `1px solid ${sidecarsStatus.simples ? 'var(--border-emerald-glow)' : 'var(--border-crimson-glow)'}`,
               }}
             >
               Sidecar Simples: {sidecarsStatus.simples ? 'Online (8081)' : 'Offline/Fallback'}
             </span>
 
             <span
+              className="tabular-nums"
               style={{
                 fontSize: 11,
                 fontWeight: 600,
                 padding: '3px 8px',
                 borderRadius: 4,
                 background: sidecarsStatus.regular ? 'var(--accent-emerald-glow)' : 'var(--accent-crimson-subtle)',
-                color: sidecarsStatus.regular ? '#6ee7b7' : '#fca5a5',
-                border: `1px solid ${sidecarsStatus.regular ? '#059669' : '#dc2626'}`,
+                color: sidecarsStatus.regular ? 'var(--ok)' : 'var(--bad)',
+                border: `1px solid ${sidecarsStatus.regular ? 'var(--border-emerald-glow)' : 'var(--border-crimson-glow)'}`,
               }}
             >
               Sidecar Regular: {sidecarsStatus.regular ? 'Online (8082)' : 'Offline/Fallback'}
@@ -544,15 +575,16 @@ export default function CadastroEmpresas() {
               type="button"
               onClick={() => checarStatusInfra(true)}
               disabled={verificandoSidecars}
+              className="st-btn-secondary st-touch-target"
               style={{
                 fontSize: 12,
                 fontWeight: 600,
                 padding: '8px 14px',
                 minHeight: '44px',
-                borderRadius: 4,
-                background: 'var(--panel-alt, #2a2a2a)',
+                borderRadius: 6,
+                background: 'var(--bg-surface-subtle)',
                 color: 'var(--ink)',
-                border: '1px solid var(--line, #444)',
+                border: '1px solid var(--border-medium)',
                 cursor: verificandoSidecars ? 'wait' : 'pointer',
               }}
             >
@@ -574,9 +606,9 @@ export default function CadastroEmpresas() {
             minHeight: '44px',
             display: 'flex',
             alignItems: 'center',
-            background: mensagem.tipo === 'sucesso' ? '#064e3b' : '#7f1d1d',
-            color: mensagem.tipo === 'sucesso' ? '#a7f3d0' : '#fecaca',
-            border: `1px solid ${mensagem.tipo === 'sucesso' ? '#059669' : '#dc2626'}`,
+            background: mensagem.tipo === 'sucesso' ? 'var(--accent-emerald-glow)' : 'var(--accent-crimson-subtle)',
+            color: mensagem.tipo === 'sucesso' ? 'var(--ok)' : 'var(--bad)',
+            border: `1px solid ${mensagem.tipo === 'sucesso' ? 'var(--border-emerald-glow)' : 'var(--border-crimson-glow)'}`,
           }}
         >
           {mensagem.texto}
@@ -646,23 +678,23 @@ export default function CadastroEmpresas() {
                     borderRadius: 6,
                     cursor: 'pointer',
                     minHeight: '48px',
-                    background: ativa ? 'var(--highlight, rgba(59, 130, 246, 0.15))' : 'var(--bg)',
-                    border: `1px solid ${ativa ? '#3b82f6' : 'var(--line)'}`,
+                    background: ativa ? 'var(--highlight)' : 'var(--bg-surface-input)',
+                    border: `1px solid ${ativa ? 'var(--border-emerald-glow)' : 'var(--border-subtle)'}`,
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 4,
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 600, fontSize: 13, color: ativa ? '#93c5fd' : 'var(--ink)' }}>
+                    <span style={{ fontWeight: 600, fontSize: 13, color: ativa ? 'var(--ok)' : 'var(--ink)' }}>
                       {emp.razaoSocial}
                     </span>
                     {ativa && (
                       <span
                         style={{
                           fontSize: 10,
-                          background: '#3b82f6',
-                          color: '#fff',
+                          background: 'var(--portela-brand-cta)',
+                          color: 'var(--portela-cta-ink)',
                           padding: '1px 6px',
                           borderRadius: 3,
                           fontWeight: 700,
@@ -672,7 +704,7 @@ export default function CadastroEmpresas() {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--ink-2)', display: 'flex', gap: 10 }}>
+                  <div className="tabular-nums" style={{ fontSize: 11, color: 'var(--ink-2)', display: 'flex', gap: 10 }}>
                     <span>CNPJ: {formatarCnpj(emp.cnpj)}</span>
                     <span>UF: {emp.uf}</span>
                     <span>Perfis: {emp.perfis?.length || 0}</span>
@@ -696,6 +728,7 @@ export default function CadastroEmpresas() {
                 <input
                   id="formCnpj"
                   type="text"
+                  className="tabular-nums"
                   value={formCnpj}
                   onChange={(e) => setFormCnpj(e.target.value)}
                   placeholder="00.000.000/0000-00"
@@ -706,8 +739,8 @@ export default function CadastroEmpresas() {
                     minHeight: '44px',
                     padding: '6px 10px',
                     borderRadius: 4,
-                    background: 'var(--bg)',
-                    border: `1px solid ${!cnpjValido ? '#dc2626' : 'var(--line)'}`,
+                    background: 'var(--bg-surface-input)',
+                    border: `1px solid ${!cnpjValido ? 'var(--accent-crimson)' : 'var(--border-subtle)'}`,
                     color: 'var(--ink)',
                     fontSize: 13,
                   }}
@@ -717,14 +750,14 @@ export default function CadastroEmpresas() {
                   onClick={handleConsultarCnpjReceita}
                   disabled={consultandoCnpj || !formCnpj.trim() || !cnpjValido}
                   aria-busy={consultandoCnpj}
-                  className="min-h-[44px]"
+                  className="st-touch-target"
                   style={{
                     minHeight: '44px',
                     padding: '8px 14px',
-                    borderRadius: 4,
-                    border: '1px solid #1d4ed8',
-                    background: consultandoCnpj ? '#1e3a8a' : '#1e40af',
-                    color: '#fff',
+                    borderRadius: 6,
+                    border: '1px solid rgba(59, 130, 246, 0.45)',
+                    background: consultandoCnpj ? 'var(--bg-surface-subtle)' : 'var(--accent-blue-subtle)',
+                    color: 'var(--accent-blue)',
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: consultandoCnpj ? 'wait' : 'pointer',
@@ -735,14 +768,14 @@ export default function CadastroEmpresas() {
                 </button>
               </div>
               {!cnpjValido && formCnpj.length > 0 && (
-                <span style={{ fontSize: 11, color: '#f87171', display: 'block', marginTop: 2 }}>
+                <span style={{ fontSize: 11, color: 'var(--bad)', display: 'block', marginTop: 2 }}>
                   Dígitos verificadores do CNPJ inválidos
                 </span>
               )}
               <div
                 role="status"
                 aria-live="polite"
-                style={{ fontSize: 11, color: '#93c5fd', marginTop: statusConsultaCnpj ? 4 : 0, minHeight: statusConsultaCnpj ? '20px' : 0 }}
+                style={{ fontSize: 11, color: 'var(--accent-blue)', marginTop: statusConsultaCnpj ? 4 : 0, minHeight: statusConsultaCnpj ? '20px' : 0 }}
               >
                 {statusConsultaCnpj}
               </div>
@@ -751,8 +784,8 @@ export default function CadastroEmpresas() {
             {dadosReceita && (
               <div
                 style={{
-                  background: 'var(--bg)',
-                  border: '1px solid #2563eb',
+                  background: 'var(--bg-surface-input)',
+                  border: '1px solid rgba(59, 130, 246, 0.4)',
                   borderRadius: 6,
                   padding: '10px 12px',
                   fontSize: 11.5,
@@ -762,24 +795,24 @@ export default function CadastroEmpresas() {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                  <strong style={{ color: '#93c5fd' }}>
+                  <strong style={{ color: 'var(--accent-blue)' }}>
                     Dados Oficiais Receita Federal ({dadosReceita.fonte.toUpperCase()})
                   </strong>
-                  <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'var(--accent-emerald-glow)', color: '#6ee7b7', fontWeight: 700 }}>
+                  <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'var(--accent-emerald-glow)', color: 'var(--ok)', fontWeight: 700 }}>
                     {dadosReceita.situacaoCadastral}
                   </span>
                 </div>
-                <div>
+                <div className="tabular-nums">
                   <b>CNAE Principal:</b> {dadosReceita.cnaePrincipal.codigo || '—'} — {dadosReceita.cnaePrincipal.descricao || 'Não informado'}
                 </div>
                 {dadosReceita.cnaesSecundarios.length > 0 && (
-                  <div style={{ color: 'var(--ink-2)' }}>
+                  <div className="tabular-nums" style={{ color: 'var(--ink-2)' }}>
                     <b>CNAEs Secundários ({dadosReceita.cnaesSecundarios.length}):</b>{' '}
                     {dadosReceita.cnaesSecundarios.slice(0, 3).map((c) => `${c.codigo} (${c.descricao})`).join('; ')}
                     {dadosReceita.cnaesSecundarios.length > 3 ? ` +${dadosReceita.cnaesSecundarios.length - 3}` : ''}
                   </div>
                 )}
-                <div>
+                <div className="tabular-nums">
                   <b>Endereço:</b> {[
                     dadosReceita.endereco.logradouro,
                     dadosReceita.endereco.numero,
@@ -790,7 +823,7 @@ export default function CadastroEmpresas() {
                 </div>
                 <div style={{ color: 'var(--ink-2)' }}>
                   <b>Natureza Jurídica:</b> {dadosReceita.naturezaJuridica || '—'} · <b>Porte:</b> {dadosReceita.porte || '—'} ·{' '}
-                  <b>Regime Sugerido:</b> <span style={{ color: '#6ee7b7', fontWeight: 700 }}>{dadosReceita.regimeTributarioSugerido}</span>{' '}
+                  <b>Regime Sugerido:</b> <span style={{ color: 'var(--ok)', fontWeight: 700 }}>{dadosReceita.regimeTributarioSugerido}</span>{' '}
                   ({dadosReceita.simplesNacional.optanteMei ? 'MEI' : dadosReceita.simplesNacional.optanteSimples ? 'Simples Nacional' : 'Não optante Simples'})
                 </div>
               </div>
@@ -895,6 +928,7 @@ export default function CadastroEmpresas() {
                 <input
                   id="formMunicipioIbge"
                   type="text"
+                  className="tabular-nums"
                   value={formMunicipioIbge}
                   onChange={(e) => setFormMunicipioIbge(e.target.value)}
                   placeholder="4106902 (Curitiba)"
@@ -903,8 +937,8 @@ export default function CadastroEmpresas() {
                     width: '100%',
                     padding: '6px 10px',
                     borderRadius: 4,
-                    background: 'var(--bg)',
-                    border: '1px solid var(--line)',
+                    background: 'var(--bg-surface-input)',
+                    border: '1px solid var(--border-subtle)',
                     color: 'var(--ink)',
                     fontSize: 13,
                   }}
@@ -915,16 +949,17 @@ export default function CadastroEmpresas() {
             <button
               type="submit"
               disabled={salvando || (formCnpj.length > 0 && !cnpjValido)}
+              className="btn st-touch-target"
               style={{
                 marginTop: 6,
-                background: '#2563eb',
-                color: '#fff',
-                border: 'none',
+                background: 'var(--portela-brand-cta)',
+                color: 'var(--portela-cta-ink)',
+                border: '1px solid var(--portela-brand-cta)',
                 padding: '8px 14px',
                 minHeight: '44px',
-                borderRadius: 4,
+                borderRadius: 6,
                 cursor: 'pointer',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: 13,
               }}
             >
@@ -936,8 +971,8 @@ export default function CadastroEmpresas() {
         {/* COLUNA DIREITA: DETALHES DA EMPRESA ATIVA & PERFIS BITEMPORAIS */}
         <section
           style={{
-            background: 'var(--panel)',
-            border: '1px solid var(--line)',
+            background: 'var(--bg-surface-card)',
+            border: '1px solid var(--border-medium)',
             borderRadius: 8,
             padding: 16,
             display: 'flex',
@@ -945,19 +980,27 @@ export default function CadastroEmpresas() {
             gap: 16,
           }}
         >
-          {empresaAtiva ? (
+          {empresaAtiva ? (() => {
+            const meta = (empresaAtiva.metadata as Record<string, any> | null) || null;
+            const end = meta?.endereco as Record<string, any> | undefined;
+            const cnaeP = meta?.cnaePrincipal as { codigo?: string; descricao?: string } | undefined;
+            const cnaesSec = Array.isArray(meta?.cnaesSecundarios) ? meta.cnaesSecundarios as Array<{ codigo?: string; descricao?: string }> : [];
+            const simples = meta?.simplesNacional as Record<string, any> | undefined;
+
+            return (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{empresaAtiva.razaoSocial}</h3>
-                  <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 2 }}>
+                  <div className="tabular-nums" style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 2 }}>
                     CNPJ: <b>{formatarCnpj(empresaAtiva.cnpj)}</b> · UF: <b>{empresaAtiva.uf}</b> · IE:{' '}
                     <b>{empresaAtiva.inscricaoEstadual || 'Isento / Não inf.'}</b>
+                    {empresaAtiva.municipioIbge ? <> · IBGE: <b>{empresaAtiva.municipioIbge}</b></> : null}
                   </div>
-                  {Boolean((empresaAtiva.metadata as Record<string, any> | null)?.cnaePrincipal) && (
-                    <div style={{ fontSize: 11.5, color: 'var(--ink-2)', marginTop: 4 }}>
-                      CNAE: <b>{(empresaAtiva.metadata as any).cnaePrincipal.codigo}</b> — {(empresaAtiva.metadata as any).cnaePrincipal.descricao}
-                      {(empresaAtiva.metadata as any).situacaoCadastral ? ` · Situação: ${(empresaAtiva.metadata as any).situacaoCadastral}` : ''}
+                  {Boolean(cnaeP) && (
+                    <div className="tabular-nums" style={{ fontSize: 11.5, color: 'var(--ink-2)', marginTop: 4 }}>
+                      CNAE: <b>{cnaeP?.codigo || '—'}</b> — {cnaeP?.descricao || 'Não informado'}
+                      {meta?.situacaoCadastral ? ` · Situação: ${meta.situacaoCadastral}` : ''}
                     </div>
                   )}
                 </div>
@@ -965,15 +1008,13 @@ export default function CadastroEmpresas() {
                 <button
                   type="button"
                   onClick={() => setModalNovoPerfil(!modalNovoPerfil)}
+                  className={modalNovoPerfil ? 'st-btn-secondary st-touch-target' : 'btn st-touch-target'}
                   style={{
-                    background: modalNovoPerfil ? 'var(--line)' : '#059669',
-                    color: '#fff',
-                    border: 'none',
                     padding: '8px 14px',
                     minHeight: '44px',
-                    borderRadius: 4,
+                    borderRadius: 6,
                     fontSize: 12,
-                    fontWeight: 600,
+                    fontWeight: 700,
                     cursor: 'pointer',
                   }}
                 >
@@ -981,13 +1022,106 @@ export default function CadastroEmpresas() {
                 </button>
               </div>
 
+              {meta && (
+                <div
+                  style={{
+                    background: 'var(--bg-surface-subtle)',
+                    border: '1px solid var(--border-medium)',
+                    borderRadius: 8,
+                    padding: '10px 12px',
+                    fontSize: 11.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 5,
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                    <strong style={{ color: 'var(--accent-blue)' }}>
+                      Ficha Cadastral RFB {meta.fonteReceita ? `(${String(meta.fonteReceita).toUpperCase()})` : ''}
+                    </strong>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                      {meta.situacaoCadastral && (
+                        <span
+                          className="badge"
+                          style={{
+                            background: String(meta.situacaoCadastral).toUpperCase().includes('ATIVA')
+                              ? 'var(--accent-emerald-glow)'
+                              : 'var(--accent-amber-subtle)',
+                            color: String(meta.situacaoCadastral).toUpperCase().includes('ATIVA')
+                              ? 'var(--ok)'
+                              : 'var(--warn)',
+                            fontSize: 10,
+                          }}
+                        >
+                          {meta.situacaoCadastral}
+                        </span>
+                      )}
+                      {meta.consultadoEm && (
+                        <span className="tabular-nums" style={{ fontSize: 10.5, color: 'var(--ink-2)' }}>
+                          Consultado em {new Date(meta.consultadoEm).toLocaleDateString('pt-BR')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ color: 'var(--ink-2)', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    {meta.porte && <span><b>Porte:</b> {meta.porte}</span>}
+                    {meta.naturezaJuridica && <span><b>Natureza Jurídica:</b> {meta.naturezaJuridica}</span>}
+                    {meta.regimeTributarioSugerido && (
+                      <span>
+                        <b>Regime Sugerido:</b>{' '}
+                        <span style={{ color: 'var(--ok)', fontWeight: 700 }}>{meta.regimeTributarioSugerido}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {end && (
+                    <div className="tabular-nums" style={{ color: 'var(--ink-2)' }}>
+                      <b>Endereço:</b>{' '}
+                      {[
+                        end.logradouro,
+                        end.numero,
+                        end.complemento,
+                        end.bairro,
+                        end.municipio && end.uf ? `${end.municipio}/${end.uf}` : end.uf,
+                        end.cep ? `CEP ${end.cep}` : '',
+                        end.municipioIbge ? `IBGE ${end.municipioIbge}` : '',
+                      ].filter(Boolean).join(', ') || 'Não informado'}
+                    </div>
+                  )}
+
+                  {simples && (
+                    <div className="tabular-nums" style={{ color: 'var(--ink-2)' }}>
+                      <b>Simples / MEI:</b>{' '}
+                      {simples.optanteMei
+                        ? 'Optante MEI'
+                        : simples.optanteSimples
+                        ? 'Optante Simples Nacional'
+                        : 'Não optante Simples'}
+                      {simples.dataOpcaoSimples ? ` · Opção Simples: ${simples.dataOpcaoSimples}` : ''}
+                      {simples.dataExclusaoSimples ? ` · Exclusão Simples: ${simples.dataExclusaoSimples}` : ''}
+                      {simples.dataOpcaoMei ? ` · Opção MEI: ${simples.dataOpcaoMei}` : ''}
+                      {simples.dataExclusaoMei ? ` · Exclusão MEI: ${simples.dataExclusaoMei}` : ''}
+                    </div>
+                  )}
+
+                  {cnaesSec.length > 0 && (
+                    <div className="tabular-nums" style={{ color: 'var(--ink-2)' }}>
+                      <b>CNAEs Secundários ({cnaesSec.length}):</b>{' '}
+                      {cnaesSec.slice(0, 3).map((c) => `${c.codigo || '—'} (${c.descricao || '—'})`).join('; ')}
+                      {cnaesSec.length > 3 ? ` +${cnaesSec.length - 3}` : ''}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* FORMULÁRIO DE NOVO PERFIL / ATUALIZAÇÃO BITEMPORAL */}
               {modalNovoPerfil && (
                 <form
                   onSubmit={handleAdicionarPerfil}
                   style={{
-                    background: 'var(--bg)',
-                    border: '1px solid #3b82f6',
+                    background: 'var(--bg-surface-subtle)',
+                    border: '1px solid rgba(59, 130, 246, 0.4)',
                     borderRadius: 6,
                     padding: 14,
                     display: 'flex',
@@ -995,7 +1129,7 @@ export default function CadastroEmpresas() {
                     gap: 12,
                   }}
                 >
-                  <h4 style={{ margin: 0, fontSize: 14, color: '#93c5fd', fontWeight: 600 }}>
+                  <h4 style={{ margin: 0, fontSize: 14, color: 'var(--accent-blue)', fontWeight: 600 }}>
                     Cadastrar Nova Vigência Tributária (Bitemporal)
                   </h4>
 
@@ -1012,8 +1146,8 @@ export default function CadastroEmpresas() {
                           width: '100%',
                           padding: '6px 8px',
                           borderRadius: 4,
-                          background: 'var(--panel)',
-                          border: '1px solid var(--line)',
+                          background: 'var(--bg-surface-input)',
+                          border: '1px solid var(--border-subtle)',
                           color: 'var(--ink)',
                           fontSize: 12,
                         }}
@@ -1033,6 +1167,7 @@ export default function CadastroEmpresas() {
                       <input
                         id="perfilVigenciaInicio"
                         type="date"
+                        className="tabular-nums"
                         value={perfilVigenciaInicio}
                         onChange={(e) => setPerfilVigenciaInicio(e.target.value)}
                         required
@@ -1040,8 +1175,8 @@ export default function CadastroEmpresas() {
                           width: '100%',
                           padding: '6px 8px',
                           borderRadius: 4,
-                          background: 'var(--panel)',
-                          border: '1px solid var(--line)',
+                          background: 'var(--bg-surface-input)',
+                          border: '1px solid var(--border-subtle)',
                           color: 'var(--ink)',
                           fontSize: 12,
                         }}
@@ -1055,14 +1190,15 @@ export default function CadastroEmpresas() {
                       <input
                         id="perfilVigenciaFim"
                         type="date"
+                        className="tabular-nums"
                         value={perfilVigenciaFim}
                         onChange={(e) => setPerfilVigenciaFim(e.target.value)}
                         style={{
                           width: '100%',
                           padding: '6px 8px',
                           borderRadius: 4,
-                          background: 'var(--panel)',
-                          border: '1px solid var(--line)',
+                          background: 'var(--bg-surface-input)',
+                          border: '1px solid var(--border-subtle)',
                           color: 'var(--ink)',
                           fontSize: 12,
                         }}
@@ -1091,14 +1227,15 @@ export default function CadastroEmpresas() {
                               id="perfilIcmsEfetivo"
                               type="number"
                               step="0.01"
+                              className="tabular-nums"
                               value={perfilIcmsEfetivo}
                               onChange={(e) => setPerfilIcmsEfetivo(e.target.value)}
                               style={{
                                 width: '100%',
                                 padding: '6px 8px',
                                 borderRadius: 4,
-                                background: 'var(--panel)',
-                                border: '1px solid var(--line)',
+                                background: 'var(--bg-surface-input)',
+                                border: '1px solid var(--border-subtle)',
                                 color: 'var(--ink)',
                                 fontSize: 12,
                               }}
@@ -1113,14 +1250,15 @@ export default function CadastroEmpresas() {
                               id="perfilPisEfetivo"
                               type="number"
                               step="0.01"
+                              className="tabular-nums"
                               value={perfilPisEfetivo}
                               onChange={(e) => setPerfilPisEfetivo(e.target.value)}
                               style={{
                                 width: '100%',
                                 padding: '6px 8px',
                                 borderRadius: 4,
-                                background: 'var(--panel)',
-                                border: '1px solid var(--line)',
+                                background: 'var(--bg-surface-input)',
+                                border: '1px solid var(--border-subtle)',
                                 color: 'var(--ink)',
                                 fontSize: 12,
                               }}
@@ -1135,14 +1273,15 @@ export default function CadastroEmpresas() {
                               id="perfilCofinsEfetivo"
                               type="number"
                               step="0.01"
+                              className="tabular-nums"
                               value={perfilCofinsEfetivo}
                               onChange={(e) => setPerfilCofinsEfetivo(e.target.value)}
                               style={{
                                 width: '100%',
                                 padding: '6px 8px',
                                 borderRadius: 4,
-                                background: 'var(--panel)',
-                                border: '1px solid var(--line)',
+                                background: 'var(--bg-surface-input)',
+                                border: '1px solid var(--border-subtle)',
                                 color: 'var(--ink)',
                                 fontSize: 12,
                               }}
@@ -1158,14 +1297,15 @@ export default function CadastroEmpresas() {
                               type="number"
                               min={1}
                               max={6}
+                              className="tabular-nums"
                               value={perfilFaixaSimples}
                               onChange={(e) => setPerfilFaixaSimples(parseInt(e.target.value, 10) || 1)}
                               style={{
                                 width: '100%',
                                 padding: '6px 8px',
                                 borderRadius: 4,
-                                background: 'var(--panel)',
-                                border: '1px solid var(--line)',
+                                background: 'var(--bg-surface-input)',
+                                border: '1px solid var(--border-subtle)',
                                 color: 'var(--ink)',
                                 fontSize: 12,
                               }}
@@ -1175,7 +1315,7 @@ export default function CadastroEmpresas() {
 
                         {/* TOGGLES ESPECÍFICOS: PARANÁ E REFORMA TRIBUTÁRIA */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', minHeight: '44px' }}>
                             <input
                               type="checkbox"
                               checked={perfilSimplesHibrido2027}
@@ -1184,7 +1324,7 @@ export default function CadastroEmpresas() {
                             <span>Simples Híbrido 2027 (IBS/CBS fora do DAS)</span>
                           </label>
 
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', minHeight: '44px' }}>
                             <input
                               type="checkbox"
                               checked={perfilDiferimentoArt28}
@@ -1193,7 +1333,7 @@ export default function CadastroEmpresas() {
                             <span>Diferimento Parcial Art. 28 Anexo VIII PR</span>
                           </label>
 
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', minHeight: '44px' }}>
                             <input
                               type="checkbox"
                               checked={perfilRotSt}
@@ -1202,7 +1342,7 @@ export default function CadastroEmpresas() {
                             <span>Optante ROT-ST Paraná (Dispensa Ajuste ST)</span>
                           </label>
 
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', minHeight: '44px' }}>
                             <input
                               type="checkbox"
                               checked={perfilSplitPayment}
@@ -1215,30 +1355,29 @@ export default function CadastroEmpresas() {
                     </ProgressiveSection>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <label htmlFor="encerrarAnterior" style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: '44px', cursor: 'pointer', fontSize: 12, color: 'var(--ink)' }}>
                     <input
                       id="encerrarAnterior"
                       type="checkbox"
                       checked={perfilEncerrarAnterior}
                       onChange={(e) => setPerfilEncerrarAnterior(e.target.checked)}
                     />
-                    <label htmlFor="encerrarAnterior" style={{ fontSize: 12, color: 'var(--ink)' }}>
-                      Encerrar vigência do perfil anterior automaticamente no dia anterior ao novo início
-                    </label>
-                  </div>
+                    <span>Encerrar vigência do perfil anterior automaticamente no dia anterior ao novo início</span>
+                  </label>
 
                   <button
                     type="submit"
                     disabled={salvando}
+                    className="btn st-touch-target"
                     style={{
-                      background: '#059669',
-                      color: '#fff',
-                      border: 'none',
+                      background: 'var(--portela-brand-cta)',
+                      color: 'var(--portela-cta-ink)',
+                      border: '1px solid var(--portela-brand-cta)',
                       padding: '8px 14px',
                       minHeight: '44px',
-                      borderRadius: 4,
+                      borderRadius: 6,
                       cursor: 'pointer',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       fontSize: 12,
                     }}
                   >
@@ -1249,7 +1388,7 @@ export default function CadastroEmpresas() {
 
               {/* TIMELINE DE PERFIS VIGENTES */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                <h4 className="tabular-nums" style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                   Linha do Tempo de Perfis Tributários ({empresaAtiva.perfis?.length || 0})
                 </h4>
 
@@ -1264,11 +1403,11 @@ export default function CadastroEmpresas() {
                   const futuro = p.vigenciaInicio > hoje;
                   const expirado = Boolean(p.vigenciaFim && p.vigenciaFim < hoje);
 
-                  let statusBadge = { bg: 'var(--accent-emerald-glow)', cor: '#6ee7b7', border: '#059669', texto: 'VIGENTE HOJE' };
+                  let statusBadge = { bg: 'var(--accent-emerald-glow)', cor: 'var(--ok)', border: 'var(--border-emerald-glow)', texto: 'VIGENTE HOJE' };
                   if (futuro) {
-                    statusBadge = { bg: '#1e293b', cor: '#93c5fd', border: '#3b82f6', texto: 'FUTURO' };
+                    statusBadge = { bg: 'var(--accent-blue-subtle)', cor: 'var(--accent-blue)', border: 'rgba(59, 130, 246, 0.35)', texto: 'FUTURO' };
                   } else if (expirado) {
-                    statusBadge = { bg: '#27272a', cor: '#a1a1aa', border: '#52525b', texto: 'ENCERRADO' };
+                    statusBadge = { bg: 'var(--bg-surface-subtle)', cor: 'var(--ink-2)', border: 'var(--border-medium)', texto: 'ENCERRADO' };
                   }
 
                   return (
@@ -1277,8 +1416,8 @@ export default function CadastroEmpresas() {
                       style={{
                         padding: '12px 14px',
                         borderRadius: 6,
-                        background: 'var(--bg)',
-                        border: `1px solid ${vigenteHoje ? '#059669' : 'var(--line)'}`,
+                        background: 'var(--bg-surface-input)',
+                        border: `1px solid ${vigenteHoje ? 'var(--border-emerald-glow)' : 'var(--border-subtle)'}`,
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 6,
@@ -1301,12 +1440,12 @@ export default function CadastroEmpresas() {
                             {statusBadge.texto}
                           </span>
                         </div>
-                        <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--ink-2)' }}>
+                        <span className="tabular-nums" style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--ink-2)' }}>
                           Vigência: {p.vigenciaInicio} até {p.vigenciaFim || 'indeterminada'}
                         </span>
                       </div>
 
-                      <div style={{ display: 'flex', gap: 14, fontSize: 11, color: 'var(--ink-2)', flexWrap: 'wrap' }}>
+                      <div className="tabular-nums" style={{ display: 'flex', gap: 14, fontSize: 11, color: 'var(--ink-2)', flexWrap: 'wrap' }}>
                         <span>ICMS Efetivo: <b>{p.aliquotasEfetivas?.icmsEfetivo ?? 'N/A'}%</b></span>
                         <span>PIS Efetivo: <b>{p.aliquotasEfetivas?.pisEfetivo ?? 'N/A'}%</b></span>
                         <span>COFINS Efetivo: <b>{p.aliquotasEfetivas?.cofinsEfetivo ?? 'N/A'}%</b></span>
@@ -1315,22 +1454,22 @@ export default function CadastroEmpresas() {
 
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
                         {p.simplesOptanteHibrido2027 && (
-                          <span style={{ fontSize: 10, background: '#1e293b', color: '#93c5fd', padding: '1px 6px', borderRadius: 3 }}>
+                          <span className="tabular-nums" style={{ fontSize: 10, background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', border: '1px solid rgba(59, 130, 246, 0.35)', padding: '1px 6px', borderRadius: 3 }}>
                             ⚡ Simples Híbrido 2027
                           </span>
                         )}
                         {p.beneficiosParana?.diferimentoParcialArt28 && (
-                          <span style={{ fontSize: 10, background: 'var(--accent-emerald-glow)', color: '#86efac', padding: '1px 6px', borderRadius: 3 }}>
+                          <span style={{ fontSize: 10, background: 'var(--accent-emerald-glow)', color: 'var(--ok)', border: '1px solid var(--border-emerald-glow)', padding: '1px 6px', borderRadius: 3 }}>
                             ✓ Art. 28 RICMS/PR
                           </span>
                         )}
                         {p.beneficiosParana?.optanteRotSt && (
-                          <span style={{ fontSize: 10, background: '#312e81', color: '#c7d2fe', padding: '1px 6px', borderRadius: 3 }}>
+                          <span style={{ fontSize: 10, background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', border: '1px solid rgba(59, 130, 246, 0.35)', padding: '1px 6px', borderRadius: 3 }}>
                             ✓ ROT-ST Ativo
                           </span>
                         )}
                         {p.reformaTributaria?.optanteSplitPayment2026 && (
-                          <span style={{ fontSize: 10, background: '#451a03', color: '#fcd34d', padding: '1px 6px', borderRadius: 3 }}>
+                          <span style={{ fontSize: 10, background: 'var(--accent-amber-subtle)', color: 'var(--warn)', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '1px 6px', borderRadius: 3 }}>
                             ✓ Split Payment
                           </span>
                         )}
@@ -1340,7 +1479,8 @@ export default function CadastroEmpresas() {
                 })}
               </div>
             </>
-          ) : (
+            );
+          })() : (
             <div style={{ textAlign: 'center', padding: 40, color: 'var(--ink-2)', fontSize: 14 }}>
               👈 Selecione uma empresa na lista ao lado para inspecionar seus perfis ou cadastrar um novo cliente.
             </div>

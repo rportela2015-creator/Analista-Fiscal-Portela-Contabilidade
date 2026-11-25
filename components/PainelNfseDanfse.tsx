@@ -74,9 +74,14 @@ export function PainelNfseDanfse({
 
         setErroDanfse(errJson.mensagem || errJson.error || 'Não foi possível gerar o DANFSe em PDF.');
         if (errJson.orientacao) {
-          setOrientacaoDanfse(errJson.orientacao);
+          const orientacaoTexto = String(errJson.orientacao);
+          setOrientacaoDanfse(
+            /compose|container/i.test(orientacaoTexto)
+              ? 'Inicie o microsserviço nativo rtc-danfse na porta 8084 (serviço Windows nativo).'
+              : orientacaoTexto
+          );
         } else if (resp.status === 503) {
-          setOrientacaoDanfse('Suba o container rtc-danfse via docker compose up -d rtc-danfse');
+          setOrientacaoDanfse('Inicie o microsserviço nativo rtc-danfse na porta 8084 (serviço Windows nativo).');
         }
         return;
       }
@@ -90,7 +95,7 @@ export function PainelNfseDanfse({
       setPdfUrl(novoBlobUrl);
     } catch (err: any) {
       setErroDanfse(err.message || 'Erro de rede ao conectar ao gerador de DANFSe.');
-      setOrientacaoDanfse('Verifique se o container docker "rtc-danfse" está ativo na porta 8084.');
+      setOrientacaoDanfse('Verifique se o serviço nativo "rtc-danfse" está ativo na porta 8084 (execução nativa Windows).');
     } finally {
       setGerandoPdf(false);
     }
@@ -172,14 +177,14 @@ export function PainelNfseDanfse({
               <span className="badge amber mono">NT 009 (Imobiliário/CIB)</span>
             )}
           </div>
-          <h2 style={{ margin: '8px 0 4px', fontSize: '19px', fontWeight: 700, color: '#f9fafb' }}>
+          <h2 className="tabular-nums" style={{ margin: '8px 0 4px', fontSize: '19px', fontWeight: 700, color: 'var(--ink)' }}>
             NFS-e Nº {ident.nNFSe || ident.nDPS || 'S/N'} • Série {ident.serie || '1'}
           </h2>
-          <p className="mono" style={{ margin: 0, fontSize: '12px', color: '#9ca3af' }}>
+          <p className="mono tabular-nums" style={{ margin: 0, fontSize: '12px', color: 'var(--ink-2)' }}>
             Chave / ID: {ident.chNFSe || ident.idDps || extracao.sha256.slice(0, 32)}
           </p>
           {empresaAtivaNome && (
-            <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#6ee7b7' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--ok)' }}>
               Tomador Ativo no Sistema: <b>{empresaAtivaNome}</b>
             </p>
           )}
@@ -227,7 +232,8 @@ export function PainelNfseDanfse({
           <button
             type="button"
             onClick={() => setErroRelatorio(null)}
-            className="mini"
+            className="mini st-touch-target"
+            style={{ minHeight: '44px', minWidth: '44px' }}
             aria-label="Fechar erro"
           >
             ×
@@ -242,8 +248,8 @@ export function PainelNfseDanfse({
             Prestador do Serviço (Emitente)
           </span>
           <p style={{ margin: 0, fontWeight: 700, fontSize: '14px', color: 'var(--ink)' }}>{prest.xNome || 'Nome não informado'}</p>
-          <p className="mono" style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>CNPJ/CPF: {prest.cnpj || prest.cpf || '-'}</p>
-          {prest.im && <p className="mono" style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>Inscrição Municipal: {prest.im}</p>}
+          <p className="mono tabular-nums" style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>CNPJ/CPF: {prest.cnpj || prest.cpf || '-'}</p>
+          {prest.im && <p className="mono tabular-nums" style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>Inscrição Municipal: {prest.im}</p>}
           <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-muted)', fontSize: '12px', color: 'var(--ink-2)' }}>
             <div>{prest.endereco?.xLgr || 'Logradouro não informado'}, {prest.endereco?.nro || 'S/N'}</div>
             <div>
@@ -258,8 +264,8 @@ export function PainelNfseDanfse({
             Tomador do Serviço (Adquirente)
           </span>
           <p style={{ margin: 0, fontWeight: 700, fontSize: '14px', color: 'var(--ink)' }}>{toma?.xNome || 'Nome não informado'}</p>
-          <p className="mono" style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>CNPJ/CPF: {toma?.cnpj || toma?.cpf || '-'}</p>
-          {toma?.im && <p className="mono" style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>Inscrição Municipal: {toma.im}</p>}
+          <p className="mono tabular-nums" style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>CNPJ/CPF: {toma?.cnpj || toma?.cpf || '-'}</p>
+          {toma?.im && <p className="mono tabular-nums" style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--ink-2)' }}>Inscrição Municipal: {toma.im}</p>}
           <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-muted)', fontSize: '12px', color: 'var(--ink-2)' }}>
             <div>{toma?.endereco?.xLgr || 'Logradouro não informado'}, {toma?.endereco?.nro || 'S/N'}</div>
             <div>
@@ -284,11 +290,11 @@ export function PainelNfseDanfse({
         <div className="st-nfse-grid-4" style={{ fontSize: '12px' }}>
           <div className="st-subcard">
             <span className="muted" style={{ display: 'block' }}>Código Trib. Nacional:</span>
-            <strong className="mono" style={{ color: 'var(--accent-blue)' }}>{serv.cTribNac || 'Não inf.'}</strong>
+            <strong className="mono tabular-nums" style={{ color: 'var(--accent-blue)' }}>{serv.cTribNac || 'Não inf.'}</strong>
           </div>
           <div className="st-subcard">
             <span className="muted" style={{ display: 'block' }}>Código NBS:</span>
-            <strong className="mono" style={{ color: 'var(--accent-blue)' }}>{serv.cNBS || 'Não inf.'}</strong>
+            <strong className="mono tabular-nums" style={{ color: 'var(--accent-blue)' }}>{serv.cNBS || 'Não inf.'}</strong>
           </div>
           <div className="st-subcard">
             <span className="muted" style={{ display: 'block' }}>Valor dos Serviços:</span>
@@ -357,7 +363,7 @@ export function PainelNfseDanfse({
               >
                 <div className="t" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <span className="badge grey">{alerta.severidade}</span>
-                  <span className="mono">{alerta.codigo}</span>
+                  <span className="mono tabular-nums">{alerta.codigo}</span>
                   <span>{alerta.titulo}</span>
                 </div>
                 <div className="x">{alerta.detalhe}</div>
@@ -468,7 +474,7 @@ export function PainelNfseDanfse({
         subtitle="Rastreabilidade pericial imutável do XML recebido"
       >
         <div className="st-legal-memory">
-          <div>SHA-256: <strong style={{ color: 'var(--accent-blue)' }}>{extracao.sha256}</strong></div>
+          <div>SHA-256: <strong className="tabular-nums" style={{ color: 'var(--accent-blue)' }}>{extracao.sha256}</strong></div>
           <div>Versão Schema: <span className="muted">{extracao.versaoSchema || 'Padrão Nacional'}</span></div>
           <div>Tipo: <span style={{ color: 'var(--ok)' }}>{extracao.tipoDocumento}</span></div>
         </div>

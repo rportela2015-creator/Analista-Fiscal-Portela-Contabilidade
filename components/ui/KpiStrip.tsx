@@ -117,6 +117,7 @@ export default function KpiStrip({
                   className="st-kpi-value tabular-nums"
                   style={{
                     fontVariantNumeric: 'tabular-nums lining-nums',
+                    fontFeatureSettings: "'tnum' 1, 'zero' 1",
                     fontSize: level === 'gerencial' ? '23px' : '19px',
                   }}
                 >

@@ -1,6 +1,13 @@
 import { ExtractedItem } from './extrator-nfe-types';
 import { RegimeTributario, DestinacaoMercadoria } from './marco-legal';
 import { esc } from './html';
+import {
+  PORTELA_FOOTER_CSS,
+  PORTELA_HEADER_CSS,
+  PORTELA_VERSION,
+  renderFooterPortela,
+  renderHeaderPortela,
+} from './relatorio-header';
 
 export interface ParametrosCalculoCustoItem {
   regime: RegimeTributario;
@@ -300,15 +307,39 @@ export function consolidarCustosEntradaCPC16(
   };
 }
 
+export interface OpcoesRelatorioCustosHtml {
+  standalone?: boolean;
+  empresaNome?: string;
+  empresaCnpj?: string;
+  empresaRegime?: string;
+}
+
 /**
- * Gera relatório HTML de composição de custos segundo o CPC 16 (Modo Resumido ou Detalhado)
+ * Gera relatório HTML de composição de custos segundo o CPC 16 (Modo Resumido ou Detalhado).
+ * Por padrão retorna um fragmento encapsulado (.rel-custos-root) seguro para dangerouslySetInnerHTML;
+ * quando opcoes.standalone === true (ou via gerarRelatorioCustosDocumentoHtml), retorna documento completo com CSP.
  */
 export function gerarRelatorioCustosHtml(
   rel: RelatorioCustoEntradaConsolidado,
-  modo: 'resumido' | 'detalhado' = 'resumido'
+  modo: 'resumido' | 'detalhado' = 'resumido',
+  opcoes?: OpcoesRelatorioCustosHtml
 ): string {
   const agora = new Date().toLocaleString('pt-BR');
   const fmtBrl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const modoLabel = modo === 'detalhado' ? 'Visão Detalhada com Citação Legal' : 'Visão Resumida (Tabela de Custos)';
+  const headerHtml = renderHeaderPortela({
+    titulo: 'Relatório de Custo Real de Entrada — Item 11 do CPC 16 (R1)',
+    subtitulo: `Regime do Adquirente: ${rel.parametros.regime.toUpperCase()} · ${modoLabel}`,
+    dataHora: agora,
+    documentoRef: `${rel.totalItens} item(ns)`,
+    empresaNome: opcoes?.empresaNome,
+    empresaCnpj: opcoes?.empresaCnpj,
+    empresaRegime: opcoes?.empresaRegime || rel.parametros.regime.toUpperCase(),
+  });
+  const footerHtml = renderFooterPortela({
+    versao: PORTELA_VERSION,
+    notaLegal: 'Apuração de custo real de aquisição elaborada conforme Item 11 do CPC 16 (R1) / NBC TG 16 (R2) e legislação tributária vigente.',
+  });
 
   const linhasTabela = rel.itens
     .map((it) => {
@@ -352,15 +383,16 @@ export function gerarRelatorioCustosHtml(
     })
     .join('');
 
-  return `
-  <div style="max-width: 1100px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-    <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #5B7B35; padding-bottom: 12px; margin-bottom: 16px;">
-      <div>
-        <h2 style="margin: 0; color: #3A4A1E; font-size: 18px;">Relatório de Custo Real de Entrada — Item 11 do CPC 16 (R1)</h2>
-        <span style="font-size: 12px; color: #64748b;">Regime do Adquirente: <b>${esc(rel.parametros.regime.toUpperCase())}</b> · Emissão: ${esc(agora)}</span>
-      </div>
+  const scopedStyles = opcoes?.standalone ? '' : `<style>${PORTELA_HEADER_CSS}\n${PORTELA_FOOTER_CSS}</style>`;
+
+  const fragmentHtml = `
+  <div class="rel-custos-root" style="max-width: 1100px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1e293b;">
+    ${scopedStyles}
+    ${headerHtml}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <span style="font-size: 12px; color: #475569;">Regime do Adquirente: <b>${esc(rel.parametros.regime.toUpperCase())}</b> · Emissão: ${esc(agora)}</span>
       <span style="font-size: 11px; background: #ecfccb; color: #365314; padding: 4px 8px; border-radius: 4px; font-weight: 600;">
-        ${modo === 'detalhado' ? 'Visão Detalhada com Citação Legal' : 'Visão Resumida (Tabela de Custos)'}
+        ${modoLabel}
       </span>
     </div>
 
@@ -407,8 +439,42 @@ export function gerarRelatorioCustosHtml(
         ${linhasTabela}
       </tbody>
     </table>
+
+    ${footerHtml}
   </div>
   `.trim();
+
+  if (opcoes?.standalone) {
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+  <title>Relatório de Custo Real de Entrada — Item 11 do CPC 16 (R1)</title>
+  <style>
+    ${PORTELA_HEADER_CSS}
+    ${PORTELA_FOOTER_CSS}
+    body { margin: 24px; background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1e293b; }
+  </style>
+</head>
+<body>
+  ${fragmentHtml}
+</body>
+</html>`;
+  }
+
+  return fragmentHtml;
+}
+
+/**
+ * Gera documento HTML completo e autônomo (com CSP) do relatório de custos CPC 16 (R1) para download/exportação.
+ */
+export function gerarRelatorioCustosDocumentoHtml(
+  rel: RelatorioCustoEntradaConsolidado,
+  modo: 'resumido' | 'detalhado' = 'resumido',
+  opcoes?: Omit<OpcoesRelatorioCustosHtml, 'standalone'>
+): string {
+  return gerarRelatorioCustosHtml(rel, modo, { ...opcoes, standalone: true });
 }
 
 /**

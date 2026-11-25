@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-25T13:59:56.689Z",
+  "updatedAt": "2026-11-25T14:58:21.999Z",
   "empresas": [
     {
       "id": "6fb292c5-e224-4582-bc11-4373c5a76add",
@@ -45,6 +45,58 @@
       },
       "criadoEm": "2026-11-25T13:59:56.688Z",
       "atualizadoEm": "2026-11-25T13:59:56.688Z"
+    },
+    {
+      "id": "3f2edd8a-1f7f-4766-9a65-979141b9e2af",
+      "escritorioId": "00000000-0000-4000-8000-000000000001",
+      "cnpj": "80815574000157",
+      "razaoSocial": "ALESSI MATERIAIS DE CONSTRUCAO LTDA",
+      "nomeFantasia": null,
+      "inscricaoEstadual": null,
+      "uf": "PR",
+      "municipioIbge": "4120606",
+      "ativo": true,
+      "metadata": {
+        "situacaoCadastral": "ATIVA",
+        "porte": "EMPRESA DE PEQUENO PORTE",
+        "naturezaJuridica": "Sociedade Empresária Limitada",
+        "endereco": {
+          "logradouro": "RUA CONSELHEIRO RUI BARBOSA",
+          "numero": "599",
+          "bairro": "CENTRO",
+          "cep": "84400000",
+          "municipio": "PRUDENTOPOLIS",
+          "municipioIbge": "4120606",
+          "uf": "PR"
+        },
+        "cnaePrincipal": {
+          "codigo": "4744005",
+          "descricao": "Comércio varejista de materiais de construção não especificados anteriormente"
+        },
+        "cnaesSecundarios": [
+          {
+            "codigo": "4683400",
+            "descricao": "Comércio atacadista de defensivos agrícolas, adubos, fertilizantes e corretivos do solo"
+          },
+          {
+            "codigo": "8211300",
+            "descricao": "Serviços combinados de escritório e apoio administrativo"
+          }
+        ],
+        "simplesNacional": {
+          "optanteSimples": true,
+          "dataOpcaoSimples": "2007-07-01",
+          "dataExclusaoSimples": null,
+          "optanteMei": false,
+          "dataOpcaoMei": null,
+          "dataExclusaoMei": null
+        },
+        "regimeTributarioSugerido": "SIMPLES_NACIONAL",
+        "fonteReceita": "brasilapi",
+        "consultadoEm": "2026-11-25T14:58:15.335Z"
+      },
+      "criadoEm": "2026-11-25T14:58:21.998Z",
+      "atualizadoEm": "2026-11-25T14:58:21.998Z"
     }
   ],
   "perfis": {
@@ -75,6 +127,35 @@
         },
         "criadoEm": "2026-11-25T13:59:56.688Z",
         "atualizadoEm": "2026-11-25T13:59:56.688Z"
+      }
+    ],
+    "3f2edd8a-1f7f-4766-9a65-979141b9e2af": [
+      {
+        "id": "7444a224-f3a9-4a5b-ac6d-af6fb2d28b8c",
+        "empresaId": "3f2edd8a-1f7f-4766-9a65-979141b9e2af",
+        "escritorioId": "00000000-0000-4000-8000-000000000001",
+        "regimeTributario": "SIMPLES_NACIONAL",
+        "vigenciaInicio": "2026-11-25",
+        "vigenciaFim": null,
+        "aliquotasEfetivas": {
+          "icmsEfetivo": 3.5,
+          "pisEfetivo": 0.38,
+          "cofinsEfetivo": 1.6,
+          "faixaSimples": 3,
+          "fatorR": 0.28
+        },
+        "simplesOptanteHibrido2027": false,
+        "beneficiosParana": {
+          "diferimentoParcialArt28": true,
+          "optanteRotSt": false,
+          "reducoesBcAtivas": []
+        },
+        "reformaTributaria": {
+          "optanteSplitPayment2026": false,
+          "creditoPresumidoIbsCbs": false
+        },
+        "criadoEm": "2026-11-25T14:58:21.998Z",
+        "atualizadoEm": "2026-11-25T14:58:21.998Z"
       }
     ]
   }

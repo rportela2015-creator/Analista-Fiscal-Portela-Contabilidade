@@ -13,6 +13,7 @@ import {
   gerarRelatorioErpDetalhadoTxt,
   gerarRelatorioErpDetalhadoHtml,
 } from '@/lib/relatorio-erp';
+import type { Empresa } from '@/lib/fiscal/perfil-tributario';
 import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
 import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
 import {
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui';
 
 function baixarArquivo(conteudo: string, nomeArquivo: string, mime: string) {
+  if (typeof window === 'undefined' || !window.URL?.createObjectURL) return;
   const blob = new Blob([conteudo], { type: mime });
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -123,6 +125,45 @@ export default function Classificar() {
       .catch((e) => setErr(String(e.message || e)));
     loadReforma().then(setReforma).catch(() => setReforma(null));
   }, []);
+
+  useEffect(() => {
+    const aplicarBuscaRapida = (termo: string) => {
+      const limpo = termo.trim();
+      if (!limpo) return;
+      setTexto(limpo);
+      setAiResult(null);
+    };
+
+    try {
+      const salvo = sessionStorage.getItem('portela_quick_search_classificar');
+      if (salvo) {
+        aplicarBuscaRapida(salvo);
+        sessionStorage.removeItem('portela_quick_search_classificar');
+      }
+    } catch { /* sem storage */ }
+
+    const handleNavegarAba = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ tab?: string; query?: string }>).detail;
+      if (detail?.tab === 'classificar' && detail?.query) {
+        aplicarBuscaRapida(detail.query);
+        try {
+          sessionStorage.removeItem('portela_quick_search_classificar');
+        } catch { /* sem storage */ }
+      }
+    };
+
+    window.addEventListener('navegar-aba', handleNavegarAba);
+    return () => window.removeEventListener('navegar-aba', handleNavegarAba);
+  }, []);
+
+  useEffect(() => {
+    if (!modalRelatorio.aberto || typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setModalRelatorio({ aberto: false, modo: 'resumido', payload: null });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [modalRelatorio.aberto]);
 
   const res = useMemo(() => {
     if (!ds || !texto.trim()) return null;
@@ -277,6 +318,9 @@ export default function Classificar() {
       contexto: {
         emitente: {
           nome: empresaAtiva?.razaoSocial || 'Empresa Emitente',
+          cnpj: empresaAtiva?.cnpj || undefined,
+          ie: empresaAtiva?.inscricaoEstadual || undefined,
+          municipioIbge: empresaAtiva?.municipioIbge || undefined,
           regime: regime === 'simples' ? 'Simples Nacional' : regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
           crt: regime === 'simples' ? '1' : '3',
           uf: ufO,
@@ -323,6 +367,9 @@ export default function Classificar() {
       contexto: {
         emitente: {
           nome: empresaAtiva?.razaoSocial || 'Empresa Emitente',
+          cnpj: empresaAtiva?.cnpj || undefined,
+          ie: empresaAtiva?.inscricaoEstadual || undefined,
+          municipioIbge: empresaAtiva?.municipioIbge || undefined,
           regime: regime === 'simples' ? 'Simples Nacional' : regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
           crt: regime === 'simples' ? '1' : '3',
           uf: ufO,
@@ -420,13 +467,14 @@ export default function Classificar() {
         <div className="row" style={{ marginTop: 12, justifyContent: 'flex-start' }}>
           <button
             type="button"
-            className="chip"
+            className="btn st-touch-target"
             style={{
-              background: 'var(--primary, #0f172a)',
-              color: '#fff',
+              background: 'var(--portela-brand-cta)',
+              color: 'var(--portela-cta-ink)',
+              borderColor: 'var(--portela-brand-cta)',
               padding: '8px 14px',
               minHeight: '44px',
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: aiLoading || !texto.trim() ? 'not-allowed' : 'pointer',
               opacity: aiLoading || !texto.trim() ? 0.6 : 1,
             }}
@@ -481,7 +529,7 @@ export default function Classificar() {
       <div style={{ marginTop: 14 }}>
         <ProgressiveSection
           id="sec-classificacao-legal"
-          title="Embasamento Jurídico & Parâmetros Legais (NESH / RGI / LC 214)"
+          title="Embasamento Jurídico"
           subtitle="Memória jurídica e normas aplicáveis à classificação e tributação"
           minLevel="senior"
           currentLevel={nivel}
@@ -506,7 +554,7 @@ export default function Classificar() {
       )}
 
       {aiResult && (
-        <div className="card" style={{ border: '2px solid #2563eb', background: 'var(--bg-card-subtle)', margin: '14px 0' }}>
+        <div className="card" style={{ border: '2px solid rgba(59, 130, 246, 0.45)', background: 'var(--bg-surface-subtle)', margin: '14px 0' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <h3 style={{ margin: 0, color: 'var(--accent-blue)' }}>Parecer Técnico Tributário (IA Especialista)</h3>
@@ -537,13 +585,16 @@ export default function Classificar() {
           <div className="row" style={{ marginTop: 12, justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
             <button
               type="button"
-              className="chip"
-              style={{ background: '#2b6cb0', color: 'white', fontWeight: 600, padding: '6px 12px', cursor: 'pointer' }}
+              className="st-btn-secondary st-touch-target"
+              style={{ background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', borderColor: 'rgba(59, 130, 246, 0.35)', fontWeight: 600, padding: '6px 12px', minHeight: '44px' }}
               onClick={() => {
                 const payload: ParametrosErpPayload = {
                   contexto: {
                     emitente: {
-                      nome: 'Empresa Emitente',
+                      nome: empresaAtiva?.razaoSocial || 'Empresa Emitente',
+                      cnpj: empresaAtiva?.cnpj || undefined,
+                      ie: empresaAtiva?.inscricaoEstadual || undefined,
+                      municipioIbge: empresaAtiva?.municipioIbge || undefined,
                       regime: regime === 'simples' ? 'Simples Nacional' : regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
                       crt: regime === 'simples' ? '1' : '3',
                       uf: ufO,
@@ -587,13 +638,16 @@ export default function Classificar() {
             </button>
             <button
               type="button"
-              className="chip"
-              style={{ background: '#276749', color: 'white', fontWeight: 600, padding: '6px 12px', cursor: 'pointer' }}
+              className="btn st-touch-target"
+              style={{ fontWeight: 700, padding: '6px 12px', minHeight: '44px' }}
               onClick={() => {
                 const payload: ParametrosErpPayload = {
                   contexto: {
                     emitente: {
-                      nome: 'Empresa Emitente',
+                      nome: empresaAtiva?.razaoSocial || 'Empresa Emitente',
+                      cnpj: empresaAtiva?.cnpj || undefined,
+                      ie: empresaAtiva?.inscricaoEstadual || undefined,
+                      municipioIbge: empresaAtiva?.municipioIbge || undefined,
                       regime: regime === 'simples' ? 'Simples Nacional' : regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
                       crt: regime === 'simples' ? '1' : '3',
                       uf: ufO,
@@ -636,16 +690,19 @@ export default function Classificar() {
               ⚖️ Relatório ERP (Modo Detalhado com Citação Legal)
             </button>
             <a
-              className="mini"
+              className="mini st-touch-target"
               href="#parametrizar"
               style={{
-                background: '#2563eb',
-                color: '#fff',
+                background: 'var(--accent-blue-subtle)',
+                color: 'var(--accent-blue)',
+                borderColor: 'rgba(59, 130, 246, 0.35)',
                 fontWeight: 600,
                 padding: '8px 14px',
-                borderRadius: 4,
+                minHeight: '44px',
+                borderRadius: 6,
                 textDecoration: 'none',
-                display: 'inline-block',
+                display: 'inline-flex',
+                alignItems: 'center',
               }}
               title="abrir a aba de parametrização de ERP com este NCM sugerido"
               onClick={() => {
@@ -684,6 +741,7 @@ export default function Classificar() {
           key={c.rec.d8} ds={ds} idx={i} cand={c} aberto={aberto === i}
           onOpen={() => setAberto(aberto === i ? -1 : i)}
           q={res.query} pin={pinput} forcar={mostrarTudo} frio={frio} reforma={reforma}
+          empresaAtiva={empresaAtiva}
           onGerarRelatorio={(modo, payload) => {
             setModalRelatorio({ aberto: true, modo, payload });
             setFormatoModal('html');
@@ -721,13 +779,17 @@ export default function Classificar() {
 
         return (
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Relatório de Parametrização Fiscal para ERP"
             style={{
               position: 'fixed',
               top: 0,
               left: 0,
               width: '100vw',
               height: '100vh',
-              backgroundColor: 'rgba(0, 0, 0, 0.65)',
+              backgroundColor: 'rgba(14, 21, 17, 0.78)',
+              backdropFilter: 'blur(4px)',
               zIndex: 9999,
               display: 'flex',
               alignItems: 'center',
@@ -738,14 +800,15 @@ export default function Classificar() {
           >
             <div
               style={{
-                background: 'var(--bg-card)',
-                borderRadius: 8,
+                background: 'var(--bg-surface-card)',
+                border: '1px solid var(--border-medium)',
+                borderRadius: 12,
                 maxWidth: 950,
                 width: '100%',
                 maxHeight: '90vh',
                 display: 'flex',
                 flexDirection: 'column',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+                boxShadow: '0 20px 48px rgba(0, 0, 0, 0.45)',
                 overflow: 'hidden',
               }}
             >
@@ -755,12 +818,12 @@ export default function Classificar() {
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '16px 20px',
-                  borderBottom: '1px solid #e2e8f0',
-                  background: 'var(--bg-card-subtle)',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  background: 'var(--bg-surface-subtle)',
                 }}
               >
                 <div>
-                  <h3 style={{ margin: 0, color: 'var(--ink)', fontSize: '1.15rem' }}>
+                  <h3 style={{ margin: 0, color: 'var(--ink)', fontSize: '1.1rem', fontFamily: 'var(--font-display)' }}>
                     Relatório de Parametrização Fiscal para ERP — Modo {modalRelatorio.modo === 'resumido' ? 'Resumido' : 'Detalhado'}
                   </h3>
                   <span className="small muted">
@@ -771,8 +834,10 @@ export default function Classificar() {
                 </div>
                 <button
                   type="button"
+                  className="mini st-touch-target"
+                  aria-label="Fechar relatório"
                   onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido', payload: null })}
-                  style={{ background: 'transparent', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: 'var(--ink-2)' }}
+                  style={{ minHeight: '44px', minWidth: '44px', fontSize: '1.15rem', cursor: 'pointer', color: 'var(--ink)' }}
                 >
                   ✕
                 </button>
@@ -781,8 +846,8 @@ export default function Classificar() {
               <div
                 style={{
                   padding: '10px 20px',
-                  background: 'var(--bg-card-subtle)',
-                  borderBottom: '1px solid #e2e8f0',
+                  background: 'var(--bg-surface-card)',
+                  borderBottom: '1px solid var(--border-subtle)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -793,57 +858,59 @@ export default function Classificar() {
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button
                     type="button"
-                    className="mini"
+                    className="mini st-touch-target"
                     onClick={() => setFormatoModal('html')}
                     style={{
-                      background: formatoModal === 'html' ? '#3182ce' : '#e2e8f0',
-                      color: formatoModal === 'html' ? 'white' : '#4a5568',
-                      fontWeight: formatoModal === 'html' ? 'bold' : 'normal',
+                      background: formatoModal === 'html' ? 'var(--portela-brand-cta)' : 'var(--bg-surface-subtle)',
+                      color: formatoModal === 'html' ? 'var(--portela-cta-ink)' : 'var(--ink)',
+                      borderColor: formatoModal === 'html' ? 'var(--portela-brand-cta)' : 'var(--border-medium)',
+                      fontWeight: formatoModal === 'html' ? 700 : 600,
                     }}
                   >
                     HTML
                   </button>
                   <button
                     type="button"
-                    className="mini"
+                    className="mini st-touch-target"
                     onClick={() => setFormatoModal('txt')}
                     style={{
-                      background: formatoModal === 'txt' ? '#3182ce' : '#e2e8f0',
-                      color: formatoModal === 'txt' ? 'white' : '#4a5568',
-                      fontWeight: formatoModal === 'txt' ? 'bold' : 'normal',
+                      background: formatoModal === 'txt' ? 'var(--portela-brand-cta)' : 'var(--bg-surface-subtle)',
+                      color: formatoModal === 'txt' ? 'var(--portela-cta-ink)' : 'var(--ink)',
+                      borderColor: formatoModal === 'txt' ? 'var(--portela-brand-cta)' : 'var(--border-medium)',
+                      fontWeight: formatoModal === 'txt' ? 700 : 600,
                     }}
                   >
                     TXT
                   </button>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    className="mini"
+                    className="mini st-touch-target"
                     onClick={() => baixarArquivo(
                       relatorioHtml,
                       `relatorio_erp_${modalRelatorio.modo}.html`,
                       'text/html; charset=utf-8'
                     )}
-                    style={{ background: '#2b6cb0', color: 'white' }}
+                    style={{ background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', borderColor: 'rgba(59, 130, 246, 0.35)' }}
                   >
                     ⬇ Baixar HTML
                   </button>
                   <button
                     type="button"
-                    className="mini"
+                    className="mini st-touch-target"
                     onClick={() => baixarArquivo(
                       relatorioTxt,
                       `relatorio_erp_${modalRelatorio.modo}.txt`,
                       'text/plain; charset=utf-8'
                     )}
-                    style={{ background: '#2d3748', color: 'white' }}
+                    style={{ background: 'var(--accent-emerald-glow)', color: 'var(--ok)', borderColor: 'var(--border-emerald-glow)' }}
                   >
                     ⬇ Baixar TXT
                   </button>
                   <button
                     type="button"
-                    className="mini"
+                    className="mini st-touch-target"
                     onClick={() => copiarTexto(formatoModal === 'html' ? relatorioHtml : relatorioTxt)}
                   >
                     Copiar {relatorioCopiado ? '✓' : ''}
@@ -856,16 +923,18 @@ export default function Classificar() {
                   <iframe
                     title="Pré-visualização do Relatório ERP"
                     srcDoc={relatorioHtml}
-                    style={{ width: '100%', height: '550px', border: 'none', background: 'var(--bg-card)', borderRadius: 4 }}
+                    style={{ width: '100%', height: '550px', border: '1px solid var(--border-medium)', background: '#ffffff', borderRadius: 6 }}
                   />
                 ) : (
                   <pre
+                    className="tabular-nums"
                     style={{
-                      background: 'var(--bg-card)',
+                      background: 'var(--bg-surface-input)',
+                      color: 'var(--on-surface)',
                       padding: 16,
-                      borderRadius: 4,
-                      border: '1px solid #cbd5e0',
-                      fontFamily: 'monospace',
+                      borderRadius: 6,
+                      border: '1px solid var(--border-medium)',
+                      fontFamily: 'var(--font-mono)',
                       fontSize: '0.85rem',
                       whiteSpace: 'pre-wrap',
                       maxHeight: '550px',
@@ -877,11 +946,11 @@ export default function Classificar() {
                 )}
               </div>
 
-              <div style={{ padding: '10px 20px', borderTop: '1px solid #e2e8f0', background: 'var(--bg-card-subtle)', textAlign: 'right' }}>
+              <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-surface-subtle)', textAlign: 'right' }}>
                 <button
                   type="button"
                   onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido', payload: null })}
-                  className="mini"
+                  className="mini st-touch-target"
                   style={{ minHeight: '44px', padding: '8px 16px', cursor: 'pointer' }}
                 >
                   Fechar
@@ -954,9 +1023,10 @@ export default function Classificar() {
   );
 }
 
-function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reforma, onGerarRelatorio }: {
+function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reforma, empresaAtiva, onGerarRelatorio }: {
   ds: Dataset; idx: number; cand: Candidate; q: ParsedQuery; aberto: boolean;
   onOpen: () => void; pin: ParamInput; forcar: boolean; frio: boolean; reforma: Reforma | null;
+  empresaAtiva?: Empresa | null;
   onGerarRelatorio?: (modo: 'resumido' | 'detalhado', payload: ParametrosErpPayload) => void;
 }) {
   const { notes, confidence, band } = buildNotes(cand, q, ds, [cand]);
@@ -975,23 +1045,23 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
   return (
     <section className={`res ${band}`}>
       <div className="res-main">
-        <span className={`res rank ${idx === 0 ? 'first' : ''}`}>#{idx + 1}</span>
+        <span className={`res rank tabular-nums ${idx === 0 ? 'first' : ''}`}>#{idx + 1}</span>
         <div style={{ flex: 1, minWidth: 240 }}>
           <div className="row" style={{ gap: 8 }}>
-            <span className="ncm-code">{rec.ncm}</span>
-            <span className={`badge ${band}`}>{Math.round(confidence * 100)}%</span>
+            <span className="ncm-code tabular-nums">{rec.ncm}</span>
+            <span className={`badge tabular-nums ${band}`}>{Math.round(confidence * 100)}%</span>
             {rec.gen === 1 && <span className="badge grey">residual “Outros”</span>}
             {tx.st && <span className="badge blue">CEST</span>}
             {tx.extarif && <span className="badge blue">NCM-Ex</span>}
             {rec.is === 1 && <span className="badge red">IS 2027</span>}
-            {criticas > 0 && <span className="badge red">{criticas} alerta(s) legal(is)</span>}
+            {criticas > 0 && <span className="badge red tabular-nums">{criticas} alerta(s) legal(is)</span>}
             {idx > 0 && !forcar && <span className="badge grey">alternativa</span>}
           </div>
           <div className="ncm-desc">{rec.desc.replace(/^[-–\s]+/, '')}</div>
           <div className="small muted" style={{ marginTop: 4 }}>{BAND_TXT[band]}</div>
         </div>
         <div className={`conf ${band}`}>
-          <div className="small muted">aderência {Math.round(cand.coverage * 100)}% · frase legal {cand.phrase ? 'sim' : 'não'}</div>
+          <div className="small muted tabular-nums">aderência {Math.round(cand.coverage * 100)}% · frase legal {cand.phrase ? 'sim' : 'não'}</div>
           <div className="bar"><div className="fill" style={{ width: `${Math.round(confidence * 100)}%` }} /></div>
         </div>
       </div>
@@ -1007,13 +1077,13 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
 
       <div className="row" style={{ margin: '0 16px 12px', gap: 8 }}>
         <button
-          className="mini"
+          className="mini st-touch-target"
           type="button"
           onClick={onOpen}
           style={{
             background: 'var(--accent-amber-subtle)',
             color: 'var(--warn)',
-            border: '1px solid #FDE047',
+            border: '1px solid rgba(245, 158, 11, 0.4)',
             fontWeight: 700,
             cursor: 'pointer',
             padding: '8px 14px',
@@ -1093,14 +1163,17 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
           <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: 'wrap' }}>
             <button
               type="button"
-              className="chip"
-              style={{ background: '#2b6cb0', color: 'white', fontWeight: 600, padding: '5px 12px', cursor: 'pointer' }}
+              className="st-btn-secondary st-touch-target"
+              style={{ background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', borderColor: 'rgba(59, 130, 246, 0.35)', fontWeight: 600, padding: '6px 12px', minHeight: '44px' }}
               onClick={() => {
                 if (!onGerarRelatorio) return;
                 const payload: ParametrosErpPayload = {
                   contexto: {
                     emitente: {
-                      nome: 'Empresa Emitente',
+                      nome: empresaAtiva?.razaoSocial || 'Empresa Emitente',
+                      cnpj: empresaAtiva?.cnpj || undefined,
+                      ie: empresaAtiva?.inscricaoEstadual || undefined,
+                      municipioIbge: empresaAtiva?.municipioIbge || undefined,
                       regime: pin.regime === 'simples' ? 'Simples Nacional' : pin.regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
                       crt: pin.regime === 'simples' ? '1' : '3',
                       uf: pin.ufOrigem,
@@ -1144,14 +1217,17 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
             </button>
             <button
               type="button"
-              className="chip"
-              style={{ background: '#276749', color: 'white', fontWeight: 600, padding: '5px 12px', cursor: 'pointer' }}
+              className="btn st-touch-target"
+              style={{ fontWeight: 700, padding: '6px 12px', minHeight: '44px' }}
               onClick={() => {
                 if (!onGerarRelatorio) return;
                 const payload: ParametrosErpPayload = {
                   contexto: {
                     emitente: {
-                      nome: 'Empresa Emitente',
+                      nome: empresaAtiva?.razaoSocial || 'Empresa Emitente',
+                      cnpj: empresaAtiva?.cnpj || undefined,
+                      ie: empresaAtiva?.inscricaoEstadual || undefined,
+                      municipioIbge: empresaAtiva?.municipioIbge || undefined,
                       regime: pin.regime === 'simples' ? 'Simples Nacional' : pin.regime === 'presumido' ? 'Lucro Presumido' : 'Lucro Real',
                       crt: pin.regime === 'simples' ? '1' : '3',
                       uf: pin.ufOrigem,
@@ -1234,7 +1310,7 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
             <dt>Matéria detectada</dt><dd>{q.material || 'não informada'}</dd>
             <dt>Uso detectado</dt><dd>{q.uso || 'não informado'}</dd>
             <dt>Medidas/atributos</dt><dd>{q.medidas.length ? q.medidas.join(', ') : 'nenhum número com unidade'}</dd>
-            <dt>Score bruto</dt><dd className="mono">{cand.score.toFixed(2)} · cobertura {(cand.coverage * 100).toFixed(0)}%</dd>
+            <dt>Score bruto</dt><dd className="mono tabular-nums">{cand.score.toFixed(2)} · cobertura {(cand.coverage * 100).toFixed(0)}%</dd>
           </div>
         </div>
       )}
@@ -1243,7 +1319,7 @@ function Resultado({ ds, idx, cand, q, aberto, onOpen, pin, forcar, frio, reform
 }
 
 function Tax({ k, v, wide }: { k: string; v: string; wide?: boolean }) {
-  return <div className="tax" style={wide ? { minWidth: 160 } : undefined}><div className="k">{k}</div><div className="v mono">{v}</div></div>;
+  return <div className="tax" style={wide ? { minWidth: 160 } : undefined}><div className="k">{k}</div><div className="v mono tabular-nums">{v}</div></div>;
 }
 
 function ReformaCard({ r, ano }: { r: ReformaSugestao; ano: number }) {
@@ -1268,8 +1344,8 @@ function ReformaCard({ r, ano }: { r: ReformaSugestao; ano: number }) {
         <tbody>
           {r.cbsibs.map((c) => (
             <tr key={c.codigo}>
-              <td className="mono">{c.cst} <span className="muted small">{c.cstNome}</span></td>
-              <td className="mono"><b>{c.codigo}</b>{c.reducao && <span className="badge blue" style={{ marginLeft: 4 }}>redução</span>}</td>
+              <td className="mono tabular-nums">{c.cst} <span className="muted small">{c.cstNome}</span></td>
+              <td className="mono tabular-nums"><b>{c.codigo}</b>{c.reducao && <span className="badge blue" style={{ marginLeft: 4 }}>redução</span>}</td>
               <td className="small">{c.tratamento || '—'}</td>
               <td className="small">{c.descricao}</td>
             </tr>
@@ -1282,7 +1358,7 @@ function ReformaCard({ r, ano }: { r: ReformaSugestao; ano: number }) {
           <div className="foldbody">
             {r.fundamentos.map((f) => (
               <div key={f.codigo} className="note info" style={{ margin: '0 0 8px' }}>
-                <div className="t">{f.codigo} · {f.curto}{f.lbl && f.lbl !== f.curto ? ` — ${f.lbl}` : ''}</div>
+                <div className="t tabular-nums">{f.codigo} · {f.curto}{f.lbl && f.lbl !== f.curto ? ` — ${f.lbl}` : ''}</div>
                 <div className="x">{f.texto}</div>
                 <div className="src mono">{f.referencia.slice(0, 260)}</div>
               </div>

@@ -1,5 +1,8 @@
 import { esc } from './html';
 
+export const PORTELA_VERSION = 'v7.2';
+export const PORTELA_COPYRIGHT = 'Desenvolvido por Contabilidade Portela — TODOS OS DIREITOS RESERVADOS';
+
 export const PORTELA_HEADER_CSS = `
 :root { --verde-escuro: #3A4A1E; --verde-claro: #5B7B35; }
 .rel-header { border-bottom: 1.5px solid var(--verde-claro); padding-bottom: 6mm; margin-bottom: 8mm; }
@@ -11,11 +14,22 @@ export const PORTELA_HEADER_CSS = `
 .rel-header__meta strong { display: block; font-size: 12pt; color: var(--verde-escuro); }
 .rel-header__meta span { display: block; }
 .rel-header__tagline { margin: 4mm 0 0; font: italic 9pt "EB Garamond", Georgia, serif; letter-spacing: .04em; color: var(--verde-claro); }
+.rel-header__attribution { margin-top: 2px; font: 7.5pt/1.35 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #64748b; }
+.rel-header__empresa { margin-top: 8px; padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-left: 3px solid var(--verde-claro); border-radius: 4px; font: 8.5pt/1.4 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1e293b; }
 @page { margin: 18mm 15mm; }
 @page :not(:first) {
   @top-left { content: "Contabilidade Portela"; font: 8pt "Inter", sans-serif; color: #5B7B35; }
   @top-right { content: "Página " counter(page) " de " counter(pages); font: 8pt "Inter", sans-serif; }
 }
+`;
+
+export const PORTELA_FOOTER_CSS = `
+.rel-footer { margin-top: 28px; padding-top: 14px; border-top: 1.5px solid #cbd5e1; font: 8.5pt/1.5 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #475569; }
+.rel-footer__row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
+.rel-footer__brand { font-weight: 700; color: var(--verde-escuro, #3A4A1E); }
+.rel-footer__copy { font-weight: 600; color: #334155; }
+.rel-footer__hash { margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 7.5pt; color: #64748b; word-break: break-all; }
+.rel-footer__legal { margin-top: 6px; font-size: 7.5pt; color: #64748b; text-align: justify; }
 `;
 
 /**
@@ -49,6 +63,9 @@ export interface HeaderPortelaOptions {
   dataHora?: string;
   documentoRef?: string;
   tagline?: string;
+  empresaNome?: string;
+  empresaCnpj?: string;
+  empresaRegime?: string;
 }
 
 /**
@@ -58,6 +75,10 @@ export interface HeaderPortelaOptions {
 export function renderHeaderPortela(opts: HeaderPortelaOptions): string {
   const dataFormatada = opts.dataHora || new Date().toLocaleString('pt-BR');
   const tagline = opts.tagline || 'Tradição, Auditoria Contábil e Engenharia Tributária · Desde 1970';
+  const empresaParts: string[] = [];
+  if (opts.empresaNome) empresaParts.push(`<strong>Empresa Ativa:</strong> ${esc(opts.empresaNome)}`);
+  if (opts.empresaCnpj) empresaParts.push(`<strong>CNPJ:</strong> ${esc(opts.empresaCnpj)}`);
+  if (opts.empresaRegime) empresaParts.push(`<strong>Regime:</strong> ${esc(opts.empresaRegime)}`);
 
   return `
   <header class="rel-header">
@@ -76,6 +97,32 @@ export function renderHeaderPortela(opts: HeaderPortelaOptions): string {
       </div>
     </div>
     <div class="rel-header__tagline">${esc(tagline)}</div>
+    <div class="rel-header__attribution">MargemReal Portela ${esc(PORTELA_VERSION)} · ${esc(PORTELA_COPYRIGHT)}</div>
+    ${empresaParts.length > 0 ? `<div class="rel-header__empresa">${empresaParts.join(' &nbsp;|&nbsp; ')}</div>` : ''}
   </header>
+  `.trim();
+}
+
+export interface FooterPortelaOptions {
+  versao?: string;
+  sha256?: string;
+  notaLegal?: string;
+}
+
+/**
+ * Renderiza o rodapé institucional padronizado MargemReal Portela em HTML.
+ * Utiliza a classe .rel-footer para evitar colisões com seletores .footer locais.
+ */
+export function renderFooterPortela(opts: FooterPortelaOptions = {}): string {
+  const versao = opts.versao || PORTELA_VERSION;
+  return `
+  <footer class="rel-footer">
+    <div class="rel-footer__row">
+      <span class="rel-footer__brand">MargemReal Portela ${esc(versao)}</span>
+      <span class="rel-footer__copy">${esc(PORTELA_COPYRIGHT)}</span>
+    </div>
+    ${opts.sha256 ? `<div class="rel-footer__hash"><strong>SHA-256:</strong> ${esc(opts.sha256)}</div>` : ''}
+    ${opts.notaLegal ? `<div class="rel-footer__legal">${esc(opts.notaLegal)}</div>` : ''}
+  </footer>
   `.trim();
 }

@@ -79,7 +79,9 @@ export default function StickyActionBar({
                 <span className="st-sticky-pill">
                   <strong className="tabular-nums">{summary.selectedCount}</strong>
                   {typeof summary?.itemCount === 'number' && (
-                    <span className="muted" style={{ fontWeight: 400 }}> de {summary.itemCount}</span>
+                    <span className="muted" style={{ fontWeight: 400 }}>
+                      {' '}de <span className="tabular-nums">{summary.itemCount}</span>
+                    </span>
                   )}{' '}
                   selecionados
                 </span>
@@ -125,8 +127,8 @@ export default function StickyActionBar({
                 onClick={sec.onClick}
                 disabled={sec.disabled}
                 title={sec.title}
-                className={`st-btn-secondary ${isDestructive ? 'is-destructive' : ''}`}
-                style={{ minHeight: '44px' }}
+                className={`st-btn-secondary st-touch-target ${isDestructive ? 'is-destructive' : ''}`}
+                style={{ minHeight: '44px', minWidth: '44px' }}
               >
                 {sec.icon && <span aria-hidden="true">{sec.icon}</span>}
                 <span>{sec.label}</span>

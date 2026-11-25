@@ -37,6 +37,7 @@ export default function ItemDetailDrawer({
 }: ItemDetailDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const tabListRef = useRef<HTMLDivElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
 
   const [currentTab, setCurrentTab] = useState<string>(
@@ -53,10 +54,40 @@ export default function ItemDetailDrawer({
     [onTabChange]
   );
 
+  const handleTabListKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (tabs.length === 0) return;
+      const currentIndex = Math.max(
+        0,
+        tabs.findIndex((t) => t.id === currentTab)
+      );
+      let nextIndex: number | null = null;
+      if (e.key === 'ArrowRight') {
+        nextIndex = (currentIndex + 1) % tabs.length;
+      } else if (e.key === 'ArrowLeft') {
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      } else if (e.key === 'Home') {
+        nextIndex = 0;
+      } else if (e.key === 'End') {
+        nextIndex = tabs.length - 1;
+      }
+      if (nextIndex !== null) {
+        e.preventDefault();
+        const nextTab = tabs[nextIndex];
+        if (nextTab) {
+          handleTabClick(nextTab.id);
+          const tabButtons = tabListRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+          tabButtons?.[nextIndex]?.focus();
+        }
+      }
+    },
+    [tabs, currentTab, handleTabClick]
+  );
+
   useEffect(() => {
     if (isOpen) {
       previousActiveElementRef.current = document.activeElement as HTMLElement;
-      setTimeout(() => {
+      const focusTimer = setTimeout(() => {
         closeButtonRef.current?.focus();
       }, 50);
 
@@ -69,6 +100,7 @@ export default function ItemDetailDrawer({
 
       document.addEventListener('keydown', handleKeyDown);
       return () => {
+        clearTimeout(focusTimer);
         document.removeEventListener('keydown', handleKeyDown);
         previousActiveElementRef.current?.focus();
       };
@@ -99,7 +131,7 @@ export default function ItemDetailDrawer({
           aria-modal="true"
           aria-labelledby="drawer-title"
           className={`st-drawer-panel ${className}`}
-          style={{ width }}
+          style={{ ['--drawer-width' as string]: width }}
         >
           <header className="st-drawer-header">
             <div style={{ minWidth: 0, flex: '1 1 auto' }}>
@@ -118,7 +150,7 @@ export default function ItemDetailDrawer({
               type="button"
               onClick={onClose}
               aria-label="Fechar gaveta de detalhes (Esc)"
-              className="st-drawer-close"
+              className="st-drawer-close st-touch-target"
               style={{ minHeight: '44px', minWidth: '44px' }}
             >
               <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -128,7 +160,13 @@ export default function ItemDetailDrawer({
           </header>
 
           {tabs.length > 0 && (
-            <div role="tablist" aria-label="Seções do detalhe do item" className="st-drawer-tabs">
+            <div
+              ref={tabListRef}
+              role="tablist"
+              aria-label="Seções do detalhe do item"
+              onKeyDown={handleTabListKeyDown}
+              className="st-drawer-tabs"
+            >
               {tabs.map((tab) => {
                 const isSelected = tab.id === currentTab;
                 return (
@@ -137,8 +175,9 @@ export default function ItemDetailDrawer({
                     role="tab"
                     type="button"
                     aria-selected={isSelected}
+                    tabIndex={isSelected ? 0 : -1}
                     onClick={() => handleTabClick(tab.id)}
-                    className={`st-drawer-tab ${isSelected ? 'is-active' : ''}`}
+                    className={`st-drawer-tab st-touch-target ${isSelected ? 'is-active' : ''}`}
                     style={{ minHeight: '44px' }}
                   >
                     {tab.icon && <span aria-hidden="true">{tab.icon}</span>}

@@ -162,10 +162,10 @@ export default function ReformaTab() {
       </div>
 
       <div className="card">
-        <h2>Catálogo Oficial IBS, CBS e Imposto Seletivo</h2>
-        <p className="hint">
+        <h2>Catálogo IBS, CBS e IS</h2>
+        <p className="hint tabular-nums">
           Tabelas oficiais carregadas sem recorte: <b>{rf.classificacoes.length}</b> códigos{' '}
-          <span className="mono">cClassTrib</span> em <b>{rf.cst.length}</b> situações (CST-IBS/CBS),{' '}
+          <span className="mono tabular-nums">cClassTrib</span> em <b>{rf.cst.length}</b> situações (CST-IBS/CBS),{' '}
           <b>{(rf.is_classificacoes || []).length}</b> códigos do Imposto Seletivo e{' '}
           <b>{Object.keys(rf.fundamentacoes || {}).length}</b> fundamentações da LC 214/2025.
           Fonte: {rf.fonte} · coleta {rf.coletado_em ? new Date(rf.coletado_em).toLocaleString('pt-BR') : '—'}.
@@ -173,7 +173,7 @@ export default function ReformaTab() {
         {!!rf.falhas && Object.keys(rf.falhas).length > 0 && (
           <div className="note info" style={{ marginTop: 12 }}>
             <div className="t">Tabelas Normativas de Referência Ativas (LC 214/2025 e LC 227/2025)</div>
-            <div className="x">
+            <div className="x tabular-nums">
               As alíquotas de referência nacional da CBS e do IBS e os <b>{rf.classificacoes.length}</b> códigos de cClassTrib estão plenamente operacionais a partir da base oficial consolidada da RFB/SEFAZ.
               As alíquotas estaduais diferenciadas para os anos de transição futura (2027, 2029 e 2033) aguardam publicação das resoluções pelo Comitê Gestor do IBS e serão atualizadas automaticamente via sincronização contínua.
             </div>
@@ -194,22 +194,22 @@ export default function ReformaTab() {
             <tbody>
               {anos.map((a) => (
                 <tr key={a.ano}>
-                  <td className="mono">{a.ano}</td>
-                  <td className="num">{fmt(a.cbs)}</td>
-                  <td className="num">{a.uf && a.uf.length ? (a.uf[0] === a.uf[a.uf.length - 1] ? fmt(a.uf[0]) : `${fmt(a.uf[0])} – ${fmt(a.uf[a.uf.length - 1])}`) : '—'}</td>
+                  <td className="mono tabular-nums">{a.ano}</td>
+                  <td className="num tabular-nums">{fmt(a.cbs)}</td>
+                  <td className="num tabular-nums">{a.uf && a.uf.length ? (a.uf[0] === a.uf[a.uf.length - 1] ? fmt(a.uf[0]) : `${fmt(a.uf[0])} – ${fmt(a.uf[a.uf.length - 1])}`) : '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="small muted" style={{ marginTop: 8 }}>
+        <p className="small muted tabular-nums" style={{ marginTop: 8 }}>
           Percentual do produto da arrecadação destinado aos entes durante a transição — CBS:{' '}
           {(rf.transicao?.cbs_destino || []).map((t) => `${new Date(t.inicioVigencia).getFullYear()}: ${t.valor}%`).join(' · ')}.{' '}
           IBS: {(rf.transicao?.ibs_destino || []).map((t) => `${new Date(t.inicioVigencia).getFullYear()}: ${t.valor}%`).join(' · ')}.
           Em 2026 a CBS e o IBS são cobrados em alíquotas-teste e <i>não</i> substituem PIS/COFINS, IPI, ICMS e ISS.
         </p>
         {rf.is_por_ncm ? (
-          <p className="small muted">
+          <p className="small muted tabular-nums">
             Imposto Seletivo por NCM: {rf.is_consultados?.toLocaleString('pt-BR')} de {rf.is_total?.toLocaleString('pt-BR')}{' '}
             NCMs consultados na tabela oficial (base {rf.is_parcial ? 'parcial — em atualização' : 'completa'}) com data{' '}
             {rf.is_data}. Os NCMs marcados aparecem com o selo <span className="badge red">IS 2027</span> no resultado.
@@ -222,7 +222,7 @@ export default function ReformaTab() {
       <div className="card">
         <div className="tabs" style={{ marginBottom: 12 }}>
           <button
-            className={`tab ${aba === 'cbsibs' ? 'on' : ''}`}
+            className={`tab tabular-nums ${aba === 'cbsibs' ? 'on' : ''}`}
             type="button"
             onClick={() => setAba('cbsibs')}
             style={{ minHeight: '44px', padding: '8px 16px' }}
@@ -230,7 +230,7 @@ export default function ReformaTab() {
             cClassTrib do IBS/CBS ({rf.classificacoes.length})
           </button>
           <button
-            className={`tab ${aba === 'is' ? 'on' : ''}`}
+            className={`tab tabular-nums ${aba === 'is' ? 'on' : ''}`}
             type="button"
             onClick={() => setAba('is')}
             style={{ minHeight: '44px', padding: '8px 16px' }}
@@ -264,7 +264,7 @@ export default function ReformaTab() {
             <label className="check" style={{ minHeight: '44px', display: 'inline-flex', alignItems: 'center' }}>
               <input type="checkbox" checked={soReducao} onChange={(e) => setSoReducao(e.target.checked)} /> só com redução de alíquota
             </label>
-            <span className="small muted mono" style={{ alignSelf: 'center' }}>{totalLinhas} código(s)</span>
+            <span className="small muted mono tabular-nums" style={{ alignSelf: 'center' }}>{totalLinhas} código(s)</span>
           </div>
         )}
 
@@ -279,10 +279,10 @@ export default function ReformaTab() {
                 <tr
                   key={c.c}
                   onClick={() => setDetalhe(detalhe === c.c ? '' : c.c)}
-                  style={{ cursor: 'pointer', background: detalhe === c.c ? 'var(--highlight, rgba(59, 130, 246, 0.12))' : undefined }}
+                  style={{ cursor: 'pointer', background: detalhe === c.c ? 'var(--highlight)' : undefined }}
                 >
-                  <td className="mono"><b>{c.c}</b></td>
-                  <td className="mono">{c.cst} <span className="small muted">{c.cn}</span></td>
+                  <td className="mono tabular-nums"><b>{c.c}</b></td>
+                  <td className="mono tabular-nums">{c.cst} <span className="small muted">{c.cn}</span></td>
                   <td className="small">{c.ta || '—'}</td>
                   <td className="small">{c.tt || '—'}</td>
                   <td className="small">
@@ -291,7 +291,7 @@ export default function ReformaTab() {
                     {c.cpF && <span className="badge grey">créd. presumido</span>}{' '}
                     {c.rb && <span className="badge grey">vedado c/ susp.</span>}
                   </td>
-                  <td className="mono small muted">{(c.df || []).join(' ') || '—'}</td>
+                  <td className="mono small muted tabular-nums">{(c.df || []).join(' ') || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -303,7 +303,7 @@ export default function ReformaTab() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               type="button"
-              className="btn ghost"
+              className="btn ghost st-touch-target"
               disabled={pagina <= 1}
               onClick={() => setPagina((p) => Math.max(1, p - 1))}
               style={{ minHeight: '44px', padding: '6px 14px' }}
@@ -311,12 +311,12 @@ export default function ReformaTab() {
             >
               ← Anterior
             </button>
-            <span className="small muted mono" style={{ padding: '0 8px' }}>
+            <span className="small muted mono tabular-nums" style={{ padding: '0 8px' }}>
               Página <b>{pagina}</b> de <b>{totalPaginas}</b> ({totalLinhas} registros)
             </span>
             <button
               type="button"
-              className="btn ghost"
+              className="btn ghost st-touch-target"
               disabled={pagina >= totalPaginas}
               onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
               style={{ minHeight: '44px', padding: '6px 14px' }}
@@ -330,6 +330,7 @@ export default function ReformaTab() {
             <label htmlFor="linhasPorPagina" className="small muted">Linhas por página:</label>
             <select
               id="linhasPorPagina"
+              className="tabular-nums"
               value={linhasPorPagina}
               onChange={(e) => {
                 setLinhasPorPagina(Number(e.target.value));
@@ -352,7 +353,7 @@ export default function ReformaTab() {
           if (!c) return null;
           return (
             <div className="note info" style={{ marginTop: 10 }}>
-              <div className="t">{c.c} — CST {c.cst} · {c.cn}</div>
+              <div className="t tabular-nums">{c.c} — CST {c.cst} · {c.cn}</div>
               <div className="x">{c.d}</div>
               {f && (
                 <>
@@ -373,7 +374,7 @@ export default function ReformaTab() {
       <div style={{ marginTop: 14 }}>
         <ProgressiveSection
           id="sec-reforma-fundamentos"
-          title="Fundamentação Legal da Reforma Tributária (LC 214/2025 & LC 227/2026)"
+          title="Fundamentação Legal"
           subtitle="Dispositivos do IBS, CBS, Comitê Gestor (CG-IBS), NT 2026.008 v1.01, CGSN 186/194 e Consulta SEFA/PR 48/2026"
           minLevel="senior"
           currentLevel={nivel}
@@ -383,7 +384,7 @@ export default function ReformaTab() {
         >
           <div style={{ marginTop: 8 }}>
             <LegalCitationBlock
-              title="Normas Regulatórias da Reforma Tributária (LC 214/2025, LC 227/2026 & NT 2026.008)"
+              title="Normas da Reforma Tributária"
               citations={citacoesNormativas}
               currentLevel={nivel}
               defaultCollapsed={false}
@@ -422,7 +423,7 @@ export default function ReformaTab() {
           },
         ]}
         contextBadge={
-          <span>
+          <span className="tabular-nums">
             Exibindo <b>{itensPaginados.length}</b> de <b>{totalLinhas}</b> classificações ({aba === 'cbsibs' ? 'IBS/CBS' : 'Imposto Seletivo'})
           </span>
         }

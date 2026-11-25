@@ -554,8 +554,8 @@ export default function Lote() {
           </div>
           {linhasProcessadas.length > 0 && (
             <a
-              className="btn"
-              style={{ textDecoration: 'none', background: '#16a34a', borderColor: 'var(--ok)', minHeight: '44px', display: 'inline-flex', alignItems: 'center' }}
+              className="btn st-touch-target tabular-nums"
+              style={{ textDecoration: 'none', background: 'var(--portela-brand-cta)', color: 'var(--portela-cta-ink)', borderColor: 'var(--portela-brand-cta)', minHeight: '44px', display: 'inline-flex', alignItems: 'center' }}
               href={`data:text/csv;charset=utf-8,${encodeURIComponent(exportarLoteErpCSV(linhasProcessadas))}`}
               download={`lote-parametrizacao-erp-${contextoAtual.regimeSaida}-${contextoAtual.anoCalendario}.csv`}
             >
@@ -579,13 +579,13 @@ export default function Lote() {
               style={{
                 marginTop: 8,
                 padding: '14px 16px',
-                background: 'var(--bg-elevated, #f8fafc)',
+                background: 'var(--bg-surface-subtle)',
                 borderRadius: 8,
-                border: '1px solid var(--border-color, #e2e8f0)',
+                border: '1px solid var(--border-medium)',
               }}
             >
         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          ⚙️ Contexto de Saída da Mercadoria (Regime Tributário & Fisco)
+          ⚙️ Contexto de Saída da Mercadoria (Regime Tributário &amp; Fisco)
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12 }}>
           {/* Regime Tributário */}
@@ -594,7 +594,7 @@ export default function Lote() {
               Regime Tributário de Saída:
             </label>
             <select
-              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: '0.82rem', fontWeight: 600 }}
+              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border-medium)', fontSize: '0.82rem', fontWeight: 600 }}
               value={regimeSaida}
               onChange={(e) => setRegimeSaida(e.target.value as RegimeSaidaLote)}
             >
@@ -612,7 +612,7 @@ export default function Lote() {
               UF Origem (Emitente):
             </label>
             <select
-              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border-medium)', fontSize: '0.82rem' }}
               value={ufOrigem}
               onChange={(e) => setUfOrigem(e.target.value)}
             >
@@ -630,7 +630,7 @@ export default function Lote() {
               UF Destino (Operação):
             </label>
             <select
-              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border-medium)', fontSize: '0.82rem' }}
               value={ufDestino}
               onChange={(e) => setUfDestino(e.target.value)}
             >
@@ -648,7 +648,7 @@ export default function Lote() {
               Finalidade da Saída:
             </label>
             <select
-              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border-medium)', fontSize: '0.82rem' }}
               value={finalidadeSaida}
               onChange={(e) => setFinalidadeSaida(e.target.value as any)}
             >
@@ -664,7 +664,8 @@ export default function Lote() {
               Ano Calendário (Reforma):
             </label>
             <select
-              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: '0.82rem', fontWeight: 600 }}
+              className="tabular-nums"
+              style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border-medium)', fontSize: '0.82rem', fontWeight: 600 }}
               value={anoCalendario}
               onChange={(e) => setAnoCalendario(Number(e.target.value) as any)}
             >
@@ -694,10 +695,10 @@ export default function Lote() {
           }}
         />
         <button
-          className="btn ghost"
+          className="btn ghost st-touch-target"
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          style={{ border: '1px dashed #3b82f6', color: 'var(--accent-blue)', minHeight: '44px' }}
+          style={{ border: '1px dashed var(--accent-blue)', color: 'var(--accent-blue)', minHeight: '44px' }}
         >
           📂 Selecionar Planilha CSV / TSV
         </button>
@@ -770,7 +771,7 @@ export default function Lote() {
             color: 'var(--accent-blue)',
             borderRadius: 6,
             fontSize: '0.82rem',
-            border: '1px solid #bae6fd',
+            border: '1px solid rgba(59, 130, 246, 0.35)',
           }}
         >
           ℹ️ {mensagemStatus}
@@ -783,32 +784,32 @@ export default function Lote() {
           style={{
             marginTop: 14,
             padding: '12px 14px',
-            background: 'var(--bg-card)',
+            background: 'var(--bg-surface-card)',
             borderRadius: 8,
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            border: '1px solid var(--border-medium)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.16)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span className="badge" style={{ background: '#0f172a', color: '#fff' }}>
+              <span className="badge grey tabular-nums" style={{ background: 'var(--bg-surface-subtle)', color: 'var(--ink)', border: '1px solid var(--border-medium)' }}>
                 Total: {resumo.total}
               </span>
-              <span className="badge" style={{ background: 'var(--accent-emerald-glow)', color: 'var(--ok)', border: '1px solid #86efac' }}>
+              <span className="badge alta tabular-nums">
                 ✅ NCM Seguro (&gt;85%): {resumo.prontosNcm}
               </span>
               {resumo.requerIaNcm > 0 && (
-                <span className="badge" style={{ background: 'var(--accent-amber-subtle)', color: 'var(--warn)', border: '1px solid #fcd34d' }}>
+                <span className="badge media tabular-nums">
                   🤖 NCM a Revisar (≤85%): {resumo.requerIaNcm}
                 </span>
               )}
               {resumo.requerIaErp > 0 && (
-                <span className="badge" style={{ background: 'var(--accent-crimson-subtle)', color: 'var(--bad)', border: '1px solid #fca5a5' }}>
+                <span className="badge baixa tabular-nums">
                   ⚠️ Aderência ERP &le;85%: {resumo.requerIaErp}
                 </span>
               )}
               {resumo.iaAssistidos > 0 && (
-                <span className="badge" style={{ background: '#e0e7ff', color: '#3730a3', border: '1px solid #c7d2fe' }}>
+                <span className="badge blue tabular-nums">
                   ✨ IA Assistidos: {resumo.iaAssistidos}
                 </span>
               )}
@@ -818,9 +819,9 @@ export default function Lote() {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {resumo.requerIaNcm > 0 && (
                 <button
-                  className="btn"
+                  className="st-btn-secondary st-touch-target"
                   type="button"
-                  style={{ background: '#d97706', borderColor: 'var(--warn)', fontSize: '0.8rem', padding: '6px 12px' }}
+                  style={{ background: 'var(--accent-amber-subtle)', color: 'var(--warn)', borderColor: 'rgba(245, 158, 11, 0.4)', fontSize: '0.8rem', padding: '6px 12px', minHeight: '44px' }}
                   onClick={() => classificarNcmsComIa()}
                   disabled={processandoIaNcm}
                 >
@@ -830,9 +831,9 @@ export default function Lote() {
 
               {resumo.requerIaErp > 0 && (
                 <button
-                  className="btn"
+                  className="st-btn-secondary st-touch-target"
                   type="button"
-                  style={{ background: '#7c3aed', borderColor: '#6d28d9', fontSize: '0.8rem', padding: '6px 12px' }}
+                  style={{ background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', borderColor: 'rgba(59, 130, 246, 0.4)', fontSize: '0.8rem', padding: '6px 12px', minHeight: '44px' }}
                   onClick={() => codificarErpComIa()}
                   disabled={processandoIaErp}
                 >
@@ -847,23 +848,23 @@ export default function Lote() {
       {/* TABELA DE PARAMETRIZAÇÃO GERENCIAL RESUMIDA DO ERP */}
       {linhasProcessadas.length > 0 && (
         <div style={{ marginTop: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--ink)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+            <span className="tabular-nums" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--ink)' }}>
               📋 Parâmetros Gerenciais Calculados para o ERP ({linhasFiltradas.length} de {linhasProcessadas.length})
             </span>
             <input
               type="text"
               placeholder="🔍 Filtrar por código, descrição, NCM ou CFOP..."
-              style={{ padding: '4px 8px', fontSize: '0.8rem', width: 260, borderRadius: 6, border: '1px solid #cbd5e1' }}
+              style={{ padding: '6px 10px', fontSize: '0.8rem', width: 260, borderRadius: 6, border: '1px solid var(--border-medium)', minHeight: '44px' }}
               value={filtroTexto}
               onChange={(e) => setFiltroTexto(e.target.value)}
             />
           </div>
 
-          <div className="scroll" style={{ border: '1px solid #e2e8f0', borderRadius: 8 }}>
+          <div className="scroll" style={{ border: '1px solid var(--border-medium)', borderRadius: 8 }}>
             <table className="tb" style={{ fontSize: '0.78rem' }}>
               <thead>
-                <tr style={{ background: 'var(--bg-card-subtle)' }}>
+                <tr style={{ background: 'var(--bg-surface-subtle)' }}>
                   <th>Código</th>
                   <th style={{ minWidth: 180 }}>Descrição</th>
                   <th>NCM</th>
@@ -886,7 +887,7 @@ export default function Lote() {
 
                   return (
                     <tr key={l.id} style={{ background: erpBaixo ? 'var(--accent-amber-subtle)' : undefined }}>
-                      <td className="mono" style={{ fontWeight: 600 }}>{l.codigo}</td>
+                      <td className="mono tabular-nums" style={{ fontWeight: 600 }}>{l.codigo}</td>
                       <td>
                         <div style={{ fontWeight: 500 }}>{l.descricao}</div>
                         {l.descricaoNcm && (
@@ -895,32 +896,32 @@ export default function Lote() {
                           </div>
                         )}
                       </td>
-                      <td className="mono" style={{ fontWeight: 700 }}>{l.ncm || '—'}</td>
+                      <td className="mono tabular-nums" style={{ fontWeight: 700 }}>{l.ncm || '—'}</td>
                       <td>
                         <span
-                          className={`badge ${l.confiancaNcmPct >= 86 ? 'alta' : l.confiancaNcmPct >= 60 ? 'media' : 'baixa'}`}
+                          className={`badge tabular-nums ${l.confiancaNcmPct >= 86 ? 'alta' : l.confiancaNcmPct >= 60 ? 'media' : 'baixa'}`}
                           title={`Origem: ${l.origemNcm}`}
                         >
                           {l.confiancaNcmPct}% {l.origemNcm === 'GEMINI_IA' ? '✨' : ''}
                         </span>
                       </td>
-                      <td className="mono" style={{ fontWeight: 600, color: 'var(--accent-blue)' }}>{l.cfopSaida}</td>
-                      <td className="mono" style={{ fontWeight: 600 }}>{l.cstOuCsosnIcms}</td>
-                      <td className="mono" style={{ fontSize: '0.72rem' }}>{l.cBenefPr}</td>
-                      <td>
+                      <td className="mono tabular-nums" style={{ fontWeight: 600, color: 'var(--accent-blue)' }}>{l.cfopSaida}</td>
+                      <td className="mono tabular-nums" style={{ fontWeight: 600 }}>{l.cstOuCsosnIcms}</td>
+                      <td className="mono tabular-nums" style={{ fontSize: '0.72rem' }}>{l.cBenefPr}</td>
+                      <td className="tabular-nums">
                         {l.aliqIcmsNominalPct}% / {l.redBcIcmsPct}% / <b>{l.cargaIcmsEfetivaPct}%</b>
                       </td>
-                      <td className="mono">
+                      <td className="mono tabular-nums">
                         {l.cest || '—'} {l.mvaOriginalPct > 0 ? `(${l.mvaOriginalPct}%)` : ''}
                       </td>
-                      <td>
+                      <td className="tabular-nums">
                         CST {l.cstPisCofins} ({l.aliqPisPct}% / {l.aliqCofinsPct}%)
                       </td>
-                      <td>
-                        CST {l.cstIbsCbs} <span className="mono" style={{ fontSize: '0.72rem' }}>({l.cClassTrib})</span> {l.aliqCbsEfetivaPct + l.aliqIbsEfetivaPct}%
+                      <td className="tabular-nums">
+                        CST {l.cstIbsCbs} <span className="mono tabular-nums" style={{ fontSize: '0.72rem' }}>({l.cClassTrib})</span> {l.aliqCbsEfetivaPct + l.aliqIbsEfetivaPct}%
                       </td>
                       <td>
-                        <span className={`badge ${l.aderenciaErpPct >= 86 ? 'alta' : 'baixa'}`}>
+                        <span className={`badge tabular-nums ${l.aderenciaErpPct >= 86 ? 'alta' : 'baixa'}`}>
                           {l.aderenciaErpPct}%
                         </span>
                       </td>
@@ -928,9 +929,9 @@ export default function Lote() {
                         <div style={{ display: 'flex', gap: 4 }}>
                           {ncmBaixo && (
                             <button
-                              className="mini"
+                              className="mini st-touch-target"
                               type="button"
-                              style={{ background: '#d97706', color: '#fff', border: 'none' }}
+                              style={{ background: 'var(--accent-amber-subtle)', color: 'var(--warn)', border: '1px solid rgba(245, 158, 11, 0.4)', minHeight: '44px' }}
                               onClick={() => classificarNcmsComIa([l])}
                               disabled={processandoIaNcm}
                               title="Classificar NCM com Gemini IA"
@@ -940,9 +941,9 @@ export default function Lote() {
                           )}
                           {erpBaixo && (
                             <button
-                              className="mini"
+                              className="mini st-touch-target"
                               type="button"
-                              style={{ background: '#7c3aed', color: '#fff', border: 'none' }}
+                              style={{ background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', border: '1px solid rgba(59, 130, 246, 0.4)', minHeight: '44px' }}
                               onClick={() => codificarErpComIa([l])}
                               disabled={processandoIaErp}
                               title="Codificar ERP com IA"
@@ -965,7 +966,7 @@ export default function Lote() {
       <div style={{ marginTop: 14 }}>
         <ProgressiveSection
           id="sec-lote-fundamentacao"
-          title="Embasamento Legal do Lote & Obrigações Acessórias (SPED / LC 214)"
+          title="Embasamento Legal do Lote"
           subtitle="Critérios de escrituração do Registro 0200 e matriz de tributação de saída"
           minLevel="senior"
           currentLevel={nivel}

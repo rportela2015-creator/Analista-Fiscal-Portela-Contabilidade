@@ -5,7 +5,14 @@
  */
 
 import { esc } from './relatorio';
-import { PORTELA_HEADER_CSS, renderHeaderPortela } from './relatorio-header';
+import {
+  PORTELA_COPYRIGHT,
+  PORTELA_FOOTER_CSS,
+  PORTELA_HEADER_CSS,
+  PORTELA_VERSION,
+  renderFooterPortela,
+  renderHeaderPortela,
+} from './relatorio-header';
 
 export interface ParametrosErpItem {
   cProd?: string;
@@ -209,7 +216,7 @@ export function gerarRelatorioErpResumidoTxt(payload: ParametrosErpPayload, agor
   const { contexto, itens } = payload;
   let txt = `================================================================================\n`;
   txt += `PARAMETRIZAÇÃO FISCAL DE ERP — MODO RESUMIDO (CÓDIGO E CAMPO)\n`;
-  txt += `Contabilidade Portela (Desde 1970) · Data da Geração: ${agora.toLocaleString('pt-BR')}\n`;
+  txt += `Contabilidade Portela (Desde 1970) · MargemReal Portela ${PORTELA_VERSION} · Data da Geração: ${agora.toLocaleString('pt-BR')}\n`;
   txt += `================================================================================\n\n`;
 
   txt += `DADOS DA EMPRESA E OPERAÇÃO:\n`;
@@ -236,6 +243,7 @@ export function gerarRelatorioErpResumidoTxt(payload: ParametrosErpPayload, agor
 
   txt += `================================================================================\n`;
   txt += `Fim do Relatório Resumido para Parametrização de ERP.\n`;
+  txt += `MargemReal Portela ${PORTELA_VERSION} — ${PORTELA_COPYRIGHT}\n`;
   return txt;
 }
 
@@ -246,15 +254,23 @@ export function gerarRelatorioErpResumidoHtml(payload: ParametrosErpPayload, ago
     subtitulo: 'Parâmetros e Códigos para Sistema Emissor de DF-e',
     dataHora: agora.toLocaleString('pt-BR'),
     documentoRef: `Ano Base ${contexto.operacao?.anoReforma || 2026}`,
+    empresaNome: contexto.emitente?.nome,
+    empresaCnpj: contexto.emitente?.cnpj,
+    empresaRegime: contexto.emitente?.regime,
+  });
+  const footerHtml = renderFooterPortela({
+    versao: PORTELA_VERSION,
   });
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
   <title>Parametrização de ERP - Modo Resumido</title>
   <style>
     ${PORTELA_HEADER_CSS}
+    ${PORTELA_FOOTER_CSS}
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 30px; color: #2c3e50; line-height: 1.5; }
     .info-box { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 24px; font-size: 0.9rem; }
     .card { background: #ffffff; border: 1px solid #cbd5e0; border-radius: 8px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; }
@@ -305,6 +321,7 @@ export function gerarRelatorioErpResumidoHtml(payload: ParametrosErpPayload, ago
     </div>
     `;
   }).join('')}
+  ${footerHtml}
 </body>
 </html>`;
 }
@@ -318,7 +335,7 @@ export function gerarRelatorioErpDetalhadoTxt(payload: ParametrosErpPayload, ago
   let txt = `================================================================================\n`;
   txt += `LAUDO TÉCNICO DE PARAMETRIZAÇÃO FISCAL DE ERP — MODO DETALHADO\n`;
   txt += `Fundamentação Jurídica Integral: Leis Complementares, Decretos, Convênios e NESH\n`;
-  txt += `Contabilidade Portela (Desde 1970) · Data da Geração: ${agora.toLocaleString('pt-BR')}\n`;
+  txt += `Contabilidade Portela (Desde 1970) · MargemReal Portela ${PORTELA_VERSION} · Data da Geração: ${agora.toLocaleString('pt-BR')}\n`;
   txt += `================================================================================\n\n`;
 
   txt += `I. IDENTIFICAÇÃO INSTITUCIONAL E DA OPERAÇÃO FISCAL\n`;
@@ -358,6 +375,7 @@ export function gerarRelatorioErpDetalhadoTxt(payload: ParametrosErpPayload, ago
   txt += `econômicos declarados e as normas tributárias vigentes no Sistema Harmonizado e no novo\n`;
   txt += `modelo da Reforma Tributária do Consumo (EC nº 132/2023, LC nº 214/2025 e LC nº 227/2026).\n`;
   txt += `Contabilidade Portela (Desde 1970) — Tradição e Excelência Tributária.\n`;
+  txt += `MargemReal Portela ${PORTELA_VERSION} — ${PORTELA_COPYRIGHT}\n`;
   txt += `================================================================================\n`;
   return txt;
 }
@@ -369,15 +387,24 @@ export function gerarRelatorioErpDetalhadoHtml(payload: ParametrosErpPayload, ag
     subtitulo: 'Contabilidade Portela (Desde 1970) · Consultoria Fiscal Pericial',
     dataHora: agora.toLocaleString('pt-BR'),
     documentoRef: `Ano Base ${contexto.operacao?.anoReforma || 2026}`,
+    empresaNome: contexto.emitente?.nome,
+    empresaCnpj: contexto.emitente?.cnpj,
+    empresaRegime: contexto.emitente?.regime,
+  });
+  const footerHtml = renderFooterPortela({
+    versao: PORTELA_VERSION,
+    notaLegal: 'Este relatório técnico foi gerado pelo MargemReal Portela (Contabilidade Portela). As fundamentações legais baseiam-se na LC 214/2025, LC 227/2026, Convênios CONFAZ e Resoluções Gecex vigentes.',
   });
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
   <title>Laudo Pericial de Parametrização Fiscal de ERP (Modo Detalhado)</title>
   <style>
     ${PORTELA_HEADER_CSS}
+    ${PORTELA_FOOTER_CSS}
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 40px; color: #1a202c; line-height: 1.6; background: #f7fafc; }
     .container { max-width: 960px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     .section-title { font-size: 1.15rem; font-weight: 700; color: #2c5282; margin: 24px 0 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
@@ -440,10 +467,7 @@ export function gerarRelatorioErpDetalhadoHtml(payload: ParametrosErpPayload, ag
       `;
     }).join('')}
 
-    <div class="footer">
-      <p>Este relatório técnico foi gerado pelo Sistema de Classificação Fiscal NCM & Reforma Tributária da Contabilidade Portela.</p>
-      <p>As fundamentações legais baseiam-se na LC 214/2025, LC 227/2026, Convênios CONFAZ e Resoluções Gecex vigentes.</p>
-    </div>
+    ${footerHtml}
   </div>
 </body>
 </html>`;

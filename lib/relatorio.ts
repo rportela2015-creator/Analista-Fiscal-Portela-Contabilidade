@@ -5,6 +5,15 @@
  * SEGURANÇA: todo texto vindo de XML/LLM é interpolado SOMENTE via esc().
  */
 
+import {
+  PORTELA_COPYRIGHT,
+  PORTELA_FOOTER_CSS,
+  PORTELA_HEADER_CSS,
+  PORTELA_VERSION,
+  renderFooterPortela,
+  renderHeaderPortela,
+} from './relatorio-header';
+
 export function esc(str: unknown): string {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -27,16 +36,39 @@ export interface PayloadRelatorio {
   parecerTecnicoXml?: any;
   parecerConformidade?: any;
   itens?: ItemRelatorio[];
+  empresaAtiva?: {
+    razaoSocial?: string;
+    cnpj?: string;
+    uf?: string;
+    regime?: string;
+  };
+  sha256?: string;
 }
 
 export function renderRelatorioHtml(payload: PayloadRelatorio, agora: Date = new Date()): string {
-  const { parecerTecnicoXml, parecerConformidade, itens } = payload;
+  const { parecerTecnicoXml, parecerConformidade, itens, empresaAtiva, sha256 } = payload;
+  const headerHtml = renderHeaderPortela({
+    titulo: 'Laudo de Auditoria Fiscal',
+    subtitulo: 'Auditoria Fiscal & Parametrização de ERP',
+    dataHora: agora.toLocaleString('pt-BR'),
+    empresaNome: empresaAtiva?.razaoSocial,
+    empresaCnpj: empresaAtiva?.cnpj,
+    empresaRegime: empresaAtiva?.regime,
+  });
+  const footerHtml = renderFooterPortela({
+    versao: PORTELA_VERSION,
+    sha256,
+  });
   return `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';">
+  <title>Portela Contabilidade - Laudo de Auditoria Fiscal</title>
   <style>
+    ${PORTELA_HEADER_CSS}
+    ${PORTELA_FOOTER_CSS}
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; color: #333; line-height: 1.6; }
     h1 { text-align: center; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
     .header-info { text-align: center; margin-bottom: 30px; font-size: 0.9em; color: #7f8c8d; }
@@ -61,8 +93,7 @@ export function renderRelatorioHtml(payload: PayloadRelatorio, agora: Date = new
   </style>
 </head>
 <body>
-  <h1>Portela Contabilidade - Laudo de Auditoria Fiscal</h1>
-  <div class="header-info">Data da geração: ${esc(agora.toLocaleString('pt-BR'))}</div>
+  ${headerHtml}
 
   <div class="section parecer-tecnico">
     <h2>Parecer Técnico do Documento</h2>
@@ -112,15 +143,24 @@ export function renderRelatorioHtml(payload: PayloadRelatorio, agora: Date = new
       </div>
     </div>
   `).join('') : '<p>Nenhum item processado nesta auditoria.</p>'}
+  ${footerHtml}
 </body>
 </html>
       `;
 }
 
 export function renderRelatorioTxt(payload: PayloadRelatorio, agora: Date = new Date()): string {
-  const { parecerTecnicoXml, parecerConformidade, itens } = payload;
+  const { parecerTecnicoXml, parecerConformidade, itens, empresaAtiva, sha256 } = payload;
   let txtContent = `# Portela Contabilidade - Laudo de Auditoria Fiscal\n`;
-  txtContent += `Data da geração: ${agora.toLocaleString('pt-BR')}\n\n`;
+  txtContent += `Plataforma: MargemReal Portela ${PORTELA_VERSION}\n`;
+  txtContent += `Data da geração: ${agora.toLocaleString('pt-BR')}\n`;
+  if (empresaAtiva?.razaoSocial || empresaAtiva?.cnpj) {
+    txtContent += `Empresa Ativa: ${empresaAtiva?.razaoSocial || 'N/A'} | CNPJ: ${empresaAtiva?.cnpj || 'N/A'}${empresaAtiva?.regime ? ` | Regime: ${empresaAtiva.regime}` : ''}\n`;
+  }
+  if (sha256) {
+    txtContent += `SHA-256: ${sha256}\n`;
+  }
+  txtContent += `\n`;
 
   txtContent += `## Parecer Técnico do Documento\n`;
   txtContent += `${parecerTecnicoXml || 'Nenhum parecer técnico disponível.'}\n\n`;
@@ -158,5 +198,8 @@ export function renderRelatorioTxt(payload: PayloadRelatorio, agora: Date = new 
   } else {
     txtContent += `Nenhum item processado nesta auditoria.\n`;
   }
+  txtContent += `\n================================================================================\n`;
+  txtContent += `MargemReal Portela ${PORTELA_VERSION}\n`;
+  txtContent += `${PORTELA_COPYRIGHT}\n`;
   return txtContent;
 }

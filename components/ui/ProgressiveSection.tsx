@@ -88,7 +88,7 @@ export default function ProgressiveSection({
           onClick={handleForceVisible}
           aria-expanded={false}
           aria-controls={contentId}
-          className="st-progressive-trigger"
+          className="st-progressive-trigger st-touch-target"
           style={{ minHeight: '44px' }}
         >
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -116,7 +116,7 @@ export default function ProgressiveSection({
               aria-expanded={isExpanded}
               aria-controls={contentId}
               onClick={toggleExpand}
-              className="st-progressive-toggle"
+              className="st-progressive-toggle st-touch-target"
               style={{ minHeight: '44px', minWidth: '44px' }}
               title={isExpanded ? 'Recolher seção' : 'Expandir seção'}
             >

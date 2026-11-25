@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ParametrosErpPayload,
   gerarRelatorioErpResumidoTxt,
@@ -8,8 +8,11 @@ import {
   gerarRelatorioErpDetalhadoTxt,
   gerarRelatorioErpDetalhadoHtml,
 } from '@/lib/relatorio-erp';
+import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
+import { ProgressiveSection, LegalCitationBlock, type NormativeCitation } from '@/components/ui';
 
 function baixarArquivo(conteudo: string, nomeArquivo: string, mime: string) {
+  if (typeof window === 'undefined' || !window.URL?.createObjectURL) return;
   const blob = new Blob([conteudo], { type: mime });
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -20,6 +23,7 @@ function baixarArquivo(conteudo: string, nomeArquivo: string, mime: string) {
 }
 
 function abrirEmNovaAba(conteudoHtml: string) {
+  if (typeof window === 'undefined') return;
   const win = window.open('', '_blank');
   if (win) {
     win.document.write(conteudoHtml);
@@ -28,10 +32,40 @@ function abrirEmNovaAba(conteudoHtml: string) {
 }
 
 export default function ParametrizacaoERP({ data }: { data: any }) {
+  // 1. TODOS OS HOOKS NO TOPO ABSOLUTO (antes de qualquer return condicional)
+  const { nivel, isSenior } = useNivelOperacional();
   const [modalAberto, setModalAberto] = useState(false);
   const [modoModal, setModoModal] = useState<'resumido' | 'detalhado'>('resumido');
   const [formatoModal, setFormatoModal] = useState<'html' | 'txt'>('html');
   const [copiado, setCopiado] = useState('');
+
+  useEffect(() => {
+    if (!modalAberto || typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setModalAberto(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [modalAberto]);
+
+  const citacoesNormativas = useMemo<NormativeCitation[]>(() => [
+    {
+      id: 'cit-erp-efd',
+      norma: 'Ajuste SINIEF nº 07/2005 & Guia Prático EFD ICMS/IPI',
+      artigo: 'Registros 0200, C100 e C170 — Codificação de Cadastro ERP',
+      ementa: 'Padronização de NCM, CEST, CFOP de entrada, CST/CSOSN e alíquotas para escrituração fiscal digital sem glosas.',
+      esfera: 'federal',
+      statusVigencia: 'vigente',
+    },
+    {
+      id: 'cit-erp-nt2026',
+      norma: 'Nota Técnica NF-e 2026.008 & LC nº 214/2025',
+      artigo: 'Grupos IBSCBS, cClassTrib e Imposto Seletivo',
+      ementa: 'Campos obrigatórios da Reforma Tributária do Consumo integrados à parametrização de entrada e saída.',
+      esfera: 'federal',
+      statusVigencia: 'vigente',
+    },
+  ], []);
 
   if (!data || !data.itens || data.itens.length === 0) return null;
 
@@ -153,16 +187,16 @@ export default function ParametrizacaoERP({ data }: { data: any }) {
   return (
     <div style={{ marginTop: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-        <h3>Parametrização de ERP</h3>
+        <h3 style={{ margin: 0, color: 'var(--ink)' }}>Parametrização de ERP</h3>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button type="button" onClick={handleExportCSV} className="chip" style={{ background: '#333', color: 'white' }}>
+          <button type="button" onClick={handleExportCSV} className="st-btn-secondary st-touch-target">
             Exportar CSV para ERP
           </button>
           <button
             type="button"
             onClick={() => handleGerarRelatorio('resumido')}
-            className="chip"
-            style={{ background: '#2980b9', color: 'white', fontWeight: 600 }}
+            className="st-btn-secondary st-touch-target"
+            style={{ borderColor: 'var(--accent-blue)', color: 'var(--accent-blue)', background: 'var(--accent-blue-subtle)' }}
             title="Relatório com campo e código correspondente"
           >
             📋 Gerar Relatório ERP (Modo Resumido)
@@ -170,8 +204,7 @@ export default function ParametrizacaoERP({ data }: { data: any }) {
           <button
             type="button"
             onClick={() => handleGerarRelatorio('detalhado')}
-            className="chip"
-            style={{ background: '#27ae60', color: 'white', fontWeight: 600 }}
+            className="btn st-touch-target"
             title="Laudo com citação de lei, artigo e dispositivo legal"
           >
             ⚖️ Gerar Relatório ERP (Modo Detalhado com Citação Legal)
@@ -180,97 +213,112 @@ export default function ParametrizacaoERP({ data }: { data: any }) {
       </div>
 
       {modalAberto && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 9999, padding: 16
-        }}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Relatório de Parametrização ERP"
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(14, 21, 17, 0.78)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9999, padding: 16
+          }}
+        >
           <div style={{
-            background: 'white', borderRadius: 8, width: '100%', maxWidth: 960, maxHeight: '90vh',
-            display: 'flex', flexDirection: 'column', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', overflow: 'hidden'
+            background: 'var(--bg-surface-card)', border: '1px solid var(--border-medium)', color: 'var(--ink)',
+            borderRadius: 12, width: '100%', maxWidth: 960, maxHeight: '90vh',
+            display: 'flex', flexDirection: 'column', boxShadow: '0 20px 48px rgba(0,0,0,0.45)', overflow: 'hidden'
           }}>
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc'
+              padding: '12px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface-subtle)'
             }}>
               <div>
-                <strong style={{ fontSize: '1.1rem', color: '#1a365d' }}>
+                <strong style={{ fontSize: '1.05rem', color: 'var(--ink)', fontFamily: 'var(--font-display)' }}>
                   {modoModal === 'resumido'
                     ? 'Relatório ERP — Modo Resumido (Campo e Código)'
                     : 'Laudo Pericial ERP — Modo Detalhado com Citação Legal'}
                 </strong>
-                <div style={{ fontSize: '0.8rem', color: '#718096' }}>
-                  Contabilidade Portela (Desde 1970) · Parâmetros Fiscais & Reforma Tributária
+                <div style={{ fontSize: '0.8rem', color: 'var(--ink-2)' }}>
+                  Contabilidade Portela (Desde 1970) · Parâmetros Fiscais &amp; Reforma Tributária
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setModalAberto(false)}
-                className="mini"
-                style={{ fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer' }}
+                className="mini st-touch-target"
+                aria-label="Fechar relatório ERP"
+                style={{ minHeight: '44px', minWidth: '44px', fontSize: '1.1rem', fontWeight: 700 }}
               >
                 ×
               </button>
             </div>
 
             <div style={{
-              display: 'flex', gap: 10, padding: '10px 20px', borderBottom: '1px solid #edf2f7',
-              alignItems: 'center', flexWrap: 'wrap', background: '#ffffff'
+              display: 'flex', gap: 10, padding: '10px 20px', borderBottom: '1px solid var(--border-subtle)',
+              alignItems: 'center', flexWrap: 'wrap', background: 'var(--bg-surface-card)'
             }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Visualização:</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--ink-2)' }}>Visualização:</span>
               <button
                 type="button"
-                className={`mini ${formatoModal === 'html' ? 'on' : ''}`}
-                style={{ background: formatoModal === 'html' ? '#2b6cb0' : '#edf2f7', color: formatoModal === 'html' ? 'white' : '#2d3748' }}
+                className={`mini st-touch-target ${formatoModal === 'html' ? 'on' : ''}`}
+                style={{
+                  background: formatoModal === 'html' ? 'var(--portela-brand-cta)' : 'var(--bg-surface-subtle)',
+                  color: formatoModal === 'html' ? 'var(--portela-cta-ink)' : 'var(--ink)',
+                  borderColor: formatoModal === 'html' ? 'var(--portela-brand-cta)' : 'var(--border-medium)',
+                }}
                 onClick={() => setFormatoModal('html')}
               >
                 Formatada (HTML)
               </button>
               <button
                 type="button"
-                className={`mini ${formatoModal === 'txt' ? 'on' : ''}`}
-                style={{ background: formatoModal === 'txt' ? '#2b6cb0' : '#edf2f7', color: formatoModal === 'txt' ? 'white' : '#2d3748' }}
+                className={`mini st-touch-target ${formatoModal === 'txt' ? 'on' : ''}`}
+                style={{
+                  background: formatoModal === 'txt' ? 'var(--portela-brand-cta)' : 'var(--bg-surface-subtle)',
+                  color: formatoModal === 'txt' ? 'var(--portela-cta-ink)' : 'var(--ink)',
+                  borderColor: formatoModal === 'txt' ? 'var(--portela-brand-cta)' : 'var(--border-medium)',
+                }}
                 onClick={() => setFormatoModal('txt')}
               >
                 Texto Puro (TXT)
               </button>
 
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
                   type="button"
-                  className="mini"
+                  className="mini st-touch-target"
                   onClick={() => abrirEmNovaAba(relatorioHtml)}
-                  style={{ background: '#4a5568', color: 'white' }}
                 >
                   ↗ Abrir em Nova Aba / Imprimir
                 </button>
                 <button
                   type="button"
-                  className="mini"
+                  className="mini st-touch-target"
                   onClick={() => baixarArquivo(
                     relatorioHtml,
                     `relatorio_erp_${modoModal}.html`,
                     'text/html; charset=utf-8'
                   )}
-                  style={{ background: '#2b6cb0', color: 'white' }}
+                  style={{ background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', borderColor: 'rgba(59, 130, 246, 0.35)' }}
                 >
                   ⬇ Baixar HTML
                 </button>
                 <button
                   type="button"
-                  className="mini"
+                  className="mini st-touch-target"
                   onClick={() => baixarArquivo(
                     relatorioTxt,
                     `relatorio_erp_${modoModal}.txt`,
                     'text/plain; charset=utf-8'
                   )}
-                  style={{ background: '#2d3748', color: 'white' }}
+                  style={{ background: 'var(--accent-emerald-glow)', color: 'var(--ok)', borderColor: 'var(--border-emerald-glow)' }}
                 >
                   ⬇ Baixar TXT
                 </button>
                 <button
                   type="button"
-                  className="mini"
+                  className="mini st-touch-target"
                   onClick={() => copiarConteudo(
                     formatoModal === 'html' ? relatorioHtml : relatorioTxt,
                     'copiado'
@@ -281,25 +329,36 @@ export default function ParametrizacaoERP({ data }: { data: any }) {
               </div>
             </div>
 
-            <div style={{ flex: 1, overflow: 'auto', padding: 20, background: '#f7fafc' }}>
+            <div style={{ flex: 1, overflow: 'auto', padding: 20, background: 'var(--bg-app)' }}>
               {formatoModal === 'html' ? (
                 <iframe
                   title="Pré-visualização do Relatório"
                   srcDoc={relatorioHtml}
-                  style={{ width: '100%', height: '550px', border: 'none', background: 'white', borderRadius: 4 }}
+                  style={{ width: '100%', height: '550px', border: '1px solid var(--border-medium)', background: '#ffffff', borderRadius: 6 }}
                 />
               ) : (
-                <pre style={{
-                  background: 'white', padding: 16, borderRadius: 4, border: '1px solid #cbd5e0',
-                  fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap', maxHeight: '550px', overflow: 'auto'
-                }}>
+                <pre
+                  className="tabular-nums"
+                  style={{
+                    background: 'var(--bg-surface-input)',
+                    color: 'var(--on-surface)',
+                    padding: 16,
+                    borderRadius: 6,
+                    border: '1px solid var(--border-medium)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.85rem',
+                    whiteSpace: 'pre-wrap',
+                    maxHeight: '550px',
+                    overflow: 'auto',
+                  }}
+                >
                   {relatorioTxt}
                 </pre>
               )}
             </div>
 
-            <div style={{ padding: '10px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', textAlign: 'right' }}>
-              <button type="button" onClick={() => setModalAberto(false)} className="mini">
+            <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-surface-subtle)', textAlign: 'right' }}>
+              <button type="button" onClick={() => setModalAberto(false)} className="mini st-touch-target">
                 Fechar
               </button>
             </div>
@@ -309,48 +368,78 @@ export default function ParametrizacaoERP({ data }: { data: any }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 16 }}>
         {data.itens.map((item: any, idx: number) => (
-          <div key={idx} className="card" style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div
+            key={idx}
+            className="card"
+            style={{
+              background: 'var(--bg-surface-card)',
+              border: '1px solid var(--border-medium)',
+              padding: 16,
+              borderRadius: 12,
+              marginBottom: 0,
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
               <div>
-                <strong>{item.cProd || 'N/A'} - {item.xProd || 'Produto não informado'}</strong>
-                <div className="small">NCM: {item.ncm} | CEST: {item.cest}</div>
+                <strong className="tabular-nums">{item.cProd || 'N/A'} - {item.xProd || 'Produto não informado'}</strong>
+                <div className="small muted tabular-nums">NCM: {item.ncm} | CEST: {item.cest || '—'}</div>
               </div>
-              <button type="button" onClick={() => handleCopy(item)} className="chip">Copiar Parâmetros</button>
+              <button type="button" onClick={() => handleCopy(item)} className="chip st-touch-target">Copiar Parâmetros</button>
             </div>
 
-            <div className="taxgrid" style={{ marginBottom: 16 }}>
+            <div className="taxgrid" style={{ marginBottom: 14, padding: 0 }}>
               {/* Bloco ICMS/ST */}
-              <div className="tax" style={{ borderLeft: '4px solid #4A90E2', paddingLeft: 8 }}>
+              <div className="tax" style={{ borderLeft: '4px solid var(--accent-blue)', paddingLeft: 10 }}>
                 <div className="k">Bloco ICMS/ST</div>
-                <div className="v">CFOP: {item.cfop?.entradaSugerido || item.cfopEntrada}</div>
-                <div className="v">CST: {item.icms?.cstIcmsEntradaSugerido || item.cstIcmsEntrada}</div>
-                <div className="v">Alíquota: {item.icms?.aliqIcmsCredito || item.aliqIcms}</div>
+                <div className="v tabular-nums">CFOP: {item.cfop?.entradaSugerido || item.cfopEntrada}</div>
+                <div className="v tabular-nums">CST: {item.icms?.cstIcmsEntradaSugerido || item.cstIcmsEntrada}</div>
+                <div className="v tabular-nums">Alíquota: {item.icms?.aliqIcmsCredito || item.aliqIcms}</div>
                 <div className="v">Crédito: {(item.icms?.permiteCredito ?? item.permiteCredito) ? 'Sim' : 'Não'}</div>
               </div>
 
               {/* Bloco PIS/COFINS */}
-              <div className="tax" style={{ borderLeft: '4px solid #F5A623', paddingLeft: 8 }}>
+              <div className="tax" style={{ borderLeft: '4px solid var(--accent-amber)', paddingLeft: 10 }}>
                 <div className="k">Bloco PIS/COFINS</div>
-                <div className="v">CST: {item.pisCofins?.cstPisCofinsEntradaSugerido || item.cstPisCofinsEntrada}</div>
-                <div className="v">Alíquota PIS: {item.aliqPis || '1.65%'}</div>
-                <div className="v">Alíquota COFINS: {item.aliqCofins || '7.6%'}</div>
+                <div className="v tabular-nums">CST: {item.pisCofins?.cstPisCofinsEntradaSugerido || item.cstPisCofinsEntrada}</div>
+                <div className="v tabular-nums">Alíquota PIS: {item.aliqPis || '1.65%'}</div>
+                <div className="v tabular-nums">Alíquota COFINS: {item.aliqCofins || '7.6%'}</div>
               </div>
 
               {/* Bloco Reforma Tributária */}
-              <div className="tax" style={{ borderLeft: '4px solid #7ED321', paddingLeft: 8 }}>
+              <div className="tax" style={{ borderLeft: '4px solid var(--accent-emerald)', paddingLeft: 10 }}>
                 <div className="k">Bloco Reforma Tributária</div>
-                <div className="v">cClassTrib: {item.reforma?.cClassTrib || item.cClassTrib}</div>
-                <div className="v">Alíquota IBS: {item.reforma?.aliqIbsTeste2026 || item.aliqIbsTransitorio}</div>
-                <div className="v">Alíquota CBS: {item.reforma?.aliqCbsTeste2026 || item.aliqCbsTransitorio}</div>
+                <div className="v tabular-nums">cClassTrib: {item.reforma?.cClassTrib || item.cClassTrib}</div>
+                <div className="v tabular-nums">Alíquota IBS: {item.reforma?.aliqIbsTeste2026 || item.aliqIbsTransitorio}</div>
+                <div className="v tabular-nums">Alíquota CBS: {item.reforma?.aliqCbsTeste2026 || item.aliqCbsTransitorio}</div>
                 <div className="v">Regime: {item.reforma?.regimeEspecial || item.regimeEspecial || 'Regime Regular (Padrão)'}</div>
               </div>
             </div>
 
-            <div className="note info" style={{ marginTop: 8 }}>
+            <div className="note info" style={{ marginTop: 8, marginBottom: 0 }}>
               <strong>Instrução:</strong> {item.instrucaoCadastroERP || item.instrucaoCadastro}
             </div>
           </div>
         ))}
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <ProgressiveSection
+          id="sec-erp-custodia"
+          title="Rastreabilidade Normativa ERP"
+          subtitle="Base legal dos parâmetros de entrada e Reforma Tributária"
+          minLevel="senior"
+          currentLevel={nivel}
+          defaultExpanded={isSenior}
+          onDemandTriggerLabel="Exibir Rastreabilidade Normativa do ERP"
+          badge={<span className="badge amber" style={{ fontSize: '10px' }}>Nível Sênior</span>}
+        >
+          <LegalCitationBlock
+            title="Normas da Parametrização ERP"
+            citations={citacoesNormativas}
+            currentLevel={nivel}
+            defaultCollapsed={false}
+          />
+        </ProgressiveSection>
       </div>
     </div>
   );

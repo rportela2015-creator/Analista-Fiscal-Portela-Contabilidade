@@ -1,0 +1,47 @@
+/**
+ * TOKENS DE TRAVAMENTO VISUAL — MARGEMREAL PORTELA (Stitch 10027389379931821169 / bf0aae4b)
+ * Escopo protegido para manter Fiscal Intelligence (Dark Cockpit) travado sem bloquear Heritage Light.
+ */
+:root:not([data-theme="heritage-light"]),
+html[data-theme="fiscal-dark"] {
+  /* Camadas de Fundo e Superfície */
+  --bg-app: #0e1511 !important;
+  --bg-surface-card: #161d19 !important;
+  --bg-surface-subtle: #1c2420 !important;
+  --bg-surface-hover: #222c27 !important;
+  --bg-surface-input: #121915 !important;
+
+  /* Contornos e Bordas */
+  --border-subtle: rgba(255, 255, 255, 0.07) !important;
+  --border-medium: rgba(255, 255, 255, 0.12) !important;
+  --border-emerald-glow: rgba(16, 185, 129, 0.35) !important;
+  --border-crimson-glow: rgba(239, 68, 68, 0.35) !important;
+
+  /* Cores Semânticas de Negócio */
+  --color-brand-emerald: #10b981 !important;
+  --color-brand-emerald-dim: #059669 !important;
+  --color-fiscal-credit: #10b981 !important;
+  --color-fiscal-glosa: #ef4444 !important;
+  --color-fiscal-warning: #f59e0b !important;
+  --color-fiscal-siscomex: #3b82f6 !important;
+  --color-split-payment: #6366f1 !important;
+
+  /* Tipografia */
+  --font-primary: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  --font-numeric-features: 'tnum' 1, 'zero' 1 !important;
+
+  /* Raio de Arredondamento */
+  --radius-sm: 4px !important;
+  --radius-md: 6px !important;
+  --radius-lg: 8px !important;
+  --radius-full: 9999px !important;
+}
+
+.tabular-nums,
+td.valor-monetario,
+span.aliquota,
+.badge-ncm,
+.metric-value {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: var(--font-numeric-features, "tnum" 1, "zero" 1);
+}

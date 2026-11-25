@@ -88,13 +88,15 @@ export default function NivelOperacionalSwitcher({
     [disabled, nivelAtivo, mudarNivel]
   );
 
+  const sizeClass = size === 'sm' ? 'is-sm' : size === 'lg' ? 'is-lg' : 'is-md';
+
   return (
     <div
       ref={groupRef}
       role="radiogroup"
       aria-label="Nível operacional de detalhamento"
       onKeyDown={handleKeyDown}
-      className={`st-switcher ${className}`}
+      className={`st-switcher ${sizeClass} ${className}`}
       style={{ minHeight: '44px' }}
     >
       {OPCOES_NIVEL.map((op) => {
@@ -110,10 +112,9 @@ export default function NivelOperacionalSwitcher({
             disabled={disabled}
             title={op.hint}
             onClick={() => mudarNivel(op.id)}
-            className={`st-switcher-btn ${isAtivo ? 'is-active' : ''}`}
+            className={`st-switcher-btn st-touch-target ${sizeClass} ${isAtivo ? 'is-active' : ''}`}
             style={{
-              minHeight: size === 'sm' ? '36px' : '40px',
-              minWidth: '88px',
+              minHeight: size === 'lg' ? '48px' : '44px',
             }}
           >
             <span>{op.label}</span>

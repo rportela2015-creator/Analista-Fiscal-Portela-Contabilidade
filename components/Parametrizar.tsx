@@ -20,8 +20,12 @@ import {
   gerarRelatorioErpDetalhadoTxt,
   gerarRelatorioErpDetalhadoHtml,
 } from '@/lib/relatorio-erp';
+import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
+import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
+import { ProgressiveSection, LegalCitationBlock, type NormativeCitation } from '@/components/ui';
 
 function baixarArquivo(conteudo: string, nomeArquivo: string, mime: string) {
+  if (typeof window === 'undefined' || !window.URL?.createObjectURL) return;
   const blob = new Blob([conteudo], { type: mime });
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -32,6 +36,7 @@ function baixarArquivo(conteudo: string, nomeArquivo: string, mime: string) {
 }
 
 function abrirEmNovaAba(conteudoHtml: string) {
+  if (typeof window === 'undefined') return;
   const win = window.open('', '_blank');
   if (win) {
     win.document.write(conteudoHtml);
@@ -44,6 +49,7 @@ function extrairPayloadErp(
   rec: Record8 | null,
   p: XmlParam | null,
   texto: string,
+  emitenteNome?: string,
 ): ParametrosErpPayload {
   const camposProd = p?.campos.find((b) => b.tag === 'prod')?.campos || [];
   const camposIcms = p?.campos.find((b) => b.grupo.startsWith('ICMS'))?.campos || [];
@@ -96,6 +102,7 @@ function extrairPayloadErp(
   return {
     contexto: {
       emitente: {
+        nome: emitenteNome || undefined,
         cnpj: ctx.cnpj,
         ie: ctx.ie,
         municipioIbge: ctx.municipioIbge,
@@ -132,6 +139,8 @@ export interface ParametrizarProps {
 }
 
 export default function Parametrizar({ itensImportados }: ParametrizarProps = {}) {
+  const { nivel, isSenior } = useNivelOperacional();
+  const { empresaAtiva } = useEmpresaAtiva();
   const [ds, setDs] = useState<Dataset | null>(null);
   const [reforma, setReforma] = useState<Reforma | null>(null);
   const [erp, setErp] = useState<ErpTabela | null>(null);
@@ -239,6 +248,34 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
     });
   }, [loteItens, ctx.ufEmi, ctx.ufDest]);
 
+  useEffect(() => {
+    if (!modalRelatorio.aberto || typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setModalRelatorio({ aberto: false, modo: 'resumido' });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [modalRelatorio.aberto]);
+
+  const citacoesNormativas = useMemo<NormativeCitation[]>(() => [
+    {
+      id: 'cit-param-nfe',
+      norma: 'Manual de Orientação do Contribuinte (MOC) NF-e / NFC-e & NT 2026.008',
+      artigo: 'Grupos <ide>, <emit>, <prod>, <ICMS>, <PIS/COFINS> e <IBSCBS>',
+      ementa: 'Estrutura de campos fiscais e regras de validação de schema XML para parametrização de emissores ERP.',
+      esfera: 'federal',
+      statusVigencia: 'vigente',
+    },
+    {
+      id: 'cit-param-lc214',
+      norma: 'Lei Complementar nº 214/2025 & RICMS/PR Decreto nº 7.871/2017',
+      artigo: 'cClassTrib, CST-IBS/CBS, CEST e CFOP',
+      ementa: 'Vinculação do cenário operacional (regime, UF e finalidade) aos códigos oficiais exigidos na emissão.',
+      esfera: 'federal',
+      statusVigencia: 'vigente',
+    },
+  ], []);
+
   if (!ds || !p) return <div className="card"><span className="spin" /> carregando dataset…</div>;
   const set = <K extends keyof XmlCtx>(k: K, val: XmlCtx[K]) => setCtx((c) => ({ ...c, [k]: val }));
 
@@ -292,12 +329,26 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
 
   return (
     <>
+      <div className="st-page-header">
+        <div>
+          <div className="st-page-title-row">
+            <h2 className="st-page-title">Parametrização de ERP</h2>
+            <span className="st-badge-norma">DF-e</span>
+            <span className="st-badge-norma">NT 2026.008</span>
+            <span className="st-badge-norma">SPED</span>
+          </div>
+          <p className="hint" style={{ margin: '4px 0 0' }}>
+            Configuração de emitente, cenário fiscal, maqueta XML e tabela de códigos para emissores ERP.
+          </p>
+        </div>
+      </div>
+
       {/* ---------------- PAINEL EXECUTIVO: LOTE DE ENTRADA (NF-E) ---------------- */}
       {loteItens && loteItens.length > 0 && (
-        <div className="card" style={{ marginBottom: 16, background: 'var(--bg-card-subtle)', border: '1px solid #cbd5e1', padding: '16px' }}>
+        <div className="card" style={{ marginBottom: 16, background: 'var(--bg-surface-subtle)', border: '1px solid var(--border-medium)', padding: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: 16, color: 'var(--ink)' }}>
+              <h3 className="tabular-nums" style={{ margin: 0, fontSize: 16, color: 'var(--ink)' }}>
                 📦 Itens Recebidos da Auditoria de Entrada (NF-e) — {loteItens.length} {loteItens.length === 1 ? 'item' : 'itens'}
               </h3>
               <p className="hint" style={{ margin: '3px 0 0', fontSize: 12.5 }}>
@@ -308,11 +359,11 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
               {resultadoDiagnosticoLote && (
                 <>
                   <span
-                    className="badge"
+                    className="badge tabular-nums"
                     style={{
                       background: resultadoDiagnosticoLote.totalBloqueantes === 0 ? 'var(--accent-emerald-glow)' : 'var(--accent-crimson-subtle)',
-                      color: resultadoDiagnosticoLote.totalBloqueantes === 0 ? '#065f46' : '#991b1b',
-                      border: '1px solid #cbd5e1',
+                      color: resultadoDiagnosticoLote.totalBloqueantes === 0 ? 'var(--ok)' : 'var(--bad)',
+                      border: `1px solid ${resultadoDiagnosticoLote.totalBloqueantes === 0 ? 'var(--border-emerald-glow)' : 'var(--border-crimson-glow)'}`,
                       padding: '4px 10px',
                       fontSize: 12,
                       fontWeight: 650,
@@ -324,7 +375,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                   </span>
                   {resultadoDiagnosticoLote.totalAlertas > 0 && (
                     <span
-                      className="badge media"
+                      className="badge media tabular-nums"
                       style={{ padding: '4px 10px', fontSize: 12, fontWeight: 600 }}
                     >
                       ⚠️ {resultadoDiagnosticoLote.totalAlertas} alerta(s)
@@ -334,27 +385,27 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
               )}
               <button
                 type="button"
-                className="mini"
+                className="btn st-touch-target"
                 onClick={exportarLoteCsv}
-                style={{ background: '#107c41', color: '#fff', borderColor: 'var(--ok)', fontWeight: 600, padding: '5px 10px' }}
+                style={{ fontWeight: 600, padding: '8px 14px', minHeight: '44px' }}
                 title="Exportar parâmetros cadastrais dos itens em formato CSV"
               >
                 📥 Exportar CSV
               </button>
               <button
                 type="button"
-                className="mini"
+                className="st-btn-secondary st-touch-target"
                 onClick={exportarLoteJson}
-                style={{ background: '#0b3d91', color: '#fff', borderColor: 'var(--accent-blue)', fontWeight: 600, padding: '5px 10px' }}
+                style={{ background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', borderColor: 'rgba(59, 130, 246, 0.35)', fontWeight: 600, padding: '8px 14px', minHeight: '44px' }}
                 title="Exportar parâmetros em formato JSON para integração com ERP"
               >
                 📥 Exportar JSON
               </button>
               <button
                 type="button"
-                className="mini"
+                className="mini st-touch-target"
                 onClick={limparLote}
-                style={{ color: 'var(--bad)', fontWeight: 600, padding: '5px 8px' }}
+                style={{ color: 'var(--bad)', fontWeight: 600, padding: '6px 12px', minHeight: '44px' }}
                 title="Remover itens importados da NF-e"
               >
                 ✕ Limpar Lote
@@ -385,24 +436,24 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                     <tr
                       key={idx}
                       style={{
-                        background: isAtivo ? 'var(--accent-blue-subtle)' : idx % 2 === 0 ? '#fff' : 'var(--bg-card)',
+                        background: isAtivo ? 'var(--accent-blue-subtle)' : idx % 2 === 0 ? 'var(--bg-surface-card)' : 'var(--bg-surface-subtle)',
                         cursor: 'pointer',
                       }}
                       onClick={() => carregarItemDoLote(it, idx)}
                     >
-                      <td style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
-                      <td className="mono" style={{ fontWeight: 600 }}>{it.codigoProduto}</td>
+                      <td className="tabular-nums" style={{ textAlign: 'center', fontWeight: 600 }}>{idx + 1}</td>
+                      <td className="mono tabular-nums" style={{ fontWeight: 600 }}>{it.codigoProduto}</td>
                       <td style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={it.descricao}>
                         {it.descricao}
                       </td>
-                      <td className="mono">{it.ncm}</td>
+                      <td className="mono tabular-nums">{it.ncm}</td>
                       <td>
-                        <span className="badge" style={{ background: 'var(--bg-card-subtle)', color: 'var(--ink)', fontSize: 10.5 }}>
+                        <span className="badge tabular-nums" style={{ background: 'var(--bg-surface-subtle)', color: 'var(--ink)', borderColor: 'var(--border-medium)', fontSize: 10.5 }}>
                           {it.cfopEntradaSugerido} ➔ {it.cfopSaidaSugerido}
                         </span>
                       </td>
                       <td>
-                        <span className="badge" style={{ background: 'var(--accent-emerald-glow)', color: 'var(--ok)', fontSize: 10.5 }}>
+                        <span className="badge tabular-nums" style={{ background: 'var(--accent-emerald-glow)', color: 'var(--ok)', borderColor: 'var(--border-emerald-glow)', fontSize: 10.5 }}>
                           {it.cClassTribSugerido || '000001'} {it.reducaoIbsCbsPct > 0 ? `(-${it.reducaoIbsCbsPct}%)` : ''}
                         </span>
                       </td>
@@ -412,7 +463,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                             ⛔ {diag.bloqueantes[0]}
                           </span>
                         ) : it.beneficioIcmsPr ? (
-                          <span className="badge" style={{ background: 'var(--accent-amber-subtle)', color: 'var(--warn)', border: '1px solid #fde68a', fontSize: 10.5 }} title={it.beneficioIcmsPr}>
+                          <span className="badge" style={{ background: 'var(--accent-amber-subtle)', color: 'var(--warn)', border: '1px solid rgba(245, 158, 11, 0.35)', fontSize: 10.5 }} title={it.beneficioIcmsPr}>
                             🏷️ {it.beneficioIcmsPr}
                           </span>
                         ) : (
@@ -424,17 +475,18 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                       <td style={{ textAlign: 'center' }}>
                         <button
                           type="button"
-                          className="mini"
+                          className="mini st-touch-target"
                           onClick={(e) => {
                             e.stopPropagation();
                             carregarItemDoLote(it, idx);
                           }}
                           style={{
-                            padding: '2px 8px',
+                            padding: '6px 10px',
+                            minHeight: '44px',
                             fontSize: 11,
-                            background: isAtivo ? 'var(--brand)' : '#fff',
-                            color: isAtivo ? '#fff' : 'var(--brand)',
-                            borderColor: 'var(--brand)',
+                            background: isAtivo ? 'var(--portela-brand-cta)' : 'var(--bg-surface-subtle)',
+                            color: isAtivo ? 'var(--portela-cta-ink)' : 'var(--ok)',
+                            borderColor: 'var(--border-emerald-glow)',
                             fontWeight: 600,
                           }}
                           title="Carregar parâmetros deste item no formulário e gerar XML"
@@ -451,7 +503,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
         </div>
       )}
       <div className="card">
-        <h2 style={{ marginTop: 0 }}>Parametrização de ERP</h2>
+        <h3 style={{ marginTop: 0 }}>Cenário da Operação</h3>
         <p className="hint">
           Informe o cadastro da empresa e o cenário da operação. O app devolve os <b>códigos</b> que o emissor
           precisa (NCM, CEST/CEF, CFOP, CST/CSOSN, CST do IPI, PIS/COFINS, CST-IBS/CBS, <b>cClassTrib</b>, IS) e a
@@ -462,11 +514,11 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
         <h3>Empresa / emitente</h3>
         <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(190px,1fr))' }}>
           <label className="field"><span>CNPJ (14 dígitos)</span>
-            <input value={ctx.cnpj} onChange={(e) => set('cnpj', e.target.value)} placeholder="ex.: 12.345.678/0001-90" /></label>
+            <input className="tabular-nums" value={ctx.cnpj} onChange={(e) => set('cnpj', e.target.value)} placeholder="ex.: 12.345.678/0001-90" /></label>
           <label className="field"><span>Inscrição Estadual</span>
-            <input value={ctx.ie} onChange={(e) => set('ie', e.target.value)} placeholder="número ou ISENTO" /></label>
+            <input className="tabular-nums" value={ctx.ie} onChange={(e) => set('ie', e.target.value)} placeholder="número ou ISENTO" /></label>
           <label className="field"><span>Município (código IBGE)</span>
-            <input value={ctx.municipioIbge} onChange={(e) => set('municipioIbge', e.target.value)} placeholder="7 dígitos" /></label>
+            <input className="tabular-nums" value={ctx.municipioIbge} onChange={(e) => set('municipioIbge', e.target.value)} placeholder="7 dígitos" /></label>
           <label className="field"><span>UF do emitente</span>
             <select value={ctx.ufEmi} onChange={(e) => set('ufEmi', e.target.value)}>{UFS.map((u) => <option key={u}>{u}</option>)}</select></label>
           <label className="field"><span>Regime tributário</span>
@@ -543,10 +595,10 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
           )}
         </div>
         <div className="row" style={{ marginTop: 6 }}>
-          <label className="check"><input type="checkbox" checked={ctx.st} onChange={(e) => set('st', e.target.checked)} /> sujeito a ICMS-ST</label>
-          <label className="check"><input type="checkbox" checked={ctx.beneficiado} onChange={(e) => set('beneficiado', e.target.checked)} /> benefício fiscal / isenção</label>
-          <label className="check"><input type="checkbox" checked={ctx.industrial} onChange={(e) => set('industrial', e.target.checked)} /> emitente industrial ou equiparado</label>
-          <label className="check"><input type="checkbox" checked={ctx.anoReforma >= 2027} onChange={(e) => set('anoReforma', (e.target.checked ? 2027 : 2026) as 2026 | 2027)} /> parametrizar para 2027 (CBS/IBS plenos + IS)</label>
+          <label className="check" style={{ minHeight: '44px', cursor: 'pointer' }}><input type="checkbox" checked={ctx.st} onChange={(e) => set('st', e.target.checked)} /> sujeito a ICMS-ST</label>
+          <label className="check" style={{ minHeight: '44px', cursor: 'pointer' }}><input type="checkbox" checked={ctx.beneficiado} onChange={(e) => set('beneficiado', e.target.checked)} /> benefício fiscal / isenção</label>
+          <label className="check" style={{ minHeight: '44px', cursor: 'pointer' }}><input type="checkbox" checked={ctx.industrial} onChange={(e) => set('industrial', e.target.checked)} /> emitente industrial ou equiparado</label>
+          <label className="check" style={{ minHeight: '44px', cursor: 'pointer' }}><input type="checkbox" checked={ctx.anoReforma >= 2027} onChange={(e) => set('anoReforma', (e.target.checked ? 2027 : 2026) as 2026 | 2027)} /> parametrizar para 2027 (CBS/IBS plenos + IS)</label>
         </div>
 
         <h3>Item</h3>
@@ -554,28 +606,28 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
           <textarea rows={2} value={texto} onChange={(e) => setTexto(e.target.value)} /></label>
         <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill,minmax(210px,1fr))' }}>
           <label className="field"><span>NCM (8 dígitos, vazio = usar a descrição)</span>
-            <input value={ncmManual} onChange={(e) => setNcmManual(e.target.value)} placeholder={rec?.ncm || '8471.30.12'} /></label>
+            <input className="tabular-nums" value={ncmManual} onChange={(e) => setNcmManual(e.target.value)} placeholder={rec?.ncm || '8471.30.12'} /></label>
           <label className="field"><span>cClassTrib (vazio = sugestão do cenário)</span>
-            <input value={ctx.cClassTribForcado} onChange={(e) => set('cClassTribForcado', e.target.value)} placeholder="000001" /></label>
+            <input className="tabular-nums" value={ctx.cClassTribForcado} onChange={(e) => set('cClassTribForcado', e.target.value)} placeholder="000001" /></label>
           <label className="field"><span>cClass da nota referenciada (crédito presumido)</span>
-            <input value={ctx.cClassReferenciada} onChange={(e) => set('cClassReferenciada', e.target.value)} placeholder="410014" /></label>
+            <input className="tabular-nums" value={ctx.cClassReferenciada} onChange={(e) => set('cClassReferenciada', e.target.value)} placeholder="410014" /></label>
         </div>
         <div className="row" style={{ marginTop: 6, gap: 8 }}>
           {rec ? (
-            <span className="badge blue">{rec.ncm} — {rec.desc.replace(/^[-–\s]+/, '').slice(0, 62)}</span>
+            <span className="badge blue tabular-nums">{rec.ncm} — {rec.desc.replace(/^[-–\s]+/, '').slice(0, 62)}</span>
           ) : <span className="badge red">sem NCM válido — o item de mercadoria seria rejeitado</span>}
           {ncmManual && (
-            <button className="mini" type="button" onClick={() => setNcmManual('')} title="reverter para NCM automático via descrição">
+            <button className="mini st-touch-target" type="button" onClick={() => setNcmManual('')} title="reverter para NCM automático via descrição">
               limpar NCM manual (×)
             </button>
           )}
           {cls && cls.candidates[0] && cls.candidates[0].rec.ncm === rec?.ncm && (
-            <span className="small muted">aderência {Math.round(cls.candidates[0].coverage * 100)}%</span>
+            <span className="small muted tabular-nums">aderência {Math.round(cls.candidates[0].coverage * 100)}%</span>
           )}
           {cls && cls.candidates.length > 1 && !ncmManual && (
             <div className="chips">
               {cls.candidates.slice(0, 5).map((c) => (
-                <button key={c.rec.d8} className="chip" type="button" onClick={() => setNcmManual(c.rec.ncm)}>{c.rec.ncm}</button>
+                <button key={c.rec.d8} className="chip tabular-nums" type="button" onClick={() => setNcmManual(c.rec.ncm)}>{c.rec.ncm}</button>
               ))}
             </div>
           )}
@@ -587,27 +639,27 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
           <button className={`tab ${aba === 'xml' ? 'on' : ''}`} type="button" onClick={() => setAba('xml')}>
             Códigos e XML do documento
           </button>
-          <button className={`tab ${aba === 'tabela' ? 'on' : ''}`} type="button" onClick={() => setAba('tabela')}>
+          <button className={`tab tabular-nums ${aba === 'tabela' ? 'on' : ''}`} type="button" onClick={() => setAba('tabela')}>
             Tabela de campos (sua planilha) {erp ? `· ${erp.linhas}` : ''}
           </button>
-          <span style={{ marginLeft: 'auto', alignSelf: 'center' }} className={erros ? 'badge red' : 'badge alta'}>
+          <span style={{ marginLeft: 'auto', alignSelf: 'center' }} className={erros ? 'badge red tabular-nums' : 'badge alta tabular-nums'}>
             {erros ? `${erros} bloqueante(s)` : 'sem bloqueantes'}
           </span>
-          <button className="mini" style={{ alignSelf: 'center' }} type="button" onClick={() => copiar('xml', p!.maqueta)}>
+          <button className="mini st-touch-target" style={{ alignSelf: 'center' }} type="button" onClick={() => copiar('xml', p!.maqueta)}>
             copiar XML {copiado === 'xml' && <span className="copia">copiado ✓</span>}
           </button>
         </div>
 
         <div style={{
           display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center',
-          marginBottom: 14, padding: '10px 14px', background: 'var(--bg-card-subtle)',
-          borderRadius: 6, border: '1px solid #e2e8f0'
+          marginBottom: 14, padding: '10px 14px', background: 'var(--bg-surface-subtle)',
+          borderRadius: 10, border: '1px solid var(--border-medium)'
         }}>
-          <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#2d3748' }}>Relatório para ERP:</span>
+          <span style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--ink)' }}>Relatório para ERP:</span>
           <button
             type="button"
-            className="chip"
-            style={{ background: '#2b6cb0', color: 'white', fontWeight: 600, padding: '6px 14px', cursor: 'pointer' }}
+            className="st-btn-secondary st-touch-target"
+            style={{ background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', borderColor: 'rgba(59, 130, 246, 0.35)', fontWeight: 600, padding: '6px 14px' }}
             onClick={() => { setModalRelatorio({ aberto: true, modo: 'resumido' }); setFormatoModal('html'); }}
             title="Gerar relatório de parametrização no modo resumido (somente campo e código correspondente)"
           >
@@ -615,8 +667,8 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
           </button>
           <button
             type="button"
-            className="chip"
-            style={{ background: '#276749', color: 'white', fontWeight: 600, padding: '6px 14px', cursor: 'pointer' }}
+            className="btn st-touch-target"
+            style={{ fontWeight: 600, padding: '6px 14px' }}
             onClick={() => { setModalRelatorio({ aberto: true, modo: 'detalhado' }); setFormatoModal('html'); }}
             title="Gerar laudo pericial no modo detalhado com citação legal completa (lei, dispositivo, artigo)"
           >
@@ -647,7 +699,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                       {b.campos.map((c, ci) => (
                         <tr key={`${b.tag}/${c.tag}/${ci}`}>
                           <td className="mono">{c.tag}{c.grupo !== b.tag && c.grupo !== b.grupo.split(' ')[0] ? <div className="small muted">em {c.grupo}</div> : null}</td>
-                          <td className={`mono ${c.valor ? '' : 'muted'}`}>{c.valor || '— a preencher —'}</td>
+                          <td className={`mono tabular-nums ${c.valor ? '' : 'muted'}`}>{c.valor || '— a preencher —'}</td>
                           <td className="small">{c.motivo}</td>
                           <td><span className={`selo ${FONTES[c.fonte] || 'selo-derivada'}`}>{c.fonte}</span></td>
                         </tr>
@@ -676,12 +728,12 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                   <span>buscar na planilha “{erp.arquivo}”</span>
                   <input value={buscaTabela} onChange={(e) => setBuscaTabela(e.target.value)} placeholder="tag, descrição ou exemplo" />
                 </label>
-                <label className="check"><input type="checkbox" checked={soOficial} onChange={(e) => setSoOficial(e.target.checked)} /> só linhas conferidas com tabela oficial</label>
-                <span className="small muted">{linhasTabela.length} de {erp.linhas} linhas · sha256 {erp.sha256}</span>
+                <label className="check" style={{ minHeight: '44px', cursor: 'pointer' }}><input type="checkbox" checked={soOficial} onChange={(e) => setSoOficial(e.target.checked)} /> só linhas conferidas com tabela oficial</label>
+                <span className="small muted tabular-nums">{linhasTabela.length} de {erp.linhas} linhas · sha256 {erp.sha256}</span>
               </div>
               <div className="row" style={{ marginTop: 8 }}>
                 {Object.entries(erp.contagens).map(([k, n]) => (
-                  <span key={k} className={`selo selo-${SELO_CLASSE[k] || 'derivada'}`}>{k}: {Number(n).toLocaleString('pt-BR')}</span>
+                  <span key={k} className={`selo tabular-nums selo-${SELO_CLASSE[k] || 'derivada'}`}>{k}: {Number(n).toLocaleString('pt-BR')}</span>
                 ))}
               </div>
               <p className="small muted" style={{ marginTop: 6 }}>{erp.aviso}</p>
@@ -691,11 +743,11 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                   <tbody>
                     {linhasTabela.slice(0, 250).map((i, k) => (
                       <tr key={k}>
-                        <td className="mono">{i.tag}</td>
+                        <td className="mono tabular-nums">{i.tag}</td>
                         <td className="small">{i.desc}</td>
                         <td className="small muted">{i.tipo}</td>
-                        <td className="small mono">{i.tam}</td>
-                        <td className="mono small">{i.ex}</td>
+                        <td className="small mono tabular-nums">{i.tam}</td>
+                        <td className="mono small tabular-nums">{i.ex}</td>
                         <td className="small muted mono">{i.fonte}</td>
                         <td><span className={`selo selo-${i.selo === 'oficial' ? 'oficial' : i.selo === 'duvidoso' ? 'duvidoso' : i.selo === 'inferido' ? 'inferido' : 'derivada'}`} title={i.nota}>{i.selo}</span></td>
                       </tr>
@@ -703,7 +755,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                   </tbody>
                 </table>
               </div>
-              {linhasTabela.length > 250 && <p className="small muted">mostrando 250 de {linhasTabela.length} — refine a busca.</p>}
+              {linhasTabela.length > 250 && <p className="small muted tabular-nums">mostrando 250 de {linhasTabela.length} — refine a busca.</p>}
             </>
           ) : (
             <p className="hint">Tabela de campos não publicada. Rode <code className="mono">python3 scripts/baixar_erp.py</code> (lê o CSV em data/raw/erp) e <code className="mono">npm run dados</code>.</p>
@@ -731,7 +783,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
       )}
 
       {modalRelatorio.aberto && (() => {
-        const payloadRelatorio = extrairPayloadErp(ctx, rec, p, texto);
+        const payloadRelatorio = extrairPayloadErp(ctx, rec, p, texto, empresaAtiva?.razaoSocial);
         const relatorioHtml = modalRelatorio.modo === 'resumido'
           ? gerarRelatorioErpResumidoHtml(payloadRelatorio)
           : gerarRelatorioErpDetalhadoHtml(payloadRelatorio);
@@ -751,97 +803,112 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
         };
 
         return (
-          <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 9999, padding: 16
-          }}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Relatório de Parametrização ERP"
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(14, 21, 17, 0.78)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 9999, padding: 16
+            }}
+          >
             <div style={{
-              background: 'var(--bg-card)', borderRadius: 8, width: '100%', maxWidth: 960, maxHeight: '90vh',
-              display: 'flex', flexDirection: 'column', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', overflow: 'hidden'
+              background: 'var(--bg-surface-card)', border: '1px solid var(--border-medium)', color: 'var(--ink)',
+              borderRadius: 12, width: '100%', maxWidth: 960, maxHeight: '90vh',
+              display: 'flex', flexDirection: 'column', boxShadow: '0 20px 48px rgba(0,0,0,0.45)', overflow: 'hidden'
             }}>
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '12px 20px', borderBottom: '1px solid #e2e8f0', background: 'var(--bg-card-subtle)'
+                padding: '12px 20px', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface-subtle)'
               }}>
                 <div>
-                  <strong style={{ fontSize: '1.1rem', color: '#1a365d' }}>
+                  <strong style={{ fontSize: '1.05rem', color: 'var(--ink)', fontFamily: 'var(--font-display)' }}>
                     {modalRelatorio.modo === 'resumido'
                       ? 'Relatório ERP — Modo Resumido (Somente Campo e Código)'
                       : 'Laudo Pericial ERP — Modo Detalhado com Citação Legal'}
                   </strong>
                   <div style={{ fontSize: '0.8rem', color: 'var(--ink-2)' }}>
-                    Contabilidade Portela (Desde 1970) · Codificação Parametrizada & Reforma Tributária
+                    Contabilidade Portela (Desde 1970) · Codificação Parametrizada &amp; Reforma Tributária
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido' })}
-                  className="mini"
-                  style={{ fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer' }}
+                  className="mini st-touch-target"
+                  aria-label="Fechar relatório ERP"
+                  style={{ minHeight: '44px', minWidth: '44px', fontSize: '1.1rem', fontWeight: 700 }}
                 >
                   ×
                 </button>
               </div>
 
               <div style={{
-                display: 'flex', gap: 10, padding: '10px 20px', borderBottom: '1px solid #edf2f7',
-                alignItems: 'center', flexWrap: 'wrap', background: 'var(--bg-card)'
+                display: 'flex', gap: 10, padding: '10px 20px', borderBottom: '1px solid var(--border-subtle)',
+                alignItems: 'center', flexWrap: 'wrap', background: 'var(--bg-surface-card)'
               }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Visualização:</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--ink-2)' }}>Visualização:</span>
                 <button
                   type="button"
-                  className={`mini ${formatoModal === 'html' ? 'on' : ''}`}
-                  style={{ background: formatoModal === 'html' ? '#2b6cb0' : 'var(--bg-card-subtle)', color: formatoModal === 'html' ? 'white' : '#2d3748' }}
+                  className={`mini st-touch-target ${formatoModal === 'html' ? 'on' : ''}`}
+                  style={{
+                    background: formatoModal === 'html' ? 'var(--portela-brand-cta)' : 'var(--bg-surface-subtle)',
+                    color: formatoModal === 'html' ? 'var(--portela-cta-ink)' : 'var(--ink)',
+                    borderColor: formatoModal === 'html' ? 'var(--portela-brand-cta)' : 'var(--border-medium)',
+                  }}
                   onClick={() => setFormatoModal('html')}
                 >
                   Formatada (HTML)
                 </button>
                 <button
                   type="button"
-                  className={`mini ${formatoModal === 'txt' ? 'on' : ''}`}
-                  style={{ background: formatoModal === 'txt' ? '#2b6cb0' : 'var(--bg-card-subtle)', color: formatoModal === 'txt' ? 'white' : '#2d3748' }}
+                  className={`mini st-touch-target ${formatoModal === 'txt' ? 'on' : ''}`}
+                  style={{
+                    background: formatoModal === 'txt' ? 'var(--portela-brand-cta)' : 'var(--bg-surface-subtle)',
+                    color: formatoModal === 'txt' ? 'var(--portela-cta-ink)' : 'var(--ink)',
+                    borderColor: formatoModal === 'txt' ? 'var(--portela-brand-cta)' : 'var(--border-medium)',
+                  }}
                   onClick={() => setFormatoModal('txt')}
                 >
                   Texto Puro (TXT)
                 </button>
 
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    className="mini"
+                    className="mini st-touch-target"
                     onClick={() => abrirEmNovaAba(relatorioHtml)}
-                    style={{ background: '#4a5568', color: 'white' }}
                   >
                     ↗ Abrir em Nova Aba / Imprimir
                   </button>
                   <button
                     type="button"
-                    className="mini"
+                    className="mini st-touch-target"
                     onClick={() => baixarArquivo(
                       relatorioHtml,
                       `relatorio_erp_${modalRelatorio.modo}.html`,
                       'text/html; charset=utf-8'
                     )}
-                    style={{ background: '#2b6cb0', color: 'white' }}
+                    style={{ background: 'var(--accent-blue-subtle)', color: 'var(--accent-blue)', borderColor: 'rgba(59, 130, 246, 0.35)' }}
                   >
                     ⬇ Baixar HTML
                   </button>
                   <button
                     type="button"
-                    className="mini"
+                    className="mini st-touch-target"
                     onClick={() => baixarArquivo(
                       relatorioTxt,
                       `relatorio_erp_${modalRelatorio.modo}.txt`,
                       'text/plain; charset=utf-8'
                     )}
-                    style={{ background: '#2d3748', color: 'white' }}
+                    style={{ background: 'var(--accent-emerald-glow)', color: 'var(--ok)', borderColor: 'var(--border-emerald-glow)' }}
                   >
                     ⬇ Baixar TXT
                   </button>
                   <button
                     type="button"
-                    className="mini"
+                    className="mini st-touch-target"
                     onClick={() => copiarModal(formatoModal === 'html' ? relatorioHtml : relatorioTxt)}
                   >
                     Copiar {relatorioCopiado ? '✓' : ''}
@@ -854,23 +921,34 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                   <iframe
                     title="Pré-visualização do Relatório"
                     srcDoc={relatorioHtml}
-                    style={{ width: '100%', height: '550px', border: 'none', background: 'var(--bg-card)', borderRadius: 4 }}
+                    style={{ width: '100%', height: '550px', border: '1px solid var(--border-medium)', background: '#ffffff', borderRadius: 6 }}
                   />
                 ) : (
-                  <pre style={{
-                    background: 'var(--bg-card)', padding: 16, borderRadius: 4, border: '1px solid #cbd5e0',
-                    fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap', maxHeight: '550px', overflow: 'auto'
-                  }}>
+                  <pre
+                    className="tabular-nums"
+                    style={{
+                      background: 'var(--bg-surface-input)',
+                      color: 'var(--on-surface)',
+                      padding: 16,
+                      borderRadius: 6,
+                      border: '1px solid var(--border-medium)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.85rem',
+                      whiteSpace: 'pre-wrap',
+                      maxHeight: '550px',
+                      overflow: 'auto',
+                    }}
+                  >
                     {relatorioTxt}
                   </pre>
                 )}
               </div>
 
-              <div style={{ padding: '10px 20px', borderTop: '1px solid #e2e8f0', background: 'var(--bg-card-subtle)', textAlign: 'right' }}>
+              <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-surface-subtle)', textAlign: 'right' }}>
                 <button
                   type="button"
                   onClick={() => setModalRelatorio({ aberto: false, modo: 'resumido' })}
-                  className="mini"
+                  className="mini st-touch-target"
                 >
                   Fechar
                 </button>
@@ -879,6 +957,26 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
           </div>
         );
       })()}
+
+      <div style={{ marginTop: 14 }}>
+        <ProgressiveSection
+          id="sec-parametrizar-normas"
+          title="Fundamentação Normativa DF-e"
+          subtitle="Base legal para leiaute XML, cClassTrib e regras de parametrização"
+          minLevel="senior"
+          currentLevel={nivel}
+          defaultExpanded={isSenior}
+          onDemandTriggerLabel="Exibir Fundamentação Normativa DF-e"
+          badge={<span className="badge amber" style={{ fontSize: '10px' }}>Nível Sênior</span>}
+        >
+          <LegalCitationBlock
+            title="Normas de Parametrização ERP"
+            citations={citacoesNormativas}
+            currentLevel={nivel}
+            defaultCollapsed={false}
+          />
+        </ProgressiveSection>
+      </div>
     </>
   );
 }

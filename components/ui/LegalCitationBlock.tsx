@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useId, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useId, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { NivelOperacional } from '@/lib/hooks/useNivelOperacional';
 
 export interface NormativeCitation {
@@ -54,6 +54,7 @@ export default function LegalCitationBlock({
 
   const [isOpen, setIsOpen] = useState<boolean>(initialOpen);
   const [copied, setCopied] = useState<boolean>(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof defaultCollapsed === 'boolean') {
@@ -62,6 +63,15 @@ export default function LegalCitationBlock({
       setIsOpen(currentLevel === 'senior');
     }
   }, [currentLevel, defaultCollapsed]);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const toggleOpen = useCallback(() => {
     setIsOpen((prev) => !prev);
@@ -91,7 +101,13 @@ export default function LegalCitationBlock({
 
     navigator.clipboard.writeText(texto).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+      }
+      copyTimerRef.current = setTimeout(() => {
+        setCopied(false);
+        copyTimerRef.current = null;
+      }, 2000);
     }).catch(() => {});
   }, [title, citations, calculationSteps, calculationMemory, auditHashSha256]);
 
@@ -103,7 +119,7 @@ export default function LegalCitationBlock({
           onClick={toggleOpen}
           aria-expanded={isOpen}
           aria-controls={contentId}
-          className="st-legal-toggle"
+          className="st-legal-toggle st-touch-target"
           style={{ minHeight: '44px' }}
         >
           <svg
@@ -131,15 +147,15 @@ export default function LegalCitationBlock({
           </span>
         </button>
 
-        {enableCopyMarkdown && isOpen && (
+        {enableCopyMarkdown && (
           <button
             type="button"
             onClick={handleCopy}
-            className="st-legal-copy-btn"
-            title="Copiar fundamentação pericial formatada"
-            style={{ minHeight: '44px' }}
+            className="st-legal-copy-btn st-touch-target"
+            title="Copiar fundamentação pericial formatada para laudo"
+            style={{ minHeight: '44px', minWidth: '44px' }}
           >
-            {copied ? '✓ Copiado' : 'Copiar Citação'}
+            {copied ? '✓ Citação Copiada' : 'Copiar Citação para Laudo'}
           </button>
         )}
       </div>
@@ -178,9 +194,9 @@ export default function LegalCitationBlock({
               <div className="st-legal-memory">
                 {calculationSteps.map((step, idx) => (
                   <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', padding: '2px 0' }}>
-                    <span style={{ color: '#9ca3af' }}>{step.step}:</span>
-                    <span style={{ color: '#93c5fd' }}>{step.formula}</span>
-                    <span className="tabular-nums" style={{ color: '#34d399', fontWeight: 700 }}>{step.result}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{step.step}:</span>
+                    <span className="tabular-nums" style={{ color: 'var(--accent-blue)' }}>{step.formula}</span>
+                    <span className="tabular-nums" style={{ color: 'var(--accent-emerald-bright)', fontWeight: 700 }}>{step.result}</span>
                   </div>
                 ))}
               </div>
@@ -202,7 +218,7 @@ export default function LegalCitationBlock({
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', fontSize: '11px', color: 'var(--ink-2)', borderTop: '1px solid var(--border-muted)', paddingTop: '8px' }}>
               {auditHashSha256 && (
                 <span>
-                  Digest SHA-256: <code className="mono">{auditHashSha256}</code>
+                  Digest SHA-256: <code className="mono tabular-nums">{auditHashSha256}</code>
                 </span>
               )}
               {verifiedAtUtc && <span>Conferido em: {verifiedAtUtc}</span>}

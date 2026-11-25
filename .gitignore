@@ -22,3 +22,12 @@ services/rtc-db-builder/output/
 services/rtc-db-builder/sql/
 *.db
 *.db.sha256
+
+# Temporary teamwork files
+.agents/teamwork/
+# Screenshot artifacts (UX audit)
+docs/ux-audit/screenshots/
+# Large JSON parts generated during data processing
+*.part.json
+# Legacy executable
+Aplicativo_NCM.exe

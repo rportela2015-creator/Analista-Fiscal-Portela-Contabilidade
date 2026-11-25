@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { esc } from '@/lib/html';
-import { PORTELA_HEADER_CSS, renderHeaderPortela } from '@/lib/relatorio-header';
+import {
+  PORTELA_COPYRIGHT,
+  PORTELA_FOOTER_CSS,
+  PORTELA_HEADER_CSS,
+  PORTELA_VERSION,
+  renderHeaderPortela,
+} from '@/lib/relatorio-header';
 
 function fmtMoeda(val: number | string | undefined | null): string {
   const n = typeof val === 'number' ? val : parseFloat(String(val ?? 0));
@@ -76,6 +82,26 @@ const relatorioItemSchema = z.object({
   diagnosticoDifal: diagnosticoDifalSchema,
 }).passthrough();
 
+const empresaEntitySchema = z.object({
+  id: z.string().optional().nullable(),
+  razaoSocial: z.string().optional().nullable(),
+  nomeFantasia: z.string().optional().nullable(),
+  cnpj: z.string().optional().nullable(),
+  uf: z.string().optional().nullable(),
+  regime: z.string().optional().nullable(),
+  cnaePrincipal: z.string().optional().nullable(),
+  inscricaoEstadual: z.string().optional().nullable(),
+}).passthrough().optional().nullable();
+
+const nfeParteSchema = z.object({
+  xNome: z.string().optional().nullable(),
+  CNPJ: z.string().optional().nullable(),
+  CPF: z.string().optional().nullable(),
+  IE: z.string().optional().nullable(),
+  enderEmit: z.object({ UF: z.string().optional().nullable() }).passthrough().optional().nullable(),
+  enderDest: z.object({ UF: z.string().optional().nullable() }).passthrough().optional().nullable(),
+}).passthrough().optional().nullable();
+
 const relatorioPayloadSchema = z.object({
   format: z.enum(['html', 'txt']).optional().default('html'),
   parecerTecnicoXml: z.string().optional().nullable(),
@@ -89,6 +115,15 @@ const relatorioPayloadSchema = z.object({
   paridadeRfb: z.any().optional().nullable(),
   sha256: z.string().optional().nullable(),
   tituloDocumento: z.string().optional().nullable(),
+  // Contexto de Empresa Ativa e NF-e
+  empresaAtiva: empresaEntitySchema,
+  empresa: empresaEntitySchema,
+  nfe: z.object({
+    emitente: nfeParteSchema,
+    destinatario: nfeParteSchema,
+  }).passthrough().optional().nullable(),
+  regime: z.string().optional().nullable(),
+  finalidade: z.string().optional().nullable(),
 }).passthrough();
 
 export async function POST(req: Request) {
@@ -133,6 +168,40 @@ export async function POST(req: Request) {
     const sha256Calculado = data.sha256 || dag?.sha256Xml || nfse?.extracao?.sha256 || 'N/A';
     const resumoDifal = data.resumoDifalEntrada || data.relatorioDifal;
 
+    // Resolver empresa ativa / partes da NF-e / contexto operacional
+    const empresaRaw = data.empresaAtiva || data.empresa;
+    const nfeDest = data.nfe?.destinatario;
+    const nfeEmit = data.nfe?.emitente;
+    const dagDest = dag?.etapas?.extracao?.destinatario;
+    const dagEmit = dag?.etapas?.extracao?.emitente;
+
+    const empresaNome =
+      empresaRaw?.razaoSocial ||
+      empresaRaw?.nomeFantasia ||
+      nfeDest?.xNome ||
+      dagDest?.razaoSocial ||
+      undefined;
+    const empresaCnpj =
+      empresaRaw?.cnpj ||
+      nfeDest?.CNPJ ||
+      nfeDest?.CPF ||
+      dagDest?.cnpj ||
+      undefined;
+    const empresaUf =
+      empresaRaw?.uf ||
+      nfeDest?.enderDest?.UF ||
+      dagDest?.uf ||
+      undefined;
+    const empresaRegime =
+      empresaRaw?.regime ||
+      data.regime ||
+      dag?.perfilUtilizado?.regime ||
+      undefined;
+    const emitenteNome = nfeEmit?.xNome || dagEmit?.razaoSocial || undefined;
+    const emitenteCnpj = nfeEmit?.CNPJ || nfeEmit?.CPF || dagEmit?.cnpj || undefined;
+    const emitenteUf = nfeEmit?.enderEmit?.UF || dagEmit?.uf || undefined;
+    const finalidadeOp = data.finalidade || undefined;
+
     // ------------------------------------------------------------------------
     // GERAÇÃO DO LAUDO EM FORMATO HTML
     // ------------------------------------------------------------------------
@@ -164,7 +233,36 @@ export async function POST(req: Request) {
         subtitulo: subtituloHeader,
         dataHora: dataHoraFormatada,
         documentoRef: docRefHeader,
+        empresaNome,
+        empresaCnpj,
+        empresaRegime,
       });
+
+      let empresaSectionHtml = '';
+      if (!nfse && (empresaNome || empresaCnpj || emitenteNome || emitenteCnpj || empresaRegime || finalidadeOp)) {
+        empresaSectionHtml = `
+    <div class="section empresa-section">
+      <h2>Identificação da Empresa Ativa e Operação</h2>
+      <div class="grid-container">
+        ${(empresaNome || empresaCnpj || empresaUf || empresaRegime) ? `
+        <div class="tax-block">
+          <div class="tax-title">Empresa Ativa / Adquirente</div>
+          ${empresaNome ? `<div class="tax-row"><span class="tax-label">Razão Social:</span> <span class="tax-value">${esc(empresaNome)}</span></div>` : ''}
+          ${empresaCnpj ? `<div class="tax-row"><span class="tax-label">CNPJ/CPF:</span> <span class="tax-value">${esc(empresaCnpj)}</span></div>` : ''}
+          ${empresaUf ? `<div class="tax-row"><span class="tax-label">UF:</span> <span class="tax-value">${esc(empresaUf)}</span></div>` : ''}
+          ${empresaRegime ? `<div class="tax-row"><span class="tax-label">Regime Tributário:</span> <span class="tax-value">${esc(empresaRegime)}</span></div>` : ''}
+        </div>` : ''}
+        ${(emitenteNome || emitenteCnpj || emitenteUf || finalidadeOp) ? `
+        <div class="tax-block">
+          <div class="tax-title">Fornecedor / Contexto da Operação</div>
+          ${emitenteNome ? `<div class="tax-row"><span class="tax-label">Emitente:</span> <span class="tax-value">${esc(emitenteNome)}</span></div>` : ''}
+          ${emitenteCnpj ? `<div class="tax-row"><span class="tax-label">CNPJ/CPF Emitente:</span> <span class="tax-value">${esc(emitenteCnpj)}</span></div>` : ''}
+          ${emitenteUf ? `<div class="tax-row"><span class="tax-label">UF Origem:</span> <span class="tax-value">${esc(emitenteUf)}</span></div>` : ''}
+          ${finalidadeOp ? `<div class="tax-row"><span class="tax-label">Finalidade:</span> <span class="tax-value">${esc(finalidadeOp)}</span></div>` : ''}
+        </div>` : ''}
+      </div>
+    </div>`;
+      }
 
       // 1. Bloco de Parecer Técnico e Parecer de Conformidade
       let pareceresHtml = '';
@@ -458,7 +556,7 @@ export async function POST(req: Request) {
       <div class="paridade-strip ${isTotal ? 'paridade-ok' : 'paridade-alerta'}">
         <div>Status: <b>${isTotal ? '✓ Paridade Total (Zero Divergência)' : `⚠️ Divergências Detectadas (${qtdDiv})`}</b></div>
         <div>Itens Auditados: <b>${totalItens}</b> | Maior Desvio: <b>R$ ${esc(desvio)}</b></div>
-        <div style="font-size: 0.8rem; color: #64748b;">RFB App: ${esc(meta.versaoAplicacaoRfb || 'v1.0')} · DB: ${esc(meta.versaoBaseDadosRfb || '2026.1')} · Local: ${esc(meta.motorLocalVersao || 'v6.0.0')}</div>
+        <div style="font-size: 0.8rem; color: #64748b;">RFB App: ${esc(meta.versaoAplicacaoRfb || 'v1.0')} · DB: ${esc(meta.versaoBaseDadosRfb || '2026.1')} · Local: ${esc(meta.motorLocalVersao || PORTELA_VERSION)}</div>
       </div>
       ${divergenciasRows ? `
       <table class="tabela-dag" style="margin-top: 14px;">
@@ -611,7 +709,7 @@ export async function POST(req: Request) {
       <div class="rodape-tecnico">
         <div class="rodape-linha">
           <div><b>Emissão:</b> ${esc(dataHoraFormatada)}</div>
-          <div><b>Plataforma:</b> Analista Fiscal Portela Contabilidade <span class="tag-versao">v6.0.0</span></div>
+          <div><b>Plataforma:</b> MargemReal Portela <span class="tag-versao">${esc(PORTELA_VERSION)}</span></div>
           <div><b>Integridade SHA-256:</b> <span class="monospace-sm">${esc(sha256Calculado)}</span></div>
         </div>
         <div class="rodape-motores">
@@ -620,6 +718,7 @@ export async function POST(req: Request) {
         <div class="rodape-aviso">
           Laudo emitido em estrita conformidade com a EC nº 132/2023, Lei Complementar nº 214/2025, Lei Complementar nº 227/2025, RICMS/PR e instruções normativas da Receita Federal do Brasil e Comitê Gestor do IBS. As diretrizes periciais contidas neste relatório destinam-se ao suporte de decisões contábeis e parametrização fiscal de sistemas.
         </div>
+        <div class="rodape-copyright">${esc(PORTELA_COPYRIGHT)}</div>
       </div>`;
 
       const htmlContent = `<!DOCTYPE html>
@@ -630,9 +729,11 @@ export async function POST(req: Request) {
   <title>Portela Contabilidade - Laudo Pericial Fiscal</title>
   <style>
     ${PORTELA_HEADER_CSS}
+    ${PORTELA_FOOTER_CSS}
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 30px; color: #1e293b; line-height: 1.5; background-color: #f8fafc; }
     .container { max-width: 1100px; margin: 0 auto; background: #ffffff; padding: 32px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
     .section { margin-bottom: 24px; padding: 20px; border-radius: 6px; }
+    .empresa-section { background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #5B7B35; }
     .parecer-tecnico { background-color: #f0f9ff; border-left: 4px solid #0284c7; }
     .parecer-conformidade { background-color: #f0fdf4; border-left: 4px solid #16a34a; }
     .dag-section { background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 4px solid #4f46e5; }
@@ -703,11 +804,13 @@ export async function POST(req: Request) {
     .rodape-linha { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
     .rodape-motores { margin-bottom: 8px; font-size: 0.78rem; color: #475569; }
     .rodape-aviso { font-size: 0.72rem; line-height: 1.4; color: #94a3b8; text-align: justify; }
+    .rodape-copyright { margin-top: 10px; font-size: 0.76rem; font-weight: 600; color: #334155; text-align: center; }
   </style>
 </head>
 <body>
   <div class="container">
     ${headerPortelaHtml}
+    ${empresaSectionHtml}
     ${pareceresHtml}
     ${nfseHtml}
     ${dagHtml}
@@ -735,9 +838,26 @@ export async function POST(req: Request) {
     // ------------------------------------------------------------------------
     let txtContent = `# Portela Contabilidade - Laudo Pericial de Auditoria Fiscal\n`;
     txtContent += `Data da geração: ${dataHoraFormatada}\n`;
-    txtContent += `Plataforma: Analista Fiscal Portela Contabilidade v6.0.0\n`;
+    txtContent += `Plataforma: MargemReal Portela ${PORTELA_VERSION}\n`;
     txtContent += `Hash de Integridade SHA-256: ${sha256Calculado}\n`;
     txtContent += `================================================================================\n\n`;
+
+    if (!nfse && (empresaNome || empresaCnpj || emitenteNome || emitenteCnpj || empresaRegime || finalidadeOp)) {
+      txtContent += `[IDENTIFICAÇÃO DA EMPRESA E DOCUMENTO]\n`;
+      if (empresaNome || empresaCnpj) {
+        txtContent += `- Empresa Ativa / Adquirente: ${empresaNome || 'N/A'} (CNPJ/CPF: ${empresaCnpj || 'N/A'})${empresaUf ? ` | UF: ${empresaUf}` : ''}\n`;
+      }
+      if (empresaRegime) {
+        txtContent += `- Regime Tributário: ${empresaRegime}\n`;
+      }
+      if (emitenteNome || emitenteCnpj) {
+        txtContent += `- Emitente / Fornecedor: ${emitenteNome || 'N/A'} (CNPJ/CPF: ${emitenteCnpj || 'N/A'})${emitenteUf ? ` | UF: ${emitenteUf}` : ''}\n`;
+      }
+      if (finalidadeOp) {
+        txtContent += `- Finalidade da Operação: ${finalidadeOp}\n`;
+      }
+      txtContent += `\n`;
+    }
 
     if (data.parecerTecnicoXml) {
       txtContent += `## Parecer Técnico do Documento\n`;
@@ -894,7 +1014,7 @@ export async function POST(req: Request) {
     txtContent += `\n================================================================================\n`;
     txtContent += `Laudo emitido em estrita conformidade com a EC nº 132/2023, LC nº 214/2025,\n`;
     txtContent += `LC nº 227/2025, RICMS/PR e normas vigentes da Receita Federal do Brasil.\n`;
-    txtContent += `Analista Fiscal Portela Contabilidade v6.0.0\n`;
+    txtContent += `MargemReal Portela ${PORTELA_VERSION} — ${PORTELA_COPYRIGHT}\n`;
 
     return new NextResponse(txtContent, {
       status: 200,

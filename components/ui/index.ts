@@ -15,3 +15,6 @@ export * from './ItemDetailDrawer';
 
 export { default as LegalCitationBlock } from './LegalCitationBlock';
 export * from './LegalCitationBlock';
+
+export { default as ErrorBoundary } from './ErrorBoundary';
+export * from './ErrorBoundary';
