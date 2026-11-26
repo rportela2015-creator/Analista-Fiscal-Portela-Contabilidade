@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-24T13:39:26",
+ "gerado_em": "2026-11-26T15:08:34",
  "base": "https://consumo.tributos.gov.br/servico/calcular-tributos-consumo/api/calculadora/dados-abertos",
  "fallback": "https://dfe-portal.svrs.rs.gov.br/DFE/ClassificacaoTributaria",
  "datas": [
@@ -7,6 +7,9 @@
   "2027-01-01"
  ],
  "falhas": {
+  "https://consumo.tributos.gov.br/servico/calcular-tributos-consumo/api/calculadora/dados-abertos/aliquota-uniao?data=2027-01-01": "HTTPError: HTTP Error 404: Not Found",
+  "https://consumo.tributos.gov.br/servico/calcular-tributos-consumo/api/calculadora/dados-abertos/aliquota-uniao?data=2029-01-01": "HTTPError: HTTP Error 404: Not Found",
+  "https://consumo.tributos.gov.br/servico/calcular-tributos-consumo/api/calculadora/dados-abertos/aliquota-uniao?data=2033-01-01": "HTTPError: HTTP Error 404: Not Found",
   "https://consumo.tributos.gov.br/servico/calcular-tributos-consumo/api/calculadora/dados-abertos/aliquota-uf?data=2027-01-01&codigoUf=11": "HTTPError: HTTP Error 404: Not Found",
   "https://consumo.tributos.gov.br/servico/calcular-tributos-consumo/api/calculadora/dados-abertos/aliquota-uf?data=2027-01-01&codigoUf=12": "HTTPError: HTTP Error 404: Not Found",
   "https://consumo.tributos.gov.br/servico/calcular-tributos-consumo/api/calculadora/dados-abertos/aliquota-uf?data=2027-01-01&codigoUf=13": "HTTPError: HTTP Error 404: Not Found",
@@ -101,8 +104,8 @@
   "transferencias_ibs": true,
   "ufs": true,
   "aliquota_uniao_2026": true,
-  "aliquota_uniao_2027": true,
-  "aliquota_uniao_2029": true,
-  "aliquota_uniao_2033": true
+  "aliquota_uniao_2027": false,
+  "aliquota_uniao_2029": false,
+  "aliquota_uniao_2033": false
  }
 }
