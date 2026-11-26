@@ -89,6 +89,25 @@ function selecionarRegraRgiSugestao(
   };
 }
 
+function extrairNucleoSubstantivo(descLimpa: string): string {
+  const tokens = normalize(descLimpa)
+    .split(/\s+/)
+    .filter(Boolean);
+  const remover = new Set([
+    'de', 'da', 'do', 'das', 'dos', 'com', 'sem', 'para', 'em', 'e', 'ou',
+    'recheado', 'recheada', 'tradicional', 'corporativo', 'corporativa', 'especial',
+    'portatil', 'executivo', 'executiva', 'polegada', 'polegadas', 'pol',
+    'ssd', 'hdd', 'nvme', 'ddr4', 'ddr5', 'ram', 'rom', 'hd', 'fhd', 'uhd', 'led', 'ips',
+  ]);
+  const filtrados = tokens.filter((t) => {
+    if (/^\d+(?:[.,]\d+)?(?:gb|tb|mb|kb|kg|g|gr|mg|ml|l|lt|cm|mm|m|w|v|hz|mah|polegadas?)?$/.test(t)) {
+      return false;
+    }
+    return !remover.has(t);
+  });
+  return filtrados.join(' ').trim();
+}
+
 function verificarConflitoAlimentacaoPanificacao(xProdNorm: string, d8: string): string | null {
   const ehPaoEstrito = d8 === '19059010' || d8 === '19051000' || d8 === '19054000';
   const termosConfeitaria = /\b(bolo|chocolate|rechead|torta|panetone|bombom|trufa|mousse|pav[eê]|pudim|alfajor)\b/i;
@@ -129,20 +148,93 @@ export function avaliarAderenciaNcm(
   }
 
   const recAtual = d8.length === 8 ? ds.byD8.get(d8) : undefined;
-  const cls = classify(descLimpa, ds, { top: 12 });
+  const xProdNorm = normalize(descLimpa);
+  const nucleoSubstantivo = extrairNucleoSubstantivo(descLimpa);
+  const cls = classify(descLimpa, ds, { top: 20 });
+  const clsNucleo =
+    nucleoSubstantivo && nucleoSubstantivo !== xProdNorm
+      ? classify(nucleoSubstantivo, ds, { top: 12 })
+      : null;
+
+  // Pool combinado ponderando núcleo substantivo acima de atributos técnicos acessórios
+  const mapaCandidatos = new Map<string, Candidate>();
+  for (const c of cls.candidates) {
+    mapaCandidatos.set(c.rec.d8, { ...c });
+  }
+  if (clsNucleo) {
+    for (const cn of clsNucleo.candidates) {
+      const existente = mapaCandidatos.get(cn.rec.d8);
+      if (existente) {
+        existente.score += cn.score * 0.45;
+      } else {
+        mapaCandidatos.set(cn.rec.d8, { ...cn, score: cn.score * 0.85 });
+      }
+    }
+  }
+
+  const ehMaquinaPortatilDados =
+    /\b(notebook|laptop|ultrabook|computador portatil|netbook)\b/i.test(xProdNorm) &&
+    !/\b(unidade|disco externo|ssd externo|pendrive|memoria|cabo|fonte|carregador|peca|capa|mochila|maleta|suporte)\b/i.test(xProdNorm);
+  const ehBoloConfeitariaDesc =
+    /\b(bolo|torta|panetone)\b/i.test(xProdNorm) &&
+    !/\b(biscoito|bolacha|wafer|torrada)\b/i.test(xProdNorm);
+
+  if (ehMaquinaPortatilDados) {
+    const recPortatil = ds.byD8.get('84713012') || ds.byD8.get('84713019') || ds.byD8.get('84713090');
+    if (recPortatil && !mapaCandidatos.has(recPortatil.d8)) {
+      mapaCandidatos.set(recPortatil.d8, {
+        rec: recPortatil,
+        score: 70,
+        coverage: 0.7,
+        matched: [{ term: 'notebook', w: 10, where: 'propria' }],
+        phrase: true,
+        penalizedGeneric: false,
+      });
+    }
+    for (const [cod, cand] of mapaCandidatos.entries()) {
+      if (cod.startsWith('847130')) {
+        cand.score += cod === '84713012' ? 65 : 50;
+      } else if (cod.startsWith('847170') || cod.startsWith('8473')) {
+        cand.score = Math.max(1, cand.score - 25);
+      }
+    }
+  }
+
+  if (ehBoloConfeitariaDesc) {
+    const recBoloOutros = ds.byD8.get('19059090');
+    if (recBoloOutros && !mapaCandidatos.has('19059090')) {
+      mapaCandidatos.set('19059090', {
+        rec: recBoloOutros,
+        score: 55,
+        coverage: 0.65,
+        matched: [{ term: 'bolo', w: 8, where: 'pai' }],
+        phrase: false,
+        penalizedGeneric: false,
+      });
+    }
+    for (const [cod, cand] of mapaCandidatos.entries()) {
+      if (cod === '19059090') {
+        cand.score += 55;
+      } else if (cod === '19059020' || cod === '19059010') {
+        cand.score = Math.max(1, cand.score - 30);
+      }
+    }
+  }
+
+  const candidatosCalibrados = Array.from(mapaCandidatos.values()).sort((a, b) => b.score - a.score);
   const q = cls.query || parseQuery(descLimpa, ds);
   const armadilhas = armadilhasAplicaveis(q, ds);
   const armadilhasIds = armadilhas.map((a) => a.titulo || a.id);
 
   const ehAlimentoSemMaquina =
     /\b(bolo|chocolate|rechead|torta|panetone|pao|biscoito|bolacha|macarrao|arroz|feijao|cafe|alimento)\b/i.test(
-      normalize(descLimpa)
-    ) && !/\b(forno|maquina|aparelho|equipamento|industrial|batedeira|liquidificador|misturador)\b/i.test(normalize(descLimpa));
+      xProdNorm
+    ) && !/\b(forno|maquina|aparelho|equipamento|industrial|batedeira|liquidificador|misturador)\b/i.test(xProdNorm);
 
   const construirCandidatos = (excluirD8?: string): CandidatoRgiSugerido[] => {
     const vistos = new Set<string>();
     const lista: CandidatoRgiSugerido[] = [];
-    for (const cand of cls.candidates) {
+    for (const cand of candidatosCalibrados) {
       if (!ds.byD8.has(cand.rec.d8)) continue;
       if (excluirD8 && cand.rec.d8 === excluirD8) continue;
       if (ehAlimentoSemMaquina && (cand.rec.d8.startsWith('84') || cand.rec.d8.startsWith('85'))) continue;
@@ -183,8 +275,8 @@ export function avaliarAderenciaNcm(
   }
 
   const { ownTokens, ancTokens, hierarquiaTextos } = extrairTokensArvore(recAtual, ds);
-  const top1 = cls.candidates[0];
-  const rankAtual = cls.candidates.findIndex((c) => c.rec.d8 === d8);
+  const top1 = candidatosCalibrados[0];
+  const rankAtual = candidatosCalibrados.findIndex((c) => c.rec.d8 === d8);
   const motivos: string[] = [];
 
   // Sobreposição ponderada entre termos/sinônimos de xProd e a árvore do NCM do XML
@@ -266,7 +358,7 @@ export function avaliarAderenciaNcm(
 
   // Subposição genérica / residual .90 / .99 quando existe item nominal forte (RGI 3(a))
   const ehResidual = recAtual.gen === 1 || d8.endsWith('90') || d8.endsWith('99');
-  if (ehResidual && top1 && top1.rec.d8 !== d8 && top1.rec.gen === 0 && top1.score > (cls.candidates[rankAtual]?.score ?? 0) * 1.15) {
+  if (ehResidual && top1 && top1.rec.d8 !== d8 && top1.rec.gen === 0 && top1.score > (candidatosCalibrados[rankAtual]?.score ?? 0) * 1.15) {
     score -= 18;
     motivos.push(
       `NCM residual/genérico (${ncmFmt} — "${recAtual.desc}") enquanto RGI 3(a) favorece descrição nominal específica (${fmtCode(top1.rec.d8)} — "${top1.rec.desc}").`
@@ -274,7 +366,6 @@ export function avaliarAderenciaNcm(
   }
 
   // Regra pericial explícita panificação/cesta básica vs confeitaria/chocolate
-  const xProdNorm = normalize(descLimpa);
   const conflitoAlim = verificarConflitoAlimentacaoPanificacao(xProdNorm, d8);
   if (conflitoAlim) {
     score -= 35;

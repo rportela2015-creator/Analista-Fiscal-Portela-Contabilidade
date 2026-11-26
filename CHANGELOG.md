@@ -5,6 +5,24 @@ O formato é baseado no [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ---
 
+## [8.0.0] - 2026-11-26 — Fechamento do Saneamento: Motor Único, Contrato Canônico, Saneamento NCM, Governança RFB Híbrida e Modularização
+- **Rodada 1 (Fases 1 e 2) — Unificação do Motor Tributário PR & Blindagem de Códigos:**
+  - Consolidação em `lib/engine/matriz-icms-pr.ts` com resolução bitemporal de alíquotas PR, FECOP e exclusões ST dos Decretos PR nº 6.048/2024 e nº 12.828/2026;
+  - Blindagem determinística de `cClassTrib` (`lib/fiscal/reforma-tabela-oficial.ts`), `cBenef` Tabela 5.2 (`rules/cbenef-pr.json`) e CFOP (`lib/fiscal/cfop-resolver.ts`).
+- **Rodada 2 (Fase 3) — Contrato Canônico `ItemFiscalAuditado` e Rateio CT-e FOB:**
+  - Criação de `lib/types/item-fiscal-auditado.ts` e `lib/fiscal/extrator-cte.ts` (rateio proporcional de CT-e mod. 57 FOB por centavos com aritmética decimal estrita `lib/math/decimal-fiscal.ts`);
+  - Propagação integral sem perdas entre Empresa Ativa -> Auditoria de Entrada -> Parametrização ERP -> Precificação (`tests/fluxo-canonico-item-auditado.test.mjs`).
+- **Rodada 3 (Fase 4) — Saneamento Assistido `xProd × NCM` (Dual-Track Imutável):**
+  - Criação de `lib/fiscal/aderencia-ncm.ts` e `lib/fiscal/saneamento-ncm.ts` com preservação de `ncmEscrituradoEntrada` para EFD C100/C170, simulação Antes × Depois, diferenciação `Anexo IX LC 214 pendente` vs. `cClassTrib a confirmar`, orientação CC-e (Ajuste SINIEF nº 07/2005 Cl. 14ª-A) e carimbo nos laudos HTML/TXT.
+- **Rodada 4 (Fase 5 — Opção D) — Snapshot Validado como Caminho Primário e Governança RFB:**
+  - Manifesto `rules/snapshot-floors.json` + pipeline atômico `scripts/rfb-refresh.mjs` (`npm run rfb:refresh` / `npm run rfb:verify`) gerando `public/data/rfb-status.json`;
+  - Modo explícito `live → snapshot → hardcoded` em `lib/integracoes/rfb-health.ts`, `instrumentation.ts`, selos no App Shell (`app/page.tsx`) e aba Reforma (`components/Reforma.tsx`), trava HTTP 503 em fechamentos `hardcoded`, blindagem do `fetcher_ricms_pr.py`, `scripts/paridade.ps1` e workflow `.github/workflows/rfb-sync.yml`.
+- **Rodada 5 (Fase 6) — Modularização, Calibração RGI, WCAG AA e Higiene:**
+  - Modularização de `components/Precificar.tsx` em `components/precificar/*` e `components/AuditoriaEntrada.tsx` em `components/auditoria/*`;
+  - Cobertura recursiva no `scripts/hookcheck.mjs`, foco visível esmeralda (`:focus-visible`) em `app/globals.css`, calibração do núcleo substantivo RGI (`Notebook` -> `8471.30.*`, `Bolo` -> `1905.90.90`) e limpeza de caches/órfãos em `data/raw/`.
+
+---
+
 ## [7.2.0] - 2026-11-25 — Sincronização Direta com Projeto Stitch `10027389379931821169` (MargemReal Portela)
 - **Extração & Documentação Stitch (`docs/ux-audit/stitch-sync/`):**
   - Materialização dos artefatos oficiais do projeto `10027389379931821169` (metadados, catálogo de telas, Design Systems, Guia de Integração Técnica Antigravity v3.0.0, Relatório de Conformidade Visual v2.6 e telas revisadas) em `docs/ux-audit/stitch-sync/10027389379931821169/`;

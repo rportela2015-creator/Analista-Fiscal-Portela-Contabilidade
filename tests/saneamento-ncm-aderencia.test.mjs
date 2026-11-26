@@ -521,3 +521,29 @@ test('SAN-7 Imprime mode, snapshotSha256 e normasVigentes junto à seção de sa
   assert.match(apiTxt, /snapshotSha256=26b6bcda9999sha256/);
   assert.match(apiTxt, /normasVigentes=.*Dec\. PR nº 12\.828\/2026/);
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// TESTE 8: CALIBRAÇÃO RGI (NÚCLEO SUBSTANTIVO ACIMA DE ATRIBUTOS ACESSÓRIOS)
+// ════════════════════════════════════════════════════════════════════════════
+test('SAN-8 Calibração RGI prioriza núcleo substantivo: Notebook -> 8471.30.* e Bolo -> 1905.90.90', () => {
+  const nb = avaliarAderenciaNcm('Notebook 15 polegadas 16GB SSD', '39269090', ds);
+  assert.ok(nb.candidatosRgi.length >= 2, 'Notebook deve ter ao menos 2 candidatos RGI');
+  assert.ok(
+    nb.candidatosRgi[0].ncm.startsWith('847130'),
+    `Top 1 para Notebook deve ser subposição 8471.30.*, obtido ${nb.candidatosRgi[0].ncmFormatado}`
+  );
+  const idx847130 = nb.candidatosRgi.findIndex((c) => c.ncm.startsWith('847130'));
+  const idx847170 = nb.candidatosRgi.findIndex((c) => c.ncm.startsWith('847170'));
+  assert.ok(idx847130 === 0 && (idx847170 === -1 || idx847130 < idx847170));
+
+  const bolo = avaliarAderenciaNcm('Bolo de Chocolate Recheado 500g', '19059010', ds);
+  assert.ok(bolo.candidatosRgi.length >= 1, 'Bolo deve ter candidatos RGI');
+  assert.equal(
+    bolo.candidatosRgi[0].ncm,
+    '19059090',
+    `Top 1 para Bolo de Chocolate deve ser 1905.90.90, obtido ${bolo.candidatosRgi[0].ncmFormatado}`
+  );
+  const idx19059090 = bolo.candidatosRgi.findIndex((c) => c.ncm === '19059090');
+  const idx19059020 = bolo.candidatosRgi.findIndex((c) => c.ncm === '19059020');
+  assert.ok(idx19059090 === 0 && (idx19059020 === -1 || idx19059090 < idx19059020));
+});

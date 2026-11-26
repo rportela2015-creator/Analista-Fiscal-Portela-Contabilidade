@@ -61,11 +61,14 @@ def main():
     for k, v in SISCOMEX.items():
         fetch(v, RAW / k, rotulo=k)
     unzip_inner("zip_atributos_ncm.zip", "atributos_por_ncm.json")
-    unzip_inner("zip_atributos.zip", "atributos_raw.json")
-    if (RAW / "atributos_raw.json").exists():
-        blob = json.loads((RAW / "atributos_raw.json").read_text(encoding="utf-8"))
+    zp_attr = RAW / "zip_atributos.zip"
+    if zp_attr.exists():
+        with zipfile.ZipFile(zp_attr) as z:
+            inner = z.namelist()[0]
+            blob = json.loads(z.read(inner).decode("utf-8"))
         (RAW / "atributos.json").write_text(
             json.dumps(blob.get("atributos", []), ensure_ascii=False), encoding="utf-8")
+        print(f"  > {'atributos.json':26s} extraído de zip_atributos.zip")
 
     print("Tabelas derivadas (TIPI/TEC/CEST/CFOP):")
     for f in AGG_FILES:

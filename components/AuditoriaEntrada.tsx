@@ -15,11 +15,12 @@ import {
   converterItemExtracaoParaParametrizacao,
 } from '@/lib/extrator-nfe-types';
 import TabelaItensExtracao from './TabelaItensExtracao';
-import ParametrizacaoERP from './ParametrizacaoERP';
+import AuditoriaUploadPanel from './auditoria/AuditoriaUploadPanel';
+import AuditoriaDifalResumoCard from './auditoria/AuditoriaDifalResumoCard';
+import AuditoriaBarraExportacao from './auditoria/AuditoriaBarraExportacao';
 import {
   calcularCustoItemCPC16,
   consolidarCustosEntradaCPC16,
-  gerarRelatorioCustosHtml,
   RelatorioCustoEntradaConsolidado,
 } from '@/lib/custos';
 import { RegimeTributario, DestinacaoMercadoria, loadMarcoLegal, type MarcoLegal } from '@/lib/marco-legal';
@@ -39,12 +40,10 @@ import {
 import { obterFontesNormativasPorAba } from '@/lib/fiscal/fontes-normativas';
 import type { DiagnosticoDifalEntrada, ResumoDifalNfeEntrada } from '@/lib/types/motor-tributario';
 import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
-import { formatarCnpj } from '@/lib/fiscal/perfil-tributario';
 import type { ResultadoOrquestracaoNfe } from '@/lib/engine/orquestrador-fiscal';
 import type { StatusExtincaoDebitoFornecedor } from '@/lib/fiscal/credito-tributario';
 import { detectarTipoXmlFiscal } from '@/lib/extrator-nfse';
 import type { ResultadoAuditoriaNfse } from '@/lib/extrator-nfse-types';
-import { PainelNfseDanfse } from './PainelNfseDanfse';
 import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
 import {
   extrairDadosXmlCte,
@@ -63,7 +62,6 @@ import {
   StickyActionBar,
   ProgressiveSection,
   LegalCitationBlock,
-  ItemDetailDrawer,
   type KpiItemData,
 } from '@/components/ui';
 
@@ -84,8 +82,6 @@ function formatarBrl(val?: number): string {
   if (val === undefined || val === null || isNaN(val)) return 'R$ 0,00';
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
-
-
 
 /**
  * Adaptador puro para compatibilidade entre a resposta pericial e o componente ParametrizacaoERP
@@ -183,6 +179,7 @@ export default function AuditoriaEntrada() {
   // 4. Estados de Exportação de Relatórios
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [relatorioBloqueadoHardcoded, setRelatorioBloqueadoHardcoded] = useState<{ mensagem: string; format: 'html' | 'txt' } | null>(null);
 
   // 5. Estados do Modal de Custo Individualizado por Produto (CPC 16)
   const [modalCusto, setModalCusto] = useState<{
@@ -611,10 +608,11 @@ export default function AuditoriaEntrada() {
   };
 
   // ─── Handler de Download de Relatório ──────────────────────────────────────
-  const handleDownloadReport = async (format: 'html' | 'txt' = 'html') => {
+  const handleDownloadReport = async (format: 'html' | 'txt' = 'html', opts?: { permitirSimulacaoHardcoded?: boolean }) => {
     if (!auditResult) return;
     setPdfLoading(true);
     setPdfError(null);
+    setRelatorioBloqueadoHardcoded(null);
     try {
       const itensEnriquecidos = (auditResult.itens || []).map((it: any) => {
         const diag =
@@ -662,6 +660,7 @@ export default function AuditoriaEntrada() {
           ],
         }),
         format,
+        permitirSimulacaoHardcoded: Boolean(opts?.permitirSimulacaoHardcoded),
       };
 
       const res = await fetch('/api/auditoria-relatorio', {
@@ -670,7 +669,18 @@ export default function AuditoriaEntrada() {
         body: JSON.stringify(payloadRelatorio),
       });
 
-      if (!res.ok) throw new Error(`Erro HTTP ${res.status} ao gerar relatório.`);
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        if (res.status === 503 && errBody?.codigo === 'RTC_HARDCODED_BLOQUEADO') {
+          setRelatorioBloqueadoHardcoded({
+            mensagem:
+              errBody.error ||
+              'Snapshot oficial RFB/Reforma indisponível (modo hardcoded). Execute npm run rfb:refresh antes de gerar laudos oficiais.',
+            format,
+          });
+        }
+        throw new Error(errBody?.error || `Erro HTTP ${res.status} ao gerar relatório.`);
+      }
 
       const blob = await res.blob();
       if (typeof window !== 'undefined' && window.URL && typeof window.URL.createObjectURL === 'function') {
@@ -1010,175 +1020,35 @@ export default function AuditoriaEntrada() {
       {/* =========================================================================
        * ETAPA 1: Formulário de Upload e Extração Determinística Imediata
        * ========================================================================= */}
-      {empresaAtiva ? (
-        <div
-          style={{
-            background: 'var(--panel)',
-            border: '1px solid #3b82f6',
-            borderRadius: 6,
-            padding: '10px 14px',
-            marginBottom: 16,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: 13,
-            flexWrap: 'wrap',
-            gap: 8,
-          }}
-        >
-          <div>
-            🏢 <b>Empresa Ativa:</b> {empresaAtiva.razaoSocial} &middot; CNPJ:{' '}
-            <span className="mono">{formatarCnpj(empresaAtiva.cnpj)}</span> &middot; UF: <b>{empresaAtiva.uf}</b> &middot; Regime:{' '}
-            <b>{notaAuditadaSessao?.contextoEmpresa.regimeTributario || perfilAtivo?.regimeTributario || 'Não configurado'}</b>
-            {notaAuditadaSessao?.contextoEmpresa.cnaePrincipal && (
-              <> &middot; CNAE <span className="mono">{notaAuditadaSessao.contextoEmpresa.cnaePrincipal}</span> ({notaAuditadaSessao.contextoEmpresa.perfilAtividade})</>
-            )}
-          </div>
-          <span style={{ fontSize: 11, background: '#1e3a5f', color: '#93c5fd', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-            Perfil Bitemporal Sincronizado ({notaAuditadaSessao?.contextoEmpresa.dataFatoGerador || 'hoje'})
-          </span>
-        </div>
-      ) : (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{
-            background: 'var(--accent-amber-subtle)',
-            border: '1px solid rgba(245, 158, 11, 0.45)',
-            color: 'var(--warn)',
-            borderRadius: 6,
-            padding: '10px 14px',
-            marginBottom: 16,
-            fontSize: 12.5,
-            fontWeight: 600,
-          }}
-        >
-          ⚠️ Nenhuma empresa ativa selecionada no cadastro: auditoria operando com parâmetros fallback (selecione uma empresa na aba Empresas para vigência bitemporal exata na data dhEmi e confronto do CT-e FOB).
-        </div>
-      )}
-
-      {resultadoNfse && (
-        <PainelNfseDanfse
-          resultado={resultadoNfse}
-          onVoltarParaUpload={() => {
-            setResultadoNfse(null);
-            setFile(null);
-          }}
-          empresaAtivaNome={empresaAtiva?.razaoSocial}
-        />
-      )}
-
-      {!extractedInvoice && !resultadoNfse && (
-        <form onSubmit={handleFileUpload}>
-          <label className="field">
-            <span>Arquivo da Nota Fiscal (.xml, .pdf)</span>
-            <input
-              type="file"
-              accept=".xml,.pdf"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
-          </label>
-
-          <label className="field">
-            <span>CT-e FOB Complementar Opcional (.xml Modelo 57)</span>
-            <input
-              type="file"
-              accept=".xml"
-              onChange={(e) => void handleUploadCteFob(e.target.files?.[0] || null)}
-            />
-            {cteFobData && (
-              <span className="small tabular-nums" style={{ color: 'var(--ok)', marginTop: 4 }}>
-                ✓ CT-e nº {cteFobData.numero || 's/n'} ({cteFobNomeArquivo}) · vTPrest {formatarBrl(cteFobData.valores.vTPrest)} · Tomador: {cteFobData.tomador.tipo}
-              </span>
-            )}
-            {cteFobError && (
-              <span className="small" style={{ color: 'var(--bad)', marginTop: 4 }}>
-                ⛔ {cteFobError}
-              </span>
-            )}
-          </label>
-
-          <label className="field">
-            <span>Regime da Empresa Adquirente</span>
-            <select value={regime} onChange={(e) => setRegime(e.target.value)}>
-              <option value="Simples Nacional">Simples Nacional</option>
-              <option value="Regime Regular">Regime Regular</option>
-            </select>
-          </label>
-
-          <label className="field">
-            <span>Finalidade da Aquisição</span>
-            <select value={finalidade} onChange={(e) => setFinalidade(e.target.value)}>
-              <option value="Revenda/Comercialização">Revenda/Comercialização</option>
-              <option value="Industrialização">Industrialização</option>
-              <option value="Uso/Consumo">Uso/Consumo</option>
-              <option value="Ativo Imobilizado">Ativo Imobilizado</option>
-            </select>
-          </label>
-
-          <label className="field">
-            <span>Status de Extinção no Fornecedor (LC 214/2025 Art. 47)</span>
-            <select
-              value={statusExtincaoRtc}
-              onChange={(e) => setStatusExtincaoRtc(e.target.value as StatusExtincaoDebitoFornecedor)}
-            >
-              <option value="EXTINTO_SPLIT">Split Payment Extinto (Apropriação Imediata de Crédito)</option>
-              <option value="EXTINTO_PAGAMENTO">Extinto por Pagamento Regular (Débito Liquidado)</option>
-              <option value="AGUARDANDO_EXTINCAO">Aguardando Extinção (Crédito Retido pelo Art. 47)</option>
-              <option value="SIMULACAO_PROJETADA">Simulação Projetada (Projeção Ampla de Cenário)</option>
-            </select>
-          </label>
-
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontSize: 13, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={autoSync}
-              onChange={(e) => setAutoSync(e.target.checked)}
-            />
-            <span>⚡ Sincronizar Automaticamente com Precificação e ERP ao Auditar XML</span>
-          </label>
-
-          <div style={{ marginTop: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button type="submit" disabled={isExtracting || isOrquestrando || !file} className="btn primary">
-              {isExtracting ? 'Extraindo Itens (< 200ms)...' : 'Auditar Documento (Extrair Itens)'}
-            </button>
-            <button
-              type="button"
-              onClick={handleExecutarOrquestracaoCompleta}
-              disabled={isExtracting || isOrquestrando || !file}
-              className="btn primary"
-              style={{ background: '#1d4ed8', borderColor: '#3b82f6', color: '#ffffff', fontWeight: 600 }}
-              title="Executa em DAG: Extração + Motor Oficial RFB RTC + ICMS/PR v5.0.0 + Créditos 3 Camadas + 4 Regimes + Persistência"
-            >
-              {isOrquestrando ? '⚡ Executando Orquestrador DAG...' : '⚡ Executar Orquestração Completa (RFB RTC + ICMS/PR + Créditos + 4 Regimes)'}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {orquestracaoErro && (
-        <div className="note error" style={{ marginTop: 20 }}>
-          <div className="t">Erro na orquestração fiscal da NF-e</div>
-          <div className="x">{orquestracaoErro}</div>
-        </div>
-      )}
-
-      {isExtracting && (
-        <div className="note info" style={{ marginTop: 20 }}>
-          <div className="t">Extração Determinística em Andamento...</div>
-          <div className="x">
-            Processamento determinístico imediato (&lt;200ms) sem invocação de LLMs. Validando 100% dos NCMs contra o catálogo oficial do Siscomex.
-          </div>
-        </div>
-      )}
-
-      {extractionError && (
-        <div className="note error" style={{ marginTop: 20 }}>
-          <div className="t">Erro na extração do documento fiscal</div>
-          <div className="x">{extractionError}</div>
-        </div>
-      )}
-
+      <AuditoriaUploadPanel
+        section="upload"
+        empresaAtiva={empresaAtiva}
+        perfilAtivo={perfilAtivo}
+        notaAuditadaSessao={notaAuditadaSessao}
+        resultadoNfse={resultadoNfse}
+        setResultadoNfse={setResultadoNfse}
+        extractedInvoice={extractedInvoice}
+        file={file}
+        setFile={setFile}
+        cteFobData={cteFobData}
+        cteFobError={cteFobError}
+        cteFobNomeArquivo={cteFobNomeArquivo}
+        handleUploadCteFob={handleUploadCteFob}
+        regime={regime}
+        setRegime={setRegime}
+        finalidade={finalidade}
+        setFinalidade={setFinalidade}
+        statusExtincaoRtc={statusExtincaoRtc}
+        setStatusExtincaoRtc={setStatusExtincaoRtc}
+        autoSync={autoSync}
+        setAutoSync={setAutoSync}
+        isExtracting={isExtracting}
+        isOrquestrando={isOrquestrando}
+        orquestracaoErro={orquestracaoErro}
+        extractionError={extractionError}
+        handleFileUpload={handleFileUpload}
+        handleExecutarOrquestracaoCompleta={handleExecutarOrquestracaoCompleta}
+      />
       {/* =========================================================================
        * ETAPA 2: Apresentação Tabular, Seleção e Disparo da Auditoria
        * ========================================================================= */}
@@ -1238,922 +1108,55 @@ export default function AuditoriaEntrada() {
               minLevel="operacional"
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {/* BLOCO 1: STATUS RFB RTC & VALIDAÇÃO XML */}
-              <div
-                className="card"
-                style={{
-                  background: 'var(--panel)',
-                  border: '1px solid #3b82f6',
-                  borderRadius: 8,
-                  padding: 14,
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 18 }}>🏛️</span>
-                    <strong style={{ fontSize: 14 }}>Motor Oficial RFB RTC & Reforma Tributária</strong>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        padding: '2px 8px',
-                        borderRadius: 4,
-                        background:
-                          resultadoOrquestracao.etapas.rtc.origemCalculoRtc === 'OFICIAL_RFB'
-                            ? 'var(--accent-emerald-glow)'
-                            : 'var(--accent-amber-subtle)',
-                        color:
-                          resultadoOrquestracao.etapas.rtc.origemCalculoRtc === 'OFICIAL_RFB'
-                            ? '#6ee7b7'
-                            : '#fcd34d',
-                        border: `1px solid ${
-                          resultadoOrquestracao.etapas.rtc.origemCalculoRtc === 'OFICIAL_RFB'
-                            ? '#059669'
-                            : '#d97706'
-                        }`,
-                      }}
-                    >
-                      {resultadoOrquestracao.etapas.rtc.origemCalculoRtc === 'OFICIAL_RFB'
-                        ? 'OFICIAL RFB'
-                        : 'FALLBACK LOCAL ESTIMADO'}
-                    </span>
-                    {resultadoOrquestracao.etapas.rtc.validacaoXml?.executada && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          padding: '2px 8px',
-                          borderRadius: 4,
-                          background:
-                            resultadoOrquestracao.etapas.rtc.validacaoXml.status === 'VALIDO'
-                              ? 'var(--accent-emerald-glow)'
-                              : resultadoOrquestracao.etapas.rtc.validacaoXml.status === 'INVALIDO'
-                              ? 'var(--accent-crimson-subtle)'
-                              : 'var(--accent-amber-subtle)',
-                          color:
-                            resultadoOrquestracao.etapas.rtc.validacaoXml.status === 'VALIDO'
-                              ? '#6ee7b7'
-                              : resultadoOrquestracao.etapas.rtc.validacaoXml.status === 'INVALIDO'
-                              ? '#fca5a5'
-                              : '#fcd34d',
-                        }}
-                      >
-                        XML: {resultadoOrquestracao.etapas.rtc.validacaoXml.status}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--ink-2)' }}>
-                    Motor: <b>{resultadoOrquestracao.etapas.rtc.motorRtcUtilizado}</b> · Latência:{' '}
-                    <b>{resultadoOrquestracao.etapas.rtc.duracaoRtcMs}ms</b>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                    gap: 10,
-                    marginTop: 10,
-                    fontSize: 12,
-                  }}
-                >
-                  <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
-                    <div style={{ color: 'var(--ink-2)' }}>IBS Estadual (UF)</div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>
-                      R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIbsUf.toFixed(2)}
-                    </div>
-                  </div>
-                  <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
-                    <div style={{ color: 'var(--ink-2)' }}>IBS Municipal</div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>
-                      R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIbsMun.toFixed(2)}
-                    </div>
-                  </div>
-                  <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
-                    <div style={{ color: 'var(--ink-2)' }}>CBS Federal</div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>
-                      R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vCbs.toFixed(2)}
-                    </div>
-                  </div>
-                  <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
-                    <div style={{ color: 'var(--ink-2)' }}>Imposto Seletivo (IS)</div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>
-                      R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIs.toFixed(2)}
-                    </div>
-                  </div>
-                  <div style={{ background: 'var(--bg)', padding: '6px 10px', borderRadius: 4 }}>
-                    <div style={{ color: 'var(--ink-2)' }}>Total IVA Dual</div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#3b82f6' }}>
-                      R$ {resultadoOrquestracao.etapas.rtc.totaisRtc.vIvaTotal.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* BLOCO 2: AUDITORIA DE CRÉDITOS EM 3 CAMADAS */}
-              <div
-                className="card"
-                style={{
-                  background: 'var(--panel)',
-                  border: '1px solid var(--line)',
-                  borderRadius: 8,
-                  padding: 14,
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <strong style={{ fontSize: 14 }}>⚖️ Auditoria Tripartida de Créditos de Entrada</strong>
-                  <span style={{ fontSize: 11, color: 'var(--ink-2)' }}>
-                    Status Extinção: <b>{resultadoOrquestracao.etapas.creditos.statusExtincaoFornecedor}</b>
-                  </span>
-                </div>
-
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', textAlign: 'right' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid var(--line)', color: 'var(--ink-2)' }}>
-                        <th style={{ textAlign: 'left', padding: '6px 8px' }}>Tributo</th>
-                        <th style={{ padding: '6px 8px' }}>Camada 1: Destacado no XML</th>
-                        <th style={{ padding: '6px 8px' }}>Camada 2: Admitido pela Regra</th>
-                        <th style={{ padding: '6px 8px' }}>Camada 3: Efetivado no CMV (CPC 16)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>ICMS Próprio</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.icms.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.icms.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.icms.toFixed(2)}</td>
-                      </tr>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>PIS / PASEP</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.pis.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.pis.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.pis.toFixed(2)}</td>
-                      </tr>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>COFINS</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.cofins.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.cofins.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.cofins.toFixed(2)}</td>
-                      </tr>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>IPI</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.ipi.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.ipi.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.ipi.toFixed(2)}</td>
-                      </tr>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>IBS</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.ibs.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.ibs.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.ibs.toFixed(2)}</td>
-                      </tr>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ textAlign: 'left', padding: '6px 8px' }}>CBS</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.cbs.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.cbs.toFixed(2)}</td>
-                        <td style={{ padding: '6px 8px', fontWeight: 600 }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.cbs.toFixed(2)}</td>
-                      </tr>
-                      <tr style={{ fontWeight: 700, borderTop: '2px solid var(--line)' }}>
-                        <td style={{ textAlign: 'left', padding: '8px' }}>TOTAL DE CRÉDITOS</td>
-                        <td style={{ padding: '8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalDestacadoXml.total.toFixed(2)}</td>
-                        <td style={{ padding: '8px' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoAdmitidoRegra.total.toFixed(2)}</td>
-                        <td style={{ padding: '8px', color: '#10b981' }}>R$ {resultadoOrquestracao.etapas.creditos.camadas.totalCreditoEfetivadoCusto.total.toFixed(2)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                {resultadoOrquestracao.etapas.creditos.retidoAguardandoExtincaoIbsCbs.total > 0 && (
-                  <div
-                    style={{
-                      marginTop: 10,
-                      padding: '8px 12px',
-                      borderRadius: 4,
-                      background: '#451a03',
-                      color: '#fcd34d',
-                      fontSize: 12,
-                      border: '1px solid #b45309',
-                    }}
-                  >
-                    ⚠️ <b>Atenção (Art. 47 LC 214/2025):</b> R${' '}
-                    {resultadoOrquestracao.etapas.creditos.retidoAguardandoExtincaoIbsCbs.total.toFixed(2)} em créditos de IBS/CBS foram retidos
-                    e NÃO abatem o CMV de imediato por estarem com status <b>AGUARDANDO_EXTINCAO</b> do débito pelo fornecedor.
-                  </div>
-                )}
-              </div>
-
-              {/* BLOCO 3: COMPARATIVO DOS 4 REGIMES TRIBUTÁRIOS */}
-              <div
-                className="card"
-                style={{
-                  background: 'var(--panel)',
-                  border: '1px solid #10b981',
-                  borderRadius: 8,
-                  padding: 14,
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                  <div>
-                    <strong style={{ fontSize: 14 }}>📊 Comparativo Tributário dos 4 Regimes (Custo Aterrissado & Preço)</strong>
-                    <div style={{ fontSize: 11, color: 'var(--ink-2)', marginTop: 2 }}>
-                      Calculado com precisão numérica ADR003 HALF_EVEN e mark-up divisor considerando desembolsos e créditos efetivos.
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleEnviarCustoEfetivoParaPrecificacao}
-                    className="btn primary"
-                    style={{ background: '#059669', borderColor: '#059669', fontSize: 12, fontWeight: 700 }}
-                  >
-                    💰 Enviar Custo Efetivo para Precificação (Camada 3 CPC 16)
-                  </button>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-                  {(
-                    ['SIMPLES_TRADICIONAL', 'SIMPLES_HIBRIDO_2027', 'LUCRO_PRESUMIDO', 'LUCRO_REAL'] as const
-                  ).map((key) => {
-                    const c = resultadoOrquestracao.etapas.custosEPrecificacao.comparativoRegimes[key];
-                    if (!c) return null;
-                    return (
-                      <div
-                        key={key}
-                        style={{
-                          background: 'var(--bg)',
-                          border: `1px solid ${c.melhorCenario ? '#10b981' : 'var(--line)'}`,
-                          borderRadius: 6,
-                          padding: 12,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 6,
-                          position: 'relative',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontWeight: 700, fontSize: 13, color: c.melhorCenario ? '#6ee7b7' : 'var(--ink)' }}>
-                            {c.nomeExibicao}
-                          </span>
-                          {c.melhorCenario && (
-                            <span
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 800,
-                                background: '#064e3b',
-                                color: '#a7f3d0',
-                                border: '1px solid #059669',
-                                padding: '1px 6px',
-                                borderRadius: 3,
-                              }}
-                            >
-                              MAIS ECONÔMICO
-                            </span>
-                          )}
-                        </div>
-
-                        <div style={{ fontSize: 11, color: 'var(--ink-2)' }}>{c.justificativa}</div>
-
-                        <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ color: 'var(--ink-2)' }}>CMV Líquido:</span>
-                            <b>R$ {c.cmvLiquidoTotal.toFixed(2)}</b>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ color: 'var(--ink-2)' }}>Créditos Entrada:</span>
-                            <span style={{ color: '#10b981' }}>R$ {c.creditosAproveitados.toFixed(2)}</span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ color: 'var(--ink-2)' }}>Tributos Saída:</span>
-                            <span>R$ {c.tributosSaidaEstimados.toFixed(2)}</span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--line)', paddingTop: 4, marginTop: 2 }}>
-                            <span>Preço Sugerido:</span>
-                            <b style={{ color: c.melhorCenario ? '#6ee7b7' : '#3b82f6', fontSize: 13 }}>
-                              R$ {c.precoVendaSugerido.toFixed(2)}
-                            </b>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-2)' }}>
-                            <span>Carga Efetiva:</span>
-                            <span>{c.cargaTributariaEfetivaPct.toFixed(2)}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <AuditoriaBarraExportacao
+                section="dag_body"
+                resultadoOrquestracao={resultadoOrquestracao}
+                handleEnviarCustoEfetivoParaPrecificacao={handleEnviarCustoEfetivoParaPrecificacao}
+              />
             </div>
           </ProgressiveSection>
         )}
 
           {/* Resumo Analítico de Custo e Tributos da NF-e (Etapa 3 / CPC 16 R1) */}
-          {consolidadoCPC16 && (
-            <div
-              className="card"
-              style={{
-                marginTop: 14,
-                marginBottom: 14,
-                background: 'var(--accent-emerald-glow)',
-                border: '1px solid #bbf7d0',
-                padding: 14,
-                borderRadius: 8,
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                <div>
-                  <h4 style={{ margin: 0, color: 'var(--ok)', fontSize: '14px' }}>
-                    📊 Resumo Analítico de Custo de Entrada & Tributos (NBC TG 16 / CPC 16 R1)
-                  </h4>
-                  <p className="hint" style={{ margin: '3px 0 0', color: 'var(--ok)', fontSize: '12px' }}>
-                    Custo de aquisição apurado segundo o Item 11 do CPC 16 (R1) e créditos admitidos no regime <b>{regime}</b>.
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className="btn primary"
-                    style={{ background: '#15803d', borderColor: '#22c55e', color: '#ffffff', fontSize: '12.5px', padding: '6px 12px', fontWeight: 600 }}
-                    onClick={() => setModalCusto({ aberto: true, modo: 'resumido' })}
-                    title="Visualizar a tabela de composição de custo de aquisição individualizado por produto"
-                  >
-                    📊 Custo Individualizado por Produto
-                  </button>
-                  <button
-                    type="button"
-                    className="btn primary"
-                    style={{ background: '#166534', borderColor: 'var(--ok)', color: '#ffffff', fontSize: '12.5px', padding: '6px 12px' }}
-                    onClick={() => handleEnviarParaPrecificacao(extractedInvoice.itens)}
-                    title="Transferir todos os itens da nota fiscal diretamente para a aba de Precificação"
-                  >
-                    💰 Enviar Todos para Precificação
-                  </button>
-                  <button
-                    type="button"
-                    className="btn primary"
-                    style={{ background: '#1d4ed8', borderColor: 'var(--accent-blue)', color: '#ffffff', fontSize: '12.5px', padding: '6px 12px' }}
-                    onClick={() => handleEnviarParaErp(extractedInvoice.itens, false)}
-                    title="Transferir todos os itens da nota fiscal diretamente para a aba de Parametrização ERP"
-                  >
-                    ⚙️ Enviar Todos para Parametrização ERP
-                  </button>
-                  {selectedIndices.size > 0 && selectedIndices.size < extractedInvoice.itens.length && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn-secundario"
-                        style={{ fontSize: '12.5px', padding: '6px 12px' }}
-                        onClick={() => {
-                          const selecionados = extractedInvoice.itens.filter((it) => selectedIndices.has(it.index));
-                          handleEnviarParaPrecificacao(selecionados);
-                        }}
-                        title="Transferir apenas os itens selecionados para a Precificação"
-                      >
-                        💰 Enviar {selectedIndices.size} Itens Selecionados
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secundario"
-                        style={{ fontSize: '12.5px', padding: '6px 12px' }}
-                        onClick={() => {
-                          const selecionados = extractedInvoice.itens.filter((it) => selectedIndices.has(it.index));
-                          handleEnviarParaErp(selecionados, false);
-                        }}
-                        title="Transferir apenas os itens selecionados para a Parametrização ERP"
-                      >
-                        ⚙️ Enviar {selectedIndices.size} Selecionados p/ ERP
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-                  gap: 10,
-                  marginTop: 12,
-                  fontSize: '12.5px',
-                }}
-              >
-                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #dcfce7' }}>
-                  <span style={{ color: 'var(--ink-2)', fontSize: '11px', display: 'block' }}>Produtos (vProd):</span>
-                  <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>
-                    {consolidadoCPC16.valorTotalBruto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </strong>
-                </div>
-
-                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #dcfce7' }}>
-                  <span style={{ color: 'var(--ink-2)', fontSize: '11px', display: 'block' }}>Frete NF-e + Despesas:</span>
-                  <strong className="tabular-nums" style={{ fontSize: '13px', color: 'var(--ink)' }}>
-                    + {consolidadoCPC16.freteSeguroTotais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </strong>
-                  {notaAuditadaSessao && notaAuditadaSessao.totaisCpc16.freteCteFobTotal > 0 && (
-                    <span className="mono tabular-nums" style={{ display: 'block', fontSize: '10.5px', color: 'var(--accent-blue)', marginTop: 2 }}>
-                      + CT-e FOB: {notaAuditadaSessao.totaisCpc16.freteCteFobTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </span>
-                  )}
-                </div>
-
-                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #fee2e2' }}>
-                  <span style={{ color: 'var(--bad)', fontSize: '11px', display: 'block' }}>Tributos s/ Crédito (IPI/ST):</span>
-                  <strong style={{ fontSize: '13px', color: 'var(--bad)' }}>
-                    + {consolidadoCPC16.tributosNaoRecuperaveisTotais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </strong>
-                </div>
-
-                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #dbeafe' }}>
-                  <span style={{ color: 'var(--accent-blue)', fontSize: '11px', display: 'block' }}>Impostos a Recuperar:</span>
-                  <strong style={{ fontSize: '13px', color: 'var(--accent-blue)' }}>
-                    - {consolidadoCPC16.impostosRecuperaveisTotais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </strong>
-                </div>
-
-                <div style={{ background: 'var(--accent-emerald-glow)', padding: '8px 12px', borderRadius: 6, border: '1px solid #86efac' }}>
-                  <span style={{ color: 'var(--ok)', fontSize: '11px', display: 'block', fontWeight: 600 }}>Custo Real Líquido (CPC 16):</span>
-                  <strong className="tabular-nums" style={{ fontSize: '14px', color: 'var(--ok)' }}>
-                    {(notaAuditadaSessao?.totaisCpc16.cmvLiquidoTotal ?? consolidadoCPC16.custoTotalRealConsolidado).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </strong>
-                </div>
-              </div>
-
-              {/* Painel Inline de Vínculo / Rateio CT-e FOB na Etapa 2 */}
-              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <div style={{ fontSize: '12px', color: 'var(--ink-2)' }}>
-                  <strong>CT-e FOB (Modelo 57):</strong>{' '}
-                  {cteFobData ? (
-                    notaAuditadaSessao?.rateioCte?.aplicado ? (
-                      <span className="tabular-nums" style={{ color: 'var(--ok)', fontWeight: 600 }}>
-                        ✓ CT-e nº {cteFobData.numero || 's/n'} aplicado ({formatarBrl(notaAuditadaSessao.rateioCte.somaRateadaFrete)} rateado · ICMS CT-e {formatarBrl(notaAuditadaSessao.rateioCte.somaRateadaIcms)})
-                      </span>
-                    ) : (
-                      <span style={{ color: 'var(--warn)', fontWeight: 600 }}>
-                        ⚠️ {notaAuditadaSessao?.rateioCte?.motivoBloqueio || 'CT-e bloqueado para rateio FOB'}
-                      </span>
-                    )
-                  ) : (
-                    <span>Nenhum CT-e FOB vinculado (anexe XML mod. 57 para incorporar frete FOB e crédito ICMS/PIS/COFINS do transporte).</span>
-                  )}
-                </div>
-                <label className="mini st-touch-target" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', minHeight: '36px' }}>
-                  📎 {cteFobData ? 'Trocar CT-e FOB (.xml)' : '+ Anexar CT-e FOB (.xml)'}
-                  <input
-                    type="file"
-                    accept=".xml"
-                    style={{ display: 'none' }}
-                    onChange={(e) => void handleUploadCteFob(e.target.files?.[0] || null)}
-                  />
-                </label>
-              </div>
-            </div>
-          )}
+          <AuditoriaBarraExportacao
+            section="cpc16_card"
+            extractedInvoice={extractedInvoice}
+            consolidadoCPC16={consolidadoCPC16}
+            regime={regime}
+            setModalCusto={setModalCusto}
+            handleEnviarParaPrecificacao={handleEnviarParaPrecificacao}
+            handleEnviarParaErp={handleEnviarParaErp}
+            selectedIndices={selectedIndices}
+            notaAuditadaSessao={notaAuditadaSessao}
+            cteFobData={cteFobData}
+            handleUploadCteFob={handleUploadCteFob}
+          />
 
           {/* Barra de Contexto da Entrada no Estado do Paraná (RICMS/PR) */}
-          <div
-            className="card"
-            style={{
-              marginTop: 14,
-              marginBottom: 14,
-              background: 'var(--bg-card-subtle)',
-              border: '1.5px solid #cbd5e1',
-              padding: 14,
-              borderRadius: 8,
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '16px' }}>⚖️</span>
-                <strong style={{ fontSize: '13.5px', color: 'var(--ink)' }}>
-                  Parâmetros de Entrada no Paraná (RICMS/PR · Decreto nº 7.871/2017)
-                </strong>
-              </div>
-              <span className="badge blue mono" style={{ fontSize: '11px' }}>
-                UF Origem: {extractedInvoice.emitente?.uf || 'ND'} ➔ Destino: {extractedInvoice.destinatario?.uf || 'PR'}
-              </span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 12, alignItems: 'flex-end' }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12px', color: 'var(--ink)' }}>
-                <strong>Regime do Destinatário (CRT):</strong>
-                <select
-                  value={crtDestinatario}
-                  onChange={(e) => setCrtDestinatario(e.target.value as any)}
-                  style={{
-                    padding: '6px 10px',
-                    borderRadius: 6,
-                    border: '1px solid #cbd5e1',
-                    fontSize: '12.5px',
-                    background: 'var(--bg-card)',
-                  }}
-                >
-                  <option value="3">CRT 3 - Regime Normal (Lucro Real / Presumido)</option>
-                  <option value="1">CRT 1 - Simples Nacional (ME / EPP)</option>
-                  <option value="2">CRT 2 - Simples Nacional (Excesso Sublimite)</option>
-                  <option value="4">CRT 4 - MEI (Microempreendedor Individual)</option>
-                </select>
-              </label>
-
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '12px', color: 'var(--ink)' }}>
-                <strong>Destinação Predominante:</strong>
-                <select
-                  value={destinacaoPadrao}
-                  onChange={(e) => setDestinacaoPadrao(e.target.value as any)}
-                  style={{
-                    padding: '6px 10px',
-                    borderRadius: 6,
-                    border: '1px solid #cbd5e1',
-                    fontSize: '12.5px',
-                    background: 'var(--bg-card)',
-                  }}
-                >
-                  <option value="comercializacao">Revenda / Comercialização</option>
-                  <option value="industrializacao">Industrialização / Insumo</option>
-                  <option value="uso_consumo">Uso e Consumo (DIFAL Base Dupla)</option>
-                  <option value="ativo_imobilizado">Ativo Imobilizado (DIFAL Base Dupla / CIAP)</option>
-                </select>
-              </label>
-
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  fontSize: '11.5px',
-                  color: 'var(--ink-2)',
-                  cursor: 'pointer',
-                  padding: '6px 8px',
-                  borderRadius: 6,
-                  background: 'var(--bg-card-subtle)',
-                  border: '1px solid #e2e8f0',
-                  minHeight: '44px',
-                }}
-                title="Conforme Consulta Tributária SEFA/PR nº 48/2026, opta-se por incluir ou não os novos tributos (IBS/CBS/IS) na Base de Cálculo do ICMS durante a transição 2026."
-              >
-                <input
-                  type="checkbox"
-                  checked={incluirIbsCbsBcIcms}
-                  onChange={(e) => setIncluirIbsCbsBcIcms(e.target.checked)}
-                />
-                <span>
-                  <strong>Consulta SEFA/PR nº 48/2026:</strong> Incluir IBS/CBS/IS na BC do ICMS
-                </span>
-              </label>
-
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  fontSize: '11.5px',
-                  color: 'var(--ink-2)',
-                  cursor: 'pointer',
-                  padding: '6px 8px',
-                  borderRadius: 6,
-                  background: 'var(--bg-card-subtle)',
-                  border: '1px solid #e2e8f0',
-                  minHeight: '44px',
-                }}
-                title="Contribuinte com Inscrição Estadual ativa no PR recolhe via GR-PR 1015 (dia 12) ou DeSTDA; não inscrito recolhe via GNRE antes da saída."
-              >
-                <input
-                  type="checkbox"
-                  checked={contribuinteInscritoPR}
-                  onChange={(e) => setContribuinteInscritoPR(e.target.checked)}
-                />
-                <span>
-                  <strong>Contribuinte Inscrito no CAD/ICMS-PR:</strong> {contribuinteInscritoPR ? 'Sim (GR-PR 1015 / DeSTDA)' : 'Não Inscrito (GNRE antecipada)'}
-                </span>
-              </label>
-            </div>
-          </div>
+          <AuditoriaUploadPanel
+            section="contexto_pr"
+            extractedInvoice={extractedInvoice}
+            crtDestinatario={crtDestinatario}
+            setCrtDestinatario={setCrtDestinatario}
+            destinacaoPadrao={destinacaoPadrao}
+            setDestinacaoPadrao={setDestinacaoPadrao}
+            incluirIbsCbsBcIcms={incluirIbsCbsBcIcms}
+            setIncluirIbsCbsBcIcms={setIncluirIbsCbsBcIcms}
+            contribuinteInscritoPR={contribuinteInscritoPR}
+            setContribuinteInscritoPR={setContribuinteInscritoPR}
+          />
 
           {/* Card Executivo: Apuração de DIFAL, FECOP & Antecipação na Entrada (RICMS/PR) */}
-          {apuracaoDifalNota && (
-            <div
-              className="card"
-              style={{
-                marginBottom: 14,
-                padding: 14,
-                borderRadius: 8,
-                background: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? 'var(--accent-amber-subtle)' : 'var(--accent-emerald-glow)',
-                border: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota
-                  ? '2px solid #ea580c'
-                  : '1px solid #86efac',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: '18px' }}>
-                    {apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '⚠️' : '✅'}
-                  </span>
-                  <div>
-                    <h4
-                      style={{
-                        margin: 0,
-                        fontSize: '14px',
-                        color: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#9a3412' : '#166534',
-                      }}
-                    >
-                      {apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota
-                        ? 'APURAÇÃO DE DIFAL, FECOP & ANTECIPAÇÃO TRIBUTÁRIA (RICMS/PR)'
-                        : 'DISPENSA DE DIFAL / ANTECIPAÇÃO NA ENTRADA (PR)'}
-                    </h4>
-                    <p
-                      className="hint"
-                      style={{
-                        margin: '2px 0 0',
-                        fontSize: '11.5px',
-                        color: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#c2410c' : '#15803d',
-                      }}
-                    >
-                      {apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota
-                        ? 'Foram identificadas obrigações estaduais e impacto no fluxo de caixa na entrada das mercadorias no Paraná.'
-                        : 'Nenhuma mercadoria desta nota exige recolhimento de DIFAL ou Antecipação tributária estadual na entrada.'}
-                    </p>
-                  </div>
-                </div>
-
-                {apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota && (
-                  <span
-                    className="badge mono"
-                    style={{ background: '#ea580c', color: '#ffffff', fontWeight: 700, fontSize: '12px' }}
-                  >
-                    Guia: {(apuracaoDifalNota.resumoDifalNota.guiasNecessarias || []).join(', ') || 'GR-PR'}
-                  </span>
-                )}
-              </div>
-
-              {/* Grid com 4 Métricas Executivas */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                  gap: 10,
-                  marginTop: 12,
-                }}
-              >
-                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
-                  <span style={{ color: 'var(--warn)', fontSize: '11px', display: 'block', fontWeight: 600 }}>
-                    1. DIFAL Base Dupla (Consumo/Ativo):
-                  </span>
-                  <strong style={{ fontSize: '14px', color: 'var(--warn)' }}>
-                    {((apuracaoDifalNota.resumoDifalNota.totalDebitoDifal || 0)).toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    })}
-                  </strong>
-                </div>
-
-                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
-                  <span style={{ color: 'var(--warn)', fontSize: '11px', display: 'block', fontWeight: 600 }}>
-                    2. FECOP 2% (Art. 14-A da Lei nº 11.580/1996 e Anexo XII do RICMS/PR):
-                  </span>
-                  <strong style={{ fontSize: '14px', color: 'var(--warn)' }}>
-                    {((apuracaoDifalNota.resumoDifalNota.totalDebitoFecop || 0)).toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    })}
-                  </strong>
-                </div>
-
-                <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #fed7aa' }}>
-                  <span style={{ color: 'var(--warn)', fontSize: '11px', display: 'block', fontWeight: 600 }}>
-                    3. Antecipação Tributária (Simples):
-                  </span>
-                  <strong style={{ fontSize: '14px', color: 'var(--warn)' }}>
-                    {((apuracaoDifalNota.resumoDifalNota.totalAntecipacaoArt16 || 0)).toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    })}
-                  </strong>
-                </div>
-
-                <div
-                  style={{
-                    background: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? 'var(--accent-amber-subtle)' : 'var(--accent-emerald-glow)',
-                    padding: '8px 12px',
-                    borderRadius: 6,
-                    border: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '1.5px solid #f97316' : '1px solid #86efac',
-                  }}
-                >
-                  <span
-                    style={{
-                      color: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#7c2d12' : '#14532d',
-                      fontSize: '11px',
-                      display: 'block',
-                      fontWeight: 700,
-                    }}
-                  >
-                    4. Total Débito Estadual / Caixa:
-                  </span>
-                  <strong
-                    style={{
-                      fontSize: '15px',
-                      color: apuracaoDifalNota.resumoDifalNota.exigeRecolhimentoNaNota ? '#c2410c' : '#166534',
-                    }}
-                  >
-                    {((apuracaoDifalNota.resumoDifalNota.totalGeralRecolher ?? apuracaoDifalNota.resumoDifalNota.totalDebitoDifal ?? 0)).toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    })}
-                  </strong>
-                </div>
-              </div>
-
-              {/* Obrigações Acessórias, Prazo Legal & Guia / EFD (Marco 2) */}
-              {demonstrativoDifalPR && (
-                <div
-                  style={{
-                    marginTop: 10,
-                    padding: '10px 12px',
-                    borderRadius: 6,
-                    background: 'var(--bg-card)',
-                    border: demonstrativoDifalPR.exigeRecolhimento ? '1px solid #fed7aa' : '1px solid #bbf7d0',
-                    fontSize: '11.5px',
-                    color: demonstrativoDifalPR.exigeRecolhimento ? '#7c2d12' : '#166534',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 14,
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center' }}>
-                    <div>
-                      <strong>Prazo Legal / Vencimento:</strong>{' '}
-                      <span className="mono" style={{ fontWeight: 700 }}>
-                        {demonstrativoDifalPR.prazoRecolhimento.dataVencimentoFormatada}
-                      </span>{' '}
-                      ({demonstrativoDifalPR.prazoRecolhimento.regraPrazo})
-                    </div>
-                    <div>
-                      <strong>Guia / Código:</strong>{' '}
-                      <span className="badge blue mono">{demonstrativoDifalPR.prazoRecolhimento.guia}</span>
-                    </div>
-                    {demonstrativoDifalPR.prazoRecolhimento.codigosEfd.length > 0 && (
-                      <div>
-                        <strong>Códigos EFD:</strong>{' '}
-                        <span className="mono">{demonstrativoDifalPR.prazoRecolhimento.codigosEfd.join(' / ')}</span>
-                      </div>
-                    )}
-                    <div>
-                      <strong>Itens Tributados DIFAL:</strong>{' '}
-                      <span className="mono tabular-nums">
-                        {demonstrativoDifalPR.somatorio.qtdItensTributados} / {demonstrativoDifalPR.somatorio.qtdItensAnalisados}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setExpandirDemonstrativoDifal((v) => !v)}
-                    aria-expanded={expandirDemonstrativoDifal}
-                    className="mini min-h-[44px]"
-                    style={{ minHeight: '44px', padding: '6px 12px', fontWeight: 600 }}
-                  >
-                    {expandirDemonstrativoDifal ? '▲ Ocultar Demonstrativo Produto a Produto' : '▼ Exibir Demonstrativo Produto a Produto'}
-                  </button>
-                </div>
-              )}
-
-              {/* Somatório Consolidado de Múltiplas Notas Auditadas na Sessão */}
-              {notasDifalSessao.length > 1 && (
-                <div
-                  style={{
-                    marginTop: 10,
-                    padding: '10px 12px',
-                    borderRadius: 6,
-                    background: 'var(--accent-blue-subtle)',
-                    border: '1px solid #bfdbfe',
-                    fontSize: '12px',
-                    color: 'var(--accent-blue)',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 16,
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div>
-                    <strong>📚 Somatório Consolidado da Sessão ({somatorioConsolidadoNotas.qtdNotas} notas):</strong>
-                  </div>
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }} className="tabular-nums">
-                    <span>Base Dupla Total: <b>{formatarBrl(somatorioConsolidadoNotas.totalBaseDifal)}</b></span>
-                    <span>DIFAL Principal: <b>{formatarBrl(somatorioConsolidadoNotas.totalDifalPrincipal)}</b></span>
-                    <span>FECOP: <b>{formatarBrl(somatorioConsolidadoNotas.totalFecop)}</b></span>
-                    <span>DIFAL Geral: <b>{formatarBrl(somatorioConsolidadoNotas.totalDifalGeral)}</b></span>
-                    <span>Itens Tributados: <b>{somatorioConsolidadoNotas.qtdItensTributados}</b></span>
-                  </div>
-                </div>
-              )}
-
-              {/* Tabela Expansível: Demonstrativo Produto a Produto DIFAL PR (Marco 2) */}
-              {demonstrativoDifalPR && expandirDemonstrativoDifal && (
-                <div style={{ marginTop: 12, overflowX: 'auto', background: 'var(--bg-card)', borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                  <table style={{ width: '100%', fontSize: '11.5px', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ background: 'var(--bg-card-subtle)', borderBottom: '1px solid #cbd5e1', color: 'var(--ink)', textAlign: 'left' }}>
-                        <th style={{ padding: '8px' }}>Cód.</th>
-                        <th style={{ padding: '8px' }}>Produto</th>
-                        <th style={{ padding: '8px' }}>NCM</th>
-                        <th style={{ padding: '8px' }}>CFOP</th>
-                        <th style={{ padding: '8px' }}>Destinação</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>Vlr. Oper.</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>Alíq. Inter</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>Intra PR / FECOP</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>Base Dupla</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>DIFAL Princ.</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>FECOP</th>
-                        <th style={{ padding: '8px', textAlign: 'right' }}>Total DIFAL</th>
-                        <th style={{ padding: '8px' }}>Status</th>
-                        <th style={{ padding: '8px' }}>Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {demonstrativoDifalPR.itens.map((it) => (
-                        <tr key={`${it.nItem}-${it.cProd}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td className="mono" style={{ padding: '6px 8px' }}>{it.cProd}</td>
-                          <td style={{ padding: '6px 8px', maxWidth: 200 }}>{it.xProd}</td>
-                          <td className="mono" style={{ padding: '6px 8px' }}>{it.NCM}</td>
-                          <td className="mono" style={{ padding: '6px 8px' }}>{it.CFOP || '—'}</td>
-                          <td style={{ padding: '6px 8px' }}>{it.destinacao}</td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">{formatarBrl(it.vOperacao)}</td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">{it.aliqInter.toFixed(1)}%</td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">
-                            {it.aliqIntraPR.toFixed(1)}% / {it.fecop.toFixed(1)}%
-                          </td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">{formatarBrl(it.baseDupla)}</td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">{formatarBrl(it.valorDifalPrincipal)}</td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right' }} className="tabular-nums">{formatarBrl(it.valorFecop)}</td>
-                          <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700, color: it.exigeRecolhimento ? '#c2410c' : '#475569' }} className="tabular-nums">
-                            {formatarBrl(it.valorDifalTotal)}
-                          </td>
-                          <td style={{ padding: '6px 8px' }}>
-                            <span className={`badge ${it.exigeRecolhimento ? 'amber' : 'green'}`} style={{ fontSize: '10px' }}>
-                              {it.exigeRecolhimento ? 'Tributado' : 'Dispensado'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '6px 8px' }}>
-                            <button
-                              type="button"
-                              onClick={() => setItemDifalSelecionado(it)}
-                              className="mini min-h-[44px]"
-                              style={{ minHeight: '44px', padding: '4px 10px', fontSize: '11px' }}
-                            >
-                              Inspecionar
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr style={{ background: 'var(--accent-amber-subtle)', borderTop: '2px solid #fdba74', fontWeight: 700, color: 'var(--warn)' }}>
-                        <td colSpan={8} style={{ padding: '8px' }}>
-                          SOMATÓRIO CONSOLIDADO ({demonstrativoDifalPR.somatorio.qtdItensTributados} de {demonstrativoDifalPR.somatorio.qtdItensAnalisados} itens tributados)
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right' }} className="tabular-nums">
-                          {formatarBrl(demonstrativoDifalPR.somatorio.totalBaseDifal)}
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right' }} className="tabular-nums">
-                          {formatarBrl(demonstrativoDifalPR.somatorio.totalDifalPrincipal)}
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right' }} className="tabular-nums">
-                          {formatarBrl(demonstrativoDifalPR.somatorio.totalFecop)}
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right' }} className="tabular-nums">
-                          {formatarBrl(demonstrativoDifalPR.somatorio.totalDifalGeral)}
-                        </td>
-                        <td colSpan={2} style={{ padding: '8px' }}>
-                          {demonstrativoDifalPR.prazoRecolhimento.guia}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
-
-              {/* Alertas Periciais Normativos */}
-              {apuracaoDifalNota.resumoDifalNota.alertasConsolidados && apuracaoDifalNota.resumoDifalNota.alertasConsolidados.length > 0 && (
-                <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {apuracaoDifalNota.resumoDifalNota.alertasConsolidados.map((alerta: string, idx: number) => (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: '6px 10px',
-                        borderRadius: 6,
-                        fontSize: '11.5px',
-                        background: alerta.includes('revogação') || alerta.includes('indevido') ? 'var(--accent-crimson-subtle)' : 'var(--accent-amber-subtle)',
-                        border: alerta.includes('revogação') || alerta.includes('indevido') ? '1px solid #fca5a5' : '1px solid #fde68a',
-                        color: alerta.includes('revogação') || alerta.includes('indevido') ? '#991b1b' : '#92400e',
-                      }}
-                    >
-                      {alerta}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <AuditoriaDifalResumoCard
+            apuracaoDifalNota={apuracaoDifalNota}
+            demonstrativoDifalPR={demonstrativoDifalPR}
+            expandirDemonstrativoDifal={expandirDemonstrativoDifal}
+            setExpandirDemonstrativoDifal={setExpandirDemonstrativoDifal}
+            notasDifalSessao={notasDifalSessao}
+            somatorioConsolidadoNotas={somatorioConsolidadoNotas}
+            itemDifalSelecionado={itemDifalSelecionado}
+            setItemDifalSelecionado={setItemDifalSelecionado}
+          />
 
           {/* Tabela Interativa de Itens */}
           <TabelaItensExtracao
@@ -2179,419 +1182,41 @@ export default function AuditoriaEntrada() {
             onReverterSaneamentoNcm={handleReverterSaneamentoNcm}
           />
 
-          {/* Painel Dual Engine Selector (Seletor de Motor Duplo) */}
-          <div className="card" style={{ marginTop: 20, marginBottom: 20, background: 'var(--bg-card)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '14px', color: 'var(--ink)' }}>
-                  Motor de Inteligência Fiscal para Auditoria
-                </h3>
-                <p className="hint" style={{ margin: '4px 0 0', fontSize: '12.5px' }}>
-                  Escolha o ambiente de processamento dos {selectedIndices.size} itens selecionados:
-                </p>
-              </div>
-              <span className="badge blue mono" style={{ fontSize: '11px' }}>
-                {motor === 'ollama' ? 'Soberania Local Ativa' : 'Modo Nuvem Selecionado'}
-              </span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
-              {/* Card 1: Ollama Local (GPU RX 580) */}
-              <label
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  padding: 16,
-                  borderRadius: 12,
-                  cursor: isAuditing ? 'not-allowed' : 'pointer',
-                  border: motor === 'ollama' ? '2px solid var(--brand)' : '1px solid var(--line)',
-                  background: motor === 'ollama' ? 'var(--accent-blue-subtle)' : '#ffffff',
-                  boxShadow: motor === 'ollama' ? '0 2px 8px rgba(11,61,145,0.08)' : 'none',
-                  transition: 'all 0.15s ease-in-out',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input
-                      type="radio"
-                      name="motor_auditoria"
-                      value="ollama"
-                      checked={motor === 'ollama'}
-                      onChange={() => setMotor('ollama')}
-                      disabled={isAuditing}
-                      style={{ width: 18, height: 18, accentColor: 'var(--brand)', cursor: 'pointer' }}
-                    />
-                    <strong style={{ fontSize: '14px', color: 'var(--ink)' }}>
-                      IA Local (GPU AMD RX 580)
-                    </strong>
-                  </div>
-                  <span className="badge alta mono" style={{ fontSize: '10.5px' }}>100% Privado</span>
-                </div>
-
-                <div style={{ fontSize: '12px', color: 'var(--ink-2)', lineHeight: 1.45, paddingLeft: 28 }}>
-                  <div>• <strong>Processamento Particionado:</strong> Item a item (ou micro-lotes de 1-2 itens).</div>
-                  <div>• <strong>Zero Timeout:</strong> Limite de 35s por item, eliminando estouros de 180s na RX 580.</div>
-                  <div>• <strong>Soberania Tributária:</strong> Zero tráfego externo; dados fiscais confidenciais não saem do servidor.</div>
-                </div>
-
-                {motor === 'ollama' && (
-                  <div style={{ marginTop: 12, paddingLeft: 28 }}>
-                    <label style={{ fontSize: '11.5px', color: 'var(--ink-2)', display: 'block', marginBottom: 4 }}>
-                      Modelo Local:
-                    </label>
-                    <select
-                      value={modeloOllama}
-                      onChange={(e) => setModeloOllama(e.target.value)}
-                      disabled={isAuditing}
-                      style={{ fontSize: '12px', padding: '6px 8px', borderRadius: 6, width: '100%', maxWidth: 280 }}
-                    >
-                      <option value="qwen2.5:7b">qwen2.5:7b (Perícia Tributária Profunda & Arbitragem NCM)</option>
-                      <option value="qwen3.5:4b">qwen3.5:4b (Triagem Rápida & Alto Rendimento 16k)</option>
-                      <option value="qwen2.5:7b-16k">qwen2.5:7b-16k (Contexto Estendido 16k)</option>
-                    </select>
-                  </div>
-                )}
-
-                <div style={{ marginTop: 12, paddingLeft: 28, fontSize: '11px', color: 'var(--ok)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--ok)', display: 'inline-block' }} />
-                  <span>Endpoint local 127.0.0.1:11434 pronto · Vulkan/DirectML ativo</span>
-                </div>
-              </label>
-
-              {/* Card 2: Google Gemini API (Nuvem) */}
-              <label
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  padding: 16,
-                  borderRadius: 12,
-                  cursor: isAuditing ? 'not-allowed' : 'pointer',
-                  border: motor === 'gemini' ? '2px solid var(--brand)' : '1px solid var(--line)',
-                  background: motor === 'gemini' ? 'var(--accent-blue-subtle)' : '#ffffff',
-                  boxShadow: motor === 'gemini' ? '0 2px 8px rgba(11,61,145,0.08)' : 'none',
-                  transition: 'all 0.15s ease-in-out',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <input
-                      type="radio"
-                      name="motor_auditoria"
-                      value="gemini"
-                      checked={motor === 'gemini'}
-                      onChange={() => setMotor('gemini')}
-                      disabled={isAuditing}
-                      style={{ width: 18, height: 18, accentColor: 'var(--brand)', cursor: 'pointer' }}
-                    />
-                    <strong style={{ fontSize: '14px', color: 'var(--ink)' }}>
-                      Google Gemini API (Nuvem)
-                    </strong>
-                  </div>
-                  <span className="badge blue mono" style={{ fontSize: '10.5px' }}>Alta Velocidade</span>
-                </div>
-
-                <div style={{ fontSize: '12px', color: 'var(--ink-2)', lineHeight: 1.45, paddingLeft: 28 }}>
-                  <div>• <strong>Modelo Cloud:</strong> gemini-3.8-flash via SDK oficial (@google/genai).</div>
-                  <div>• <strong>Execução Paralela:</strong> Auditoria em nuvem com resposta estruturada em JSON Schema.</div>
-                  <div>• <strong>Ideal para Lotes:</strong> Elevada vazão para notas fiscais com dezenas de itens.</div>
-                </div>
-
-                <div style={{ marginTop: 'auto', paddingTop: 12, paddingLeft: 28 }}>
-                  <div style={{ fontSize: '11px', color: 'var(--ink-2)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0e5cc4', display: 'inline-block' }} />
-                    <span>Utiliza chave de API configurada no ambiente (GEMINI_API_KEY)</span>
-                  </div>
-                </div>
-              </label>
-            </div>
-
-            {/* Ação de Disparo da Auditoria */}
-            <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={handleAuditSubmit}
-                disabled={isAuditing || selectedIndices.size === 0}
-                className="btn primary"
-                style={{ fontWeight: 650, padding: '10px 20px' }}
-              >
-                {isAuditing
-                  ? `Auditando ${selectedIndices.size} item(ns) via ${motor === 'ollama' ? 'IA Local (RX 580)' : 'Google Gemini'}...`
-                  : `Auditar ${selectedIndices.size} Item(ns) Selecionado(s)`}
-              </button>
-
-              {selectedIndices.size === 0 && (
-                <span className="small" style={{ color: 'var(--bad)', fontWeight: 600 }}>
-                  Selecione ao menos 1 item na tabela acima para iniciar a auditoria.
-                </span>
-              )}
-            </div>
-          </div>
-
-          {isAuditing && (
-            <div className="note info" style={{ marginTop: 20 }}>
-              <div className="t">
-                Executando Auditoria Pericial via {motor === 'ollama' ? 'IA Local Ollama (GPU RX 580)' : 'Google Gemini Cloud API'}...
-              </div>
-              <div className="x" style={{ marginTop: 6 }}>
-                Auditando <strong>{selectedIndices.size}</strong> item(ns) de {extractedInvoice.itens.length} · Tempo decorrido: <strong>{auditElapsedTime}s</strong>
-              </div>
-              <div className="x" style={{ marginTop: 4, fontSize: '0.88rem', opacity: 0.85 }}>
-                {motor === 'ollama'
-                  ? 'Os itens selecionados estão sendo particionados item a item com timeout de 35s e num_ctx: 4096 para eliminar sobrecargas de VRAM e timeouts de 180s na GPU RX 580.'
-                  : 'Os itens selecionados estão sendo processados via Google Gemini API (gemini-3.8-flash) com schema estruturado e saneamento determinístico Siscomex.'}
-              </div>
-            </div>
-          )}
-
-          {auditError && (
-            <div className="note error" style={{ marginTop: 20 }}>
-              <div className="t">Erro na auditoria pericial</div>
-              <div className="x">{auditError}</div>
-              {motor === 'ollama' && (
-                <div style={{ marginTop: 10 }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMotor('gemini');
-                      setAuditError(null);
-                    }}
-                    className="chip"
-                    style={{ cursor: 'pointer' }}
-                  >
-                    Alternar para Google Gemini Cloud API
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+          <AuditoriaBarraExportacao
+            section="motor_ia"
+            extractedInvoice={extractedInvoice}
+            selectedIndices={selectedIndices}
+            motor={motor}
+            setMotor={setMotor}
+            modeloOllama={modeloOllama}
+            setModeloOllama={setModeloOllama}
+            isAuditing={isAuditing}
+            auditElapsedTime={auditElapsedTime}
+            auditError={auditError}
+            setAuditError={setAuditError}
+            handleAuditSubmit={handleAuditSubmit}
+          />
         </div>
       )}
 
       {/* =========================================================================
        * ETAPA FINAL: Apresentação dos Resultados Auditados e ERP
        * ========================================================================= */}
-      {auditResult && (
-        <div style={{ marginTop: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <h3 style={{ margin: 0 }}>Resultados da Auditoria</h3>
-              {auditResult.statusGlobal === 'Inconsistente' ? (
-                <span className="badge error">{auditResult.statusGlobal}</span>
-              ) : auditResult.statusGlobal === 'Atenção' ? (
-                <span className="badge media">{auditResult.statusGlobal}</span>
-              ) : (
-                <span className="badge blue">{auditResult.statusGlobal || 'Regular'}</span>
-              )}
-              <span className="badge grey mono">{auditResult.motor}</span>
-            </div>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={handleReturnToSelection} className="mini" title="Modificar seleção de itens ou motor">
-                ← Voltar para Seleção de Itens
-              </button>
-              <button type="button" onClick={handleResetToUpload} className="mini">
-                ↺ Nova Auditoria
-              </button>
-            </div>
-          </div>
-
-          <div className="card" style={{ marginTop: 14, marginBottom: 16, background: 'var(--bg-card-subtle)', padding: 16, borderRadius: 8 }}>
-            <h4>Parecer Técnico do Documento</h4>
-            <p className="small">{auditResult.parecerTecnicoXml || 'Nenhum parecer técnico disponível.'}</p>
-          </div>
-
-          <div className="card" style={{ marginBottom: 16, background: 'var(--bg-card-subtle)', padding: 16, borderRadius: 8 }}>
-            <h4>Parecer Breve de Conformidade e Créditos</h4>
-            <p className="small">{auditResult.parecerConformidade || 'Nenhum parecer de conformidade disponível.'}</p>
-          </div>
-
-          <div style={{ marginTop: 16, display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => handleDownloadReport('html')}
-              disabled={pdfLoading}
-              className="chip"
-              style={{ padding: '8px 16px', background: 'var(--brand)', color: 'white' }}
-            >
-              {pdfLoading ? 'Gerando...' : 'Baixar Relatório HTML'}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDownloadReport('txt')}
-              disabled={pdfLoading}
-              className="chip"
-              style={{ padding: '8px 16px', background: '#34495e', color: 'white' }}
-            >
-              {pdfLoading ? 'Gerando...' : 'Baixar Relatório TXT'}
-            </button>
-            {pdfError && <div className="note error" style={{ marginTop: 8 }}>{pdfError}</div>}
-          </div>
-
-          <ParametrizacaoERP data={auditResult} />
-        </div>
-      )}
-
-      {/* Modal de Custo Individualizado por Produto (CPC 16 / NBC TG 16) */}
-      {modalCusto.aberto && consolidadoCPC16 && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(15, 23, 42, 0.75)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: 10,
-              width: '100%',
-              maxWidth: 1100,
-              maxHeight: '90vh',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Topo do Modal */}
-            <div
-              style={{
-                padding: '16px 20px',
-                borderBottom: '1.5px solid #e2e8f0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                backgroundColor: 'var(--bg-card-subtle)',
-              }}
-            >
-              <div>
-                <h3 style={{ margin: 0, color: '#3A4A1E', fontSize: '1.15rem' }}>
-                  📊 Custo de Aquisição Individualizado por Produto — CPC 16 (R1)
-                </h3>
-                <span style={{ fontSize: '0.82rem', color: 'var(--ink-2)' }}>
-                  Regime tributário: <b>{regime}</b> · Finalidade: <b>{finalidade}</b>
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalCusto({ aberto: false, modo: 'resumido' })}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  fontSize: '1.4rem',
-                  cursor: 'pointer',
-                  color: 'var(--ink-2)',
-                  lineHeight: 1,
-                  padding: '4px 8px',
-                }}
-                title="Fechar modal"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Barra de Ações e Alternância de Modo */}
-            <div
-              style={{
-                padding: '10px 20px',
-                backgroundColor: 'var(--bg-card)',
-                borderBottom: '1px solid #f1f5f9',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 10,
-              }}
-            >
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button
-                  type="button"
-                  className="mini"
-                  onClick={() => setModalCusto((prev) => ({ ...prev, modo: 'resumido' }))}
-                  style={{
-                    backgroundColor: modalCusto.modo === 'resumido' ? '#3A4A1E' : 'var(--bg-card-subtle)',
-                    color: modalCusto.modo === 'resumido' ? '#ffffff' : '#334155',
-                    fontWeight: 600,
-                    padding: '6px 12px',
-                    borderRadius: 6,
-                    border: '1px solid #cbd5e1',
-                    cursor: 'pointer',
-                  }}
-                >
-                  📋 Visão Resumida (Somente Tabela de Custos)
-                </button>
-                <button
-                  type="button"
-                  className="mini"
-                  onClick={() => setModalCusto((prev) => ({ ...prev, modo: 'detalhado' }))}
-                  style={{
-                    backgroundColor: modalCusto.modo === 'detalhado' ? '#3A4A1E' : 'var(--bg-card-subtle)',
-                    color: modalCusto.modo === 'detalhado' ? '#ffffff' : '#334155',
-                    fontWeight: 600,
-                    padding: '6px 12px',
-                    borderRadius: 6,
-                    border: '1px solid #cbd5e1',
-                    cursor: 'pointer',
-                  }}
-                >
-                  ⚖️ Visão Detalhada (com Citação Legal)
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  type="button"
-                  className="mini"
-                  onClick={() => {
-                    const html = gerarRelatorioCustosHtml(consolidadoCPC16, modalCusto.modo);
-                    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `relatorio_custo_cpc16_${modalCusto.modo}.html`;
-                    a.click();
-                    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-                  }}
-                  style={{ backgroundColor: 'var(--accent-blue)', color: '#fff', fontWeight: 600, padding: '6px 12px' }}
-                >
-                  📥 Baixar HTML
-                </button>
-                <button
-                  type="button"
-                  className="mini"
-                  onClick={() => setModalCusto({ aberto: false, modo: 'resumido' })}
-                  style={{ padding: '6px 12px' }}
-                >
-                  Fechar
-                </button>
-              </div>
-            </div>
-
-            {/* Conteúdo Renderizado com Scroll */}
-            <div
-              style={{
-                padding: '16px 20px',
-                overflowY: 'auto',
-                flex: 1,
-                backgroundColor: 'var(--bg-card-subtle)',
-              }}
-              dangerouslySetInnerHTML={{
-                __html: gerarRelatorioCustosHtml(consolidadoCPC16, modalCusto.modo),
-              }}
-            />
-          </div>
-        </div>
-      )}
+      <AuditoriaBarraExportacao
+        section="resultado_e_modal"
+        auditResult={auditResult}
+        handleReturnToSelection={handleReturnToSelection}
+        handleResetToUpload={handleResetToUpload}
+        handleDownloadReport={handleDownloadReport}
+        pdfLoading={pdfLoading}
+        pdfError={pdfError}
+        relatorioBloqueadoHardcoded={relatorioBloqueadoHardcoded}
+        modalCusto={modalCusto}
+        setModalCusto={setModalCusto}
+        consolidadoCPC16={consolidadoCPC16}
+        regime={regime}
+        finalidade={finalidade}
+      />
 
       {/* Fundamentação Normativa Consolidada da Auditoria de Entrada (Marco 1) */}
       <div style={{ marginTop: 20 }}>
@@ -2604,63 +1229,6 @@ export default function AuditoriaEntrada() {
       </div>
 
       {/* Drawer Lateral de Detalhe Pericial do DIFAL por Produto (Marco 2) */}
-      <ItemDetailDrawer
-        isOpen={Boolean(itemDifalSelecionado)}
-        onClose={() => setItemDifalSelecionado(null)}
-        title={itemDifalSelecionado ? `DIFAL Item #${itemDifalSelecionado.nItem} — ${itemDifalSelecionado.cProd}` : 'Detalhes DIFAL'}
-        subtitle={itemDifalSelecionado ? `${itemDifalSelecionado.xProd} · NCM ${itemDifalSelecionado.NCM}` : undefined}
-      >
-        {itemDifalSelecionado && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ background: 'var(--bg-card-subtle)', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
-                <div><b>CFOP:</b> <span className="mono">{itemDifalSelecionado.CFOP || '—'}</span></div>
-                <div><b>Destinação:</b> {itemDifalSelecionado.destinacao}</div>
-                <div><b>Valor Operação:</b> <span className="tabular-nums">{formatarBrl(itemDifalSelecionado.vOperacao)}</span></div>
-                <div><b>Base Dupla PR:</b> <span className="tabular-nums">{formatarBrl(itemDifalSelecionado.baseDupla)}</span></div>
-                <div><b>DIFAL Principal:</b> <span className="tabular-nums">{formatarBrl(itemDifalSelecionado.valorDifalPrincipal)}</span></div>
-                <div><b>FECOP ({itemDifalSelecionado.fecop}%):</b> <span className="tabular-nums">{formatarBrl(itemDifalSelecionado.valorFecop)}</span></div>
-              </div>
-              <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #e2e8f0', fontSize: 13 }}>
-                <b>Total DIFAL a Recolher:</b>{' '}
-                <span className="tabular-nums" style={{ fontWeight: 800, color: itemDifalSelecionado.exigeRecolhimento ? '#c2410c' : '#15803d' }}>
-                  {formatarBrl(itemDifalSelecionado.valorDifalTotal)}
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <strong style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Fundamentação Legal:</strong>
-              <p style={{ margin: 0, fontSize: 12, color: 'var(--ink)', lineHeight: 1.5 }}>{itemDifalSelecionado.fundamento}</p>
-              {itemDifalSelecionado.motivoDispensa && (
-                <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--ok)', fontWeight: 600 }}>
-                  Motivo da Dispensa: {itemDifalSelecionado.motivoDispensa}
-                </p>
-              )}
-            </div>
-
-            {itemDifalSelecionado.codigosEfd.length > 0 && (
-              <div>
-                <strong style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Códigos EFD ICMS/IPI (NPF 052/2018):</strong>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {itemDifalSelecionado.codigosEfd.map((cod) => (
-                    <span key={cod} className="badge blue mono" style={{ fontSize: 11 }}>{cod}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <strong style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>Memória de Cálculo:</strong>
-              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 11.5, color: 'var(--ink)', lineHeight: 1.5 }}>
-                {itemDifalSelecionado.memoriaCalculo.map((m, i) => (
-                  <li key={i}>{m}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-      </ItemDetailDrawer>
 
       {/* ---------------- STICKY ACTION BAR PERSISTENTE (WCAG AA) ---------------- */}
       {extractedInvoice && (

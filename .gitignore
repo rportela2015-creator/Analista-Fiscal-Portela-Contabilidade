@@ -24,6 +24,10 @@ services/rtc-db-builder/sql/
 *.db
 *.db.sha256
 
+# Python bytecode cache
+**/__pycache__/
+*.pyc
+
 # Temporary teamwork files
 .agents/teamwork/
 # Screenshot artifacts (UX audit)

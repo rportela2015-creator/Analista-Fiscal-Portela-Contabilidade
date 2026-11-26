@@ -53,7 +53,22 @@ function fecharEm(src, abre) {
   return src.length;
 }
 
-const arquivos = (await readdir(RAIZ).catch(() => [])).filter((f) => /\.tsx?$/.test(f)).sort();
+async function coletarArquivos(dir, prefixo = '') {
+  const entradas = await readdir(dir, { withFileTypes: true }).catch(() => []);
+  const lista = [];
+  for (const ent of entradas) {
+    if (ent.name === 'node_modules' || ent.name === '.next' || ent.name === '.git') continue;
+    const rel = prefixo ? join(prefixo, ent.name) : ent.name;
+    if (ent.isDirectory()) {
+      lista.push(...(await coletarArquivos(join(dir, ent.name), rel)));
+    } else if (ent.isFile() && /\.tsx?$/.test(ent.name)) {
+      lista.push(rel);
+    }
+  }
+  return lista;
+}
+
+const arquivos = (await coletarArquivos(RAIZ)).sort();
 if (!arquivos.length) { console.log(`hookcheck: nada em ${RAIZ}`); process.exit(2); }
 
 let violacoes = 0;
