@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { gerarDanfsePdfRfb } from '@/lib/integracoes/rtc-danfse/client';
-import { ErroIntegracaoRfb } from '@/lib/integracoes/rfb-health';
+import { ErroIntegracaoRfb, getRtcMode } from '@/lib/integracoes/rfb-health';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const rtcStatus = await getRtcMode();
   try {
     const contentType = req.headers.get('content-type') || '';
     let xmlContent = '';
@@ -93,6 +94,7 @@ export async function POST(req: NextRequest) {
         'Content-Disposition': 'inline; filename="danfse.pdf"',
         'Content-Length': String(uint8Array.byteLength),
         'X-Content-Type-Options': 'nosniff',
+        'X-RTC-Mode': rtcStatus.mode,
       },
     });
   } catch (err: any) {
@@ -110,6 +112,7 @@ export async function POST(req: NextRequest) {
             : undefined,
           status: err.status,
           circuitBreakerState: err.circuitBreakerState,
+          rtcStatus,
         },
         { status: err.status || 503 }
       );
@@ -124,6 +127,7 @@ export async function POST(req: NextRequest) {
           mensagem: 'Não foi possível conectar ao gerador oficial DANFSe em Go.',
           codigo: 'DANFSE_SIDECAR_OFFLINE',
           orientacao: 'Suba o container rtc-danfse via docker compose up -d rtc-danfse',
+          rtcStatus,
         },
         { status: 503 }
       );
@@ -134,6 +138,7 @@ export async function POST(req: NextRequest) {
         sucesso: false,
         mensagem: 'Erro ao gerar DANFSe em PDF',
         detalhes: err.message,
+        rtcStatus,
       },
       { status: 400 }
     );

@@ -10,6 +10,8 @@ import { mods } from 'ncm:libs';
 
 import { avaliarAderenciaNcm } from '../lib/fiscal/aderencia-ncm.ts';
 import {
+  formatarStatusReformaSaneamento,
+  resolverRastreabilidadeSnapshot,
   simularImpactoSaneamentoNcm,
   aplicarSaneamentoNcmNoItem,
   reverterSaneamentoNcmNoItem,
@@ -24,6 +26,7 @@ import {
   gerarRelatorioErpResumidoHtml,
   gerarRelatorioErpDetalhadoHtml,
   gerarRelatorioErpResumidoTxt,
+  gerarRelatorioErpDetalhadoTxt,
 } from '../lib/relatorio-erp.ts';
 import { POST as gerarRelatorioAuditoriaPost } from '../app/api/auditoria-relatorio/route.ts';
 
@@ -341,4 +344,180 @@ test('SAN-5 Escapa XSS (<script>, aspas) no bloco de saneamento dos relatórios 
   assert.match(apiHtml, /Divergências de Classificação &amp; Saneamento NCM/);
   assert.ok(!apiHtml.includes('<script>alert("xss")</script>'));
   assert.ok(apiHtml.includes('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'));
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// TESTE 6: DIFERENCIAÇÃO ANEXO IX LC 214 PENDENTE VS. cClassTrib A CONFIRMAR
+// ════════════════════════════════════════════════════════════════════════════
+test('SAN-6 Diferencia requerConferenciaAnexoIX (8432..8701) de enquadramentoPendente genérico (8471.30.12)', async () => {
+  const ctxLp = resolverContextoEmpresaNaData({ empresaAtiva: EMPRESA_LP, dataEmissao: '2026-06-15' });
+  const doc = { dhEmi: '2026-06-15', ufOrigem: 'SP', ufDestino: 'PR', emitCrt: '3' };
+
+  // Notebook 8471.30.12: enquadramentoPendente=true, requerConferenciaAnexoIX=false
+  const notebookAuditado = construirItemFiscalAuditado({
+    item: criarItemNfe({ cProd: 'NB-01', xProd: 'Notebook 15 polegadas 16GB SSD', ncm: '84713012' }),
+    documento: doc,
+    contextoEmpresa: ctxLp,
+    destinacao: 'revenda',
+    opcoes: { marco, ds },
+  });
+  assert.equal(notebookAuditado.tributacaoReforma.enquadramentoPendente, true);
+  assert.equal(notebookAuditado.tributacaoReforma.requerConferenciaAnexoIX, false);
+
+  const statusNotebook = formatarStatusReformaSaneamento(notebookAuditado.tributacaoReforma);
+  assert.equal(statusNotebook.tipo, 'cclasstrib_confirmar');
+  assert.equal(statusNotebook.rotulo, 'cClassTrib a confirmar');
+  assert.ok(!/Anexo IX/i.test(statusNotebook.rotulo), '8471.30.12 nunca deve exibir Anexo IX pendente');
+
+  // Grade agrícola 8432.29.00: requerConferenciaAnexoIX=true
+  const agroAuditado = construirItemFiscalAuditado({
+    item: criarItemNfe({ cProd: 'AGRO-8432', xProd: 'Grade aradora agrícola de discos', ncm: '84322900' }),
+    documento: doc,
+    contextoEmpresa: ctxLp,
+    destinacao: 'revenda',
+    opcoes: { marco, ds },
+  });
+  assert.equal(agroAuditado.tributacaoReforma.requerConferenciaAnexoIX, true);
+  const statusAgro = formatarStatusReformaSaneamento(agroAuditado.tributacaoReforma);
+  assert.equal(statusAgro.tipo, 'anexo_ix_pendente');
+  assert.match(statusAgro.rotulo, /Anexo IX LC 214 pendente/);
+
+  // Simular saneamento de NCM divergente (39269090 -> 84713012) e verificar relatório ERP + Auditoria
+  const notebookDivergente = construirItemFiscalAuditado({
+    item: criarItemNfe({ cProd: 'NB-DIV', xProd: 'Notebook 15 polegadas 16GB SSD', ncm: '39269090' }),
+    documento: doc,
+    contextoEmpresa: ctxLp,
+    destinacao: 'revenda',
+    opcoes: { marco, ds },
+  });
+  const notebookSaneado = aplicarSaneamentoNcmNoItem(notebookDivergente, {
+    ncmSaneado: '84713012',
+    justificativaPericial: 'RGI 1: máquina automática para processamento de dados.',
+    ds,
+    marco,
+  });
+
+  const payloadErpNb = {
+    contexto: { emitente: { nome: 'Empresa Teste', cnpj: '12345678000195', uf: 'PR', regime: 'presumido', crt: '3' } },
+    itens: [
+      {
+        cProd: notebookSaneado.cProd,
+        xProd: notebookSaneado.xProd,
+        ncm: '84713012',
+        cfop: '5102',
+        saneamentoNcm: notebookSaneado.saneamentoNcm,
+      },
+    ],
+  };
+
+  const erpHtml = gerarRelatorioErpResumidoHtml(payloadErpNb);
+  const erpTxt = gerarRelatorioErpResumidoTxt(payloadErpNb);
+  assert.match(erpHtml, /cClassTrib a confirmar/);
+  assert.ok(!/Anexo IX.*pendente/i.test(erpHtml));
+  assert.match(erpTxt, /cClassTrib a confirmar/);
+  assert.ok(!/Anexo IX.*pendente/i.test(erpTxt));
+
+  const apiReqTxt = new NextRequest('http://localhost/api/auditoria-relatorio', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ format: 'txt', itensAuditados: [notebookSaneado] }),
+  });
+  const apiRespTxt = await gerarRelatorioAuditoriaPost(apiReqTxt);
+  assert.equal(apiRespTxt.status, 200);
+  const apiTxt = await apiRespTxt.text();
+  assert.match(apiTxt, /cClassTrib a confirmar/);
+  assert.ok(!/Anexo IX.*pendente/i.test(apiTxt));
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// TESTE 7: CARIMBO DE RASTREABILIDADE DO SNAPSHOT NOS RELATÓRIOS + ESCAPE XSS
+// ════════════════════════════════════════════════════════════════════════════
+test('SAN-7 Imprime mode, snapshotSha256 e normasVigentes junto à seção de saneamento NCM e escapa XSS', async () => {
+  const ctxLp = resolverContextoEmpresaNaData({ empresaAtiva: EMPRESA_LP, dataEmissao: '2026-06-15' });
+  const baseAuditado = construirItemFiscalAuditado({
+    item: criarItemNfe({ cProd: 'SAN-TRACE', xProd: 'Bolo de Chocolate Recheado 500g', ncm: '19059010' }),
+    documento: { dhEmi: '2026-06-15', ufOrigem: 'SP', ufDestino: 'PR', emitCrt: '3' },
+    contextoEmpresa: ctxLp,
+    destinacao: 'revenda',
+    opcoes: { marco, ds },
+  });
+  const saneado = aplicarSaneamentoNcmNoItem(baseAuditado, {
+    ncmSaneado: '19059090',
+    justificativaPericial: 'RGI 1 e RGI 6.',
+    ds,
+    marco,
+  });
+
+  const rastreabilidade = resolverRastreabilidadeSnapshot({
+    mode: 'deterministico-local<script>alert("xss-mode")</script>',
+    snapshotSha256: '26b6bcda9999sha256<script>alert("xss-sha")</script>',
+    normasVigentes: [
+      'LC nº 214/2025 (Anexo IX)',
+      'Dec. PR nº 12.828/2026 <script>alert("xss-norma")</script>',
+    ],
+  });
+
+  const payloadErp = {
+    contexto: { emitente: { nome: 'Empresa Teste', cnpj: '12345678000195', uf: 'PR', regime: 'presumido', crt: '3' } },
+    rastreabilidadeSnapshot: rastreabilidade,
+    itens: [
+      {
+        cProd: saneado.cProd,
+        xProd: saneado.xProd,
+        ncm: '19059090',
+        cfop: '5102',
+        saneamentoNcm: saneado.saneamentoNcm,
+      },
+    ],
+  };
+
+  for (const htmlOut of [gerarRelatorioErpResumidoHtml(payloadErp), gerarRelatorioErpDetalhadoHtml(payloadErp)]) {
+    assert.match(htmlOut, /Rastreabilidade Snapshot:/);
+    assert.match(htmlOut, /deterministico-local/);
+    assert.match(htmlOut, /26b6bcda9999sha256/);
+    assert.match(htmlOut, /LC nº 214\/2025 \(Anexo IX\)/);
+    assert.match(htmlOut, /Dec\. PR nº 12\.828\/2026/);
+    assert.ok(!htmlOut.includes('<script>alert('));
+  }
+
+  for (const txtOut of [gerarRelatorioErpResumidoTxt(payloadErp), gerarRelatorioErpDetalhadoTxt(payloadErp)]) {
+    assert.match(txtOut, /Rastreabilidade Snapshot: mode=/);
+    assert.match(txtOut, /snapshotSha256=26b6bcda9999sha256/);
+    assert.match(txtOut, /normasVigentes=.*Dec\. PR nº 12\.828\/2026/);
+  }
+
+  const reqHtml = new NextRequest('http://localhost/api/auditoria-relatorio', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      format: 'html',
+      itensAuditados: [saneado],
+      rastreabilidadeSnapshot: rastreabilidade,
+    }),
+  });
+  const respHtml = await gerarRelatorioAuditoriaPost(reqHtml);
+  assert.equal(respHtml.status, 200);
+  const apiHtml = await respHtml.text();
+  assert.match(apiHtml, /Divergências de Classificação &amp; Saneamento NCM/);
+  assert.match(apiHtml, /Rastreabilidade Snapshot:/);
+  assert.match(apiHtml, /26b6bcda9999sha256/);
+  assert.match(apiHtml, /LC nº 214\/2025 \(Anexo IX\)/);
+  assert.ok(!apiHtml.includes('<script>alert('));
+
+  const reqTxt = new NextRequest('http://localhost/api/auditoria-relatorio', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      format: 'txt',
+      itensAuditados: [saneado],
+      rastreabilidadeSnapshot: rastreabilidade,
+    }),
+  });
+  const respTxt = await gerarRelatorioAuditoriaPost(reqTxt);
+  assert.equal(respTxt.status, 200);
+  const apiTxt = await respTxt.text();
+  assert.match(apiTxt, /## Divergências de Classificação & Saneamento NCM/);
+  assert.match(apiTxt, /Rastreabilidade Snapshot: mode=/);
+  assert.match(apiTxt, /snapshotSha256=26b6bcda9999sha256/);
+  assert.match(apiTxt, /normasVigentes=.*Dec\. PR nº 12\.828\/2026/);
 });

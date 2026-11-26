@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "1.0.0",
+  "updatedAt": "2026-11-26T15:12:04.763Z",
+  "maxAgeDays": 30,
+  "metaVersao": "ab057930",
+  "metaGeradoEm": "2026-11-26T15:12:04.763Z",
+  "ncmVigente": "Vigente em 09/09/2026",
+  "ncmAto": "Resolução Gecex nº 926/2026",
+  "manifestVersao": "1.0.0",
+  "snapshotSha256": "7898e5c1aa48826c04e3254554c0094a7b5d811dafa00257025b3dd2d63c7b7d",
+  "normasVigentes": {
+    "ntNfe": "NT 2025.002 v1.52 / NT 2026.008 v1.01",
+    "ricmsPr": "Dec. 7.871/2017 + Dec. 6.048/2024 + Dec. 12.828/2026",
+    "lcReforma": "LC 214/2025 + LC 227/2026 + Res. CGSN 186/2026 e 194/2026"
+  },
+  "files": [
+    {
+      "file": "public/data/reforma.json",
+      "bytes": 261586,
+      "records": 164,
+      "sha256": "80df224e25c2b3bdd1f3c35b382f539e7c6dc8224762cfddb885a85e41fca88b"
+    },
+    {
+      "file": "public/data/ncm.json",
+      "bytes": 1977094,
+      "records": 10515,
+      "sha256": "d568e5497f3c4898ac3e4906a288ac48d1b9e94331d4072d19e418288d5d7efc"
+    },
+    {
+      "file": "public/data/cest.json",
+      "bytes": 165727,
+      "records": 1010,
+      "sha256": "83cdb7a9f39476dcf911a6bce8b6cb54148625ee3a1461b6b6e3b705336c6b27"
+    },
+    {
+      "file": "public/data/regras.json",
+      "bytes": 43035,
+      "records": 19,
+      "sha256": "57c2cb2a878607f6447255e2e446a8683e0af53f20d944a40ce2cc67e5b9304b"
+    },
+    {
+      "file": "public/data/marco-legal.json",
+      "bytes": 45472,
+      "records": 35,
+      "sha256": "36b74498cab2b2da5ab5d6948c8ced210427f0a49eb532560feadae904186b27"
+    },
+    {
+      "file": "public/data/meta.json",
+      "bytes": 2279,
+      "records": 8,
+      "sha256": "76ac155d063de44bd4f749a6f16e18e823f865a2812f779e38b4d6a0a94512ec"
+    }
+  ]
+}

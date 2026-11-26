@@ -39,6 +39,13 @@ interface InfraStatus {
   sidecarsOnline: number;
   sidecarsTotal: number;
   modo: string;
+  rtcMode: 'live' | 'snapshot' | 'hardcoded';
+  rtcStale: boolean;
+  rtcAgeDays: number | null;
+  rtcUpdatedAt: string | null;
+  rtcSnapshotSha256: string | null;
+  rtcNormasTexto: string;
+  rtcBloqueio: boolean;
   carregado: boolean;
 }
 
@@ -74,6 +81,13 @@ export default function Home() {
     sidecarsOnline: 0,
     sidecarsTotal: 3,
     modo: 'hybrid_fallback',
+    rtcMode: 'snapshot',
+    rtcStale: false,
+    rtcAgeDays: 0,
+    rtcUpdatedAt: null,
+    rtcSnapshotSha256: null,
+    rtcNormasTexto: '',
+    rtcBloqueio: false,
     carregado: false,
   });
 
@@ -178,6 +192,13 @@ export default function Home() {
       let sidecarsOnline = 0;
       const sidecarsTotal = 3;
       let modo = 'hybrid_fallback';
+      let rtcMode: 'live' | 'snapshot' | 'hardcoded' = 'snapshot';
+      let rtcStale = false;
+      let rtcAgeDays: number | null = null;
+      let rtcUpdatedAt: string | null = null;
+      let rtcSnapshotSha256: string | null = null;
+      let rtcNormasTexto = '';
+      let rtcBloqueio = false;
       if (rtcRes.status === 'fulfilled' && rtcRes.value.ok) {
         try {
           const rtcData = await rtcRes.value.json();
@@ -192,6 +213,24 @@ export default function Home() {
           if (typeof rtcData?.modoOperacao === 'string') {
             modo = rtcData.modoOperacao;
           }
+          const st = rtcData?.rtcStatus;
+          if (st) {
+            if (st.mode === 'live' || st.mode === 'snapshot' || st.mode === 'hardcoded') {
+              rtcMode = st.mode;
+            }
+            rtcStale = Boolean(st.stale);
+            rtcAgeDays = typeof st.ageDays === 'number' ? st.ageDays : null;
+            rtcUpdatedAt = typeof st.updatedAt === 'string' ? st.updatedAt : null;
+            rtcSnapshotSha256 = typeof st.snapshotSha256 === 'string' ? st.snapshotSha256 : null;
+            rtcBloqueio = Boolean(st.bloqueioOperacional);
+            if (st.normasVigentes) {
+              rtcNormasTexto = [
+                st.normasVigentes.ntNfe,
+                st.normasVigentes.ricmsPr,
+                st.normasVigentes.lcReforma,
+              ].filter(Boolean).join(' | ');
+            }
+          }
         } catch { /* resposta JSON inválida */ }
       }
 
@@ -201,6 +240,13 @@ export default function Home() {
         sidecarsOnline,
         sidecarsTotal,
         modo,
+        rtcMode,
+        rtcStale,
+        rtcAgeDays,
+        rtcUpdatedAt,
+        rtcSnapshotSha256,
+        rtcNormasTexto,
+        rtcBloqueio,
         carregado: true,
       });
     } catch {
@@ -489,17 +535,23 @@ export default function Home() {
 
   const infraVariant = !infraStatus.carregado
     ? 'is-warn'
-    : !infraStatus.dbOnline
+    : !infraStatus.dbOnline || infraStatus.rtcMode === 'hardcoded'
       ? 'is-err'
-      : infraStatus.sidecarsOnline === infraStatus.sidecarsTotal
+      : infraStatus.rtcMode === 'live' || (infraStatus.rtcMode === 'snapshot' && !infraStatus.rtcStale)
         ? 'is-ok'
         : 'is-warn';
 
   const infraLabel = !infraStatus.carregado
     ? 'Verificando...'
     : !infraStatus.dbOnline
-      ? 'Base Offline'
-      : `Base OK · RFB ${infraStatus.sidecarsOnline}/${infraStatus.sidecarsTotal}`;
+      ? '⛔ Base Offline'
+      : infraStatus.rtcMode === 'live'
+        ? '✓ RFB Live'
+        : infraStatus.rtcMode === 'hardcoded'
+          ? '⛔ Hardcoded — Fechamento Bloqueado'
+          : infraStatus.rtcStale
+            ? `⚠️ Snapshot Vencido (${infraStatus.rtcAgeDays ?? '?'}d)`
+            : `✓ Snapshot Validado (${infraStatus.rtcAgeDays ?? 0}d)`;
 
   const isSidebarControlExpanded = isMobileViewport ? mobileMenuOpen : sidebarExpanded;
 
@@ -595,7 +647,7 @@ export default function Home() {
             <button
               type="button"
               onClick={refreshInfraStatus}
-              title={`Persistência local (${infraStatus.totalEmpresas} empresas) e sidecars RFB (${infraStatus.modo}). Clique para atualizar.`}
+              title={`Modo RTC: ${infraStatus.rtcMode} | Empresas: ${infraStatus.totalEmpresas}${infraStatus.rtcUpdatedAt ? ` | Atualizado: ${infraStatus.rtcUpdatedAt}` : ''}${infraStatus.rtcSnapshotSha256 ? ` | SHA-256: ${infraStatus.rtcSnapshotSha256.slice(0, 12)}` : ''}${infraStatus.rtcNormasTexto ? ` | Normas: ${infraStatus.rtcNormasTexto}` : ''}. Clique para atualizar.`}
               aria-label={`Status de infraestrutura: ${infraLabel}`}
               className={`st-infra-pill st-touch-target ${infraVariant}`}
               style={{ minHeight: '44px' }}

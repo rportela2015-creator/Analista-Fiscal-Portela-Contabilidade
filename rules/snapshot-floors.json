@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "versao": "1.0.0",
+  "manifestRef": "services/rfb-manifest.json",
+  "maxAgeDaysDefault": 30,
+  "normasVigentes": {
+    "ntNfe": "NT 2025.002 v1.52 / NT 2026.008 v1.01",
+    "ricmsPr": "Dec. 7.871/2017 + Dec. 6.048/2024 + Dec. 12.828/2026",
+    "lcReforma": "LC 214/2025 + LC 227/2026 + Res. CGSN 186/2026 e 194/2026"
+  },
+  "files": {
+    "public/data/reforma.json": {
+      "format": "json",
+      "minBytes": 50000,
+      "minRecords": 50,
+      "recordPath": "classificacoes",
+      "required": true,
+      "descricao": "Tabelas oficiais IBS/CBS/IS da Calculadora RFB"
+    },
+    "public/data/ncm.json": {
+      "format": "json",
+      "minBytes": 500000,
+      "minRecords": 9000,
+      "required": true,
+      "descricao": "Catálogo Siscomex NCM vigente (8 dígitos)"
+    },
+    "public/data/cest.json": {
+      "format": "json",
+      "minBytes": 50000,
+      "minRecords": 500,
+      "required": true,
+      "descricao": "Tabela CEST CONFAZ (Convênio ICMS 142/2018)"
+    },
+    "public/data/regras.json": {
+      "format": "json",
+      "minBytes": 15000,
+      "minRecords": 10,
+      "recordPath": "armadilhas",
+      "required": true,
+      "descricao": "Regras compiladas RGI, Notas Legais e Armadilhas"
+    },
+    "public/data/marco-legal.json": {
+      "format": "json",
+      "minBytes": 10000,
+      "minRecords": 20,
+      "recordPath": "normas",
+      "required": true,
+      "descricao": "Catálogo de normas jurídicas vigentes"
+    },
+    "public/data/meta.json": {
+      "format": "json",
+      "minBytes": 500,
+      "minRecords": 5,
+      "recordPath": "fontes",
+      "required": true,
+      "descricao": "Metadados e versões do snapshot publicado"
+    },
+    "data/raw/ricms_pr_oficial.pdf": {
+      "format": "pdf",
+      "minBytes": 51200,
+      "minRecords": 0,
+      "magicBytes": "%PDF-",
+      "required": false,
+      "descricao": "PDF consolidado oficial RICMS/PR SEFA/PR (rejeita stubs < 50 KB ou sem %PDF-)"
+    }
+  }
+}

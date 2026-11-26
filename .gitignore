@@ -1,6 +1,7 @@
 ﻿node_modules/
 .next/
 out/
+.rfb-stage/
 .env*.local
 .test-parse/
 tsconfig.tsbuildinfo

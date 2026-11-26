@@ -16,7 +16,7 @@ import shutil
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 import urllib.request
 import urllib.error
 
@@ -85,11 +85,15 @@ class BaseFetcher:
         self,
         url: str,
         nome_arquivo_destino: str,
-        headers: Optional[Dict[str, str]] = None
+        headers: Optional[Dict[str, str]] = None,
+        content_types_aceitos: Optional[Tuple[str, ...]] = None,
+        magic_bytes: Optional[bytes] = None,
+        min_bytes: int = 0
     ) -> Path:
         """
         Efetua o download do arquivo a partir da URL oficial com User-Agent customizado.
-        Salva temporariamente e retorna o caminho local.
+        Valida Content-Type, assinatura binária (`magic_bytes`) e tamanho mínimo (`min_bytes`)
+        antes de retornar o arquivo temporário. Em qualquer violação, remove o temporário e lança erro.
         """
         headers_req = {
             "User-Agent": (
@@ -107,16 +111,42 @@ class BaseFetcher:
 
         req = urllib.request.Request(url, headers=headers_req)
         inicio = time.time()
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            with open(caminho_temp, "wb") as out_f:
-                shutil.copyfileobj(resp, out_f)
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                content_type = (resp.headers.get("Content-Type") or "").lower().split(";")[0].strip()
+                if content_types_aceitos:
+                    aceitos_norm = tuple(ct.lower() for ct in content_types_aceitos)
+                    if content_type and not any(content_type.startswith(a) for a in aceitos_norm):
+                        raise ValueError(
+                            f"Content-Type incompatível: '{content_type}' (esperado: {aceitos_norm})"
+                        )
+                with open(caminho_temp, "wb") as out_f:
+                    shutil.copyfileobj(resp, out_f)
 
-        duracao = time.time() - inicio
-        tamanho_bytes = caminho_temp.stat().st_size
-        self.logger.info(
-            f"Download concluído em {duracao:.2f}s ({tamanho_bytes / 1024:.1f} KB)"
-        )
-        return caminho_temp
+            duracao = time.time() - inicio
+            tamanho_bytes = caminho_temp.stat().st_size
+
+            if min_bytes > 0 and tamanho_bytes < min_bytes:
+                raise ValueError(
+                    f"Arquivo abaixo do tamanho mínimo exigido ({tamanho_bytes} bytes < {min_bytes} bytes)"
+                )
+
+            if magic_bytes:
+                with open(caminho_temp, "rb") as chk:
+                    cabecalho = chk.read(len(magic_bytes))
+                if cabecalho != magic_bytes:
+                    raise ValueError(
+                        f"Assinatura binária inválida: esperado {magic_bytes!r}, obtido {cabecalho!r}"
+                    )
+
+            self.logger.info(
+                f"Download concluído em {duracao:.2f}s ({tamanho_bytes / 1024:.1f} KB)"
+            )
+            return caminho_temp
+        except Exception:
+            if caminho_temp.exists():
+                caminho_temp.unlink(missing_ok=True)
+            raise
 
     def registrar_versao_com_hash(
         self,

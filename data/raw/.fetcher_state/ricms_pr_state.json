@@ -1,15 +1,16 @@
 {
   "coletor": "ricms_pr",
-  "arquivo_canonico": "data\\raw\\ricms_pr_oficial.pdf",
+  "status": "pendente_coleta_oficial",
+  "arquivo_canonico": null,
   "nome_canônico": "ricms_pr_oficial.pdf",
-  "hash_sha256": "98aa09660be140b00d16a49fcd28872d99b2957a2e5792273529355f4f373bd7",
-  "alterado": true,
-  "capturado_em": "2026-11-11T18:09:48Z",
-  "tamanho_bytes": 166,
+  "hash_sha256": null,
+  "alterado": false,
+  "tamanho_bytes": 0,
+  "observacao": "Stub legado de 166 bytes removido na Rodada 4; coleta oficial exige Content-Type PDF, magic bytes %PDF- e tamanho >= 50 KB.",
   "metadados": {
     "jurisdicao": "PR",
     "tributo": "ICMS",
-    "modo": "contingencia_local",
+    "decreto_base": "Decreto nº 7.871/2017",
     "anexos_alvo": [
       {
         "anexo": "V",

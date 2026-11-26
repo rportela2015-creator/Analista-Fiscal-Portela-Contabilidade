@@ -9,9 +9,210 @@
  * - Probes paralelos para verificação do status dos motores oficiais
  */
 
+import { readFile, stat } from 'node:fs/promises';
+import path from 'node:path';
+
 export type ServicoRfb = 'rtc-regime-regular' | 'rtc-simples' | 'rtc-danfse';
 export type CircuitBreakerState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 export type RtcOperationMode = 'hybrid_fallback' | 'strict_rfb';
+export type RtcMode = 'live' | 'snapshot' | 'hardcoded';
+
+export interface NormasVigentesSnapshot {
+  ntNfe: string;
+  ricmsPr: string;
+  lcReforma: string;
+}
+
+export interface RtcModeStatus {
+  mode: RtcMode;
+  stale: boolean;
+  ageDays: number | null;
+  updatedAt: string | null;
+  snapshotSha256: string | null;
+  normasVigentes: NormasVigentesSnapshot;
+  bloqueioOperacional: boolean;
+  motivoBloqueio?: string;
+}
+
+export const DEFAULT_NORMAS_VIGENTES_RTC: NormasVigentesSnapshot = {
+  ntNfe: 'NT 2025.002 v1.52 / NT 2026.008 v1.01',
+  ricmsPr: 'Dec. 7.871/2017 + Dec. 6.048/2024 + Dec. 12.828/2026',
+  lcReforma: 'LC 214/2025 + LC 227/2026 + Res. CGSN 186/2026 e 194/2026',
+};
+
+export const MENSAGEM_BLOQUEIO_HARDCODED =
+  'Snapshot oficial RFB/Reforma ausente ou corrompido (modo hardcoded). Execute npm run rfb:refresh antes de gerar laudos oficiais.';
+
+const LIVE_PROBE_TIMEOUT_MS = 1200;
+const LIVE_PROBE_CACHE_TTL_MS = 60_000;
+
+let liveProbeCache: { checkedAt: number; ok: boolean; url: string } | null = null;
+
+export function resetRtcModeCacheForTests(): void {
+  liveProbeCache = null;
+}
+
+async function probeLiveSidecar(liveUrl: string, skipCache: boolean): Promise<boolean> {
+  const now = Date.now();
+  if (
+    !skipCache &&
+    liveProbeCache &&
+    liveProbeCache.url === liveUrl &&
+    now - liveProbeCache.checkedAt < LIVE_PROBE_CACHE_TTL_MS
+  ) {
+    return liveProbeCache.ok;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LIVE_PROBE_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${liveUrl}/health`, {
+      method: 'GET',
+      signal: controller.signal,
+      cache: 'no-store',
+    });
+    const ok = res.ok;
+    liveProbeCache = { checkedAt: now, ok, url: liveUrl };
+    return ok;
+  } catch {
+    liveProbeCache = { checkedAt: now, ok: false, url: liveUrl };
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function lerSnapshotLocal(dataDir: string, nowMs: number, maxAgeDays: number): Promise<{
+  valido: boolean;
+  stale: boolean;
+  ageDays: number | null;
+  updatedAt: string | null;
+  snapshotSha256: string | null;
+  normasVigentes: NormasVigentesSnapshot;
+}> {
+  const statusPath = path.join(dataDir, 'rfb-status.json');
+  const reformaPath = path.join(dataDir, 'reforma.json');
+
+  try {
+    const [statusRaw, reformaRaw, reformaStat] = await Promise.all([
+      readFile(statusPath, 'utf8'),
+      readFile(reformaPath, 'utf8'),
+      stat(reformaPath),
+    ]);
+
+    if (!reformaStat.isFile() || reformaStat.size < 100) {
+      throw new Error('reforma.json ausente ou abaixo do tamanho mínimo');
+    }
+
+    const statusJson = JSON.parse(statusRaw);
+    const reformaJson = JSON.parse(reformaRaw);
+
+    const reformaValida =
+      reformaJson &&
+      typeof reformaJson === 'object' &&
+      reformaJson.disponivel !== false &&
+      Array.isArray(reformaJson.classificacoes) &&
+      reformaJson.classificacoes.length > 0;
+
+    const updatedAt = typeof statusJson?.updatedAt === 'string' ? statusJson.updatedAt : null;
+    const updatedMs = updatedAt ? Date.parse(updatedAt) : NaN;
+    const sha = typeof statusJson?.snapshotSha256 === 'string' ? statusJson.snapshotSha256.trim() : '';
+    const filesValidos = Array.isArray(statusJson?.files) && statusJson.files.length > 0;
+
+    if (!reformaValida || !Number.isFinite(updatedMs) || !sha || !filesValidos) {
+      throw new Error('Metadados de snapshot inválidos');
+    }
+
+    const diffDays = (nowMs - updatedMs) / 86_400_000;
+    const ageDays = Math.max(0, Math.floor(diffDays));
+    const stale = diffDays > maxAgeDays;
+
+    const nv = statusJson?.normasVigentes || {};
+    const normasVigentes: NormasVigentesSnapshot = {
+      ntNfe: typeof nv.ntNfe === 'string' && nv.ntNfe.trim() ? nv.ntNfe.trim() : DEFAULT_NORMAS_VIGENTES_RTC.ntNfe,
+      ricmsPr: typeof nv.ricmsPr === 'string' && nv.ricmsPr.trim() ? nv.ricmsPr.trim() : DEFAULT_NORMAS_VIGENTES_RTC.ricmsPr,
+      lcReforma: typeof nv.lcReforma === 'string' && nv.lcReforma.trim() ? nv.lcReforma.trim() : DEFAULT_NORMAS_VIGENTES_RTC.lcReforma,
+    };
+
+    return {
+      valido: true,
+      stale,
+      ageDays,
+      updatedAt,
+      snapshotSha256: sha,
+      normasVigentes,
+    };
+  } catch {
+    return {
+      valido: false,
+      stale: true,
+      ageDays: null,
+      updatedAt: null,
+      snapshotSha256: null,
+      normasVigentes: { ...DEFAULT_NORMAS_VIGENTES_RTC },
+    };
+  }
+}
+
+/**
+ * Resolve o modo explícito de operação do motor RTC na ordem `live -> snapshot -> hardcoded`.
+ * - `live`: somente com `RTC_LIVE_PROBE=true` e resposta saudável em <= 1200ms (cache 60s).
+ * - `snapshot`: lê `public/data/rfb-status.json` + `public/data/reforma.json`.
+ * - `hardcoded`: fallback emergencial quando snapshot ausente/corrompido (bloqueia fechamento oficial).
+ */
+export async function getRtcMode(options?: {
+  dataDir?: string;
+  nowMs?: number;
+  maxAgeDays?: number;
+  skipCache?: boolean;
+  liveProbeUrl?: string;
+}): Promise<RtcModeStatus> {
+  const dataDir = options?.dataDir || process.env.RFB_DATA_DIR || path.join(process.cwd(), 'public', 'data');
+  const nowMs = options?.nowMs ?? Date.now();
+  const maxAgeEnv = Number(process.env.RFB_MAX_AGE_DAYS ?? 30);
+  const maxAgeDays = options?.maxAgeDays ?? (Number.isFinite(maxAgeEnv) && maxAgeEnv >= 0 ? maxAgeEnv : 30);
+
+  const snap = await lerSnapshotLocal(dataDir, nowMs, maxAgeDays);
+
+  if (process.env.RTC_LIVE_PROBE === 'true') {
+    const baseUrl = (options?.liveProbeUrl || process.env.RTC_BASE_URL || 'http://127.0.0.1:8080').replace(/\/+$/, '');
+    const liveOk = await probeLiveSidecar(baseUrl, Boolean(options?.skipCache));
+    if (liveOk) {
+      return {
+        mode: 'live',
+        stale: false,
+        ageDays: snap.ageDays ?? 0,
+        updatedAt: snap.updatedAt ?? new Date(nowMs).toISOString(),
+        snapshotSha256: snap.snapshotSha256,
+        normasVigentes: snap.normasVigentes,
+        bloqueioOperacional: false,
+      };
+    }
+  }
+
+  if (snap.valido) {
+    return {
+      mode: 'snapshot',
+      stale: snap.stale,
+      ageDays: snap.ageDays,
+      updatedAt: snap.updatedAt,
+      snapshotSha256: snap.snapshotSha256,
+      normasVigentes: snap.normasVigentes,
+      bloqueioOperacional: false,
+    };
+  }
+
+  return {
+    mode: 'hardcoded',
+    stale: true,
+    ageDays: null,
+    updatedAt: null,
+    snapshotSha256: null,
+    normasVigentes: { ...DEFAULT_NORMAS_VIGENTES_RTC },
+    bloqueioOperacional: true,
+    motivoBloqueio: MENSAGEM_BLOQUEIO_HARDCODED,
+  };
+}
 
 export interface CircuitBreakerRecord {
   state: CircuitBreakerState;

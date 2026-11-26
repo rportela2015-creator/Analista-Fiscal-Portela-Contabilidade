@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getRtcMode, MENSAGEM_BLOQUEIO_HARDCODED } from '@/lib/integracoes/rfb-health';
 import {
   ParametrosErpPayload,
   gerarRelatorioErpResumidoTxt,
@@ -17,7 +18,37 @@ export async function POST(req: Request) {
       );
     }
 
-    const payload: ParametrosErpPayload = body.payload;
+    const rtcStatus = await getRtcMode();
+    const permitirSimulacaoHardcoded = Boolean(body.permitirSimulacaoHardcoded);
+    if (rtcStatus.mode === 'hardcoded' && !permitirSimulacaoHardcoded) {
+      return NextResponse.json(
+        {
+          error: MENSAGEM_BLOQUEIO_HARDCODED,
+          codigo: 'RTC_HARDCODED_BLOQUEADO',
+          rtcStatus,
+        },
+        { status: 503 }
+      );
+    }
+
+    const normasList = [
+      rtcStatus.normasVigentes.ntNfe,
+      rtcStatus.normasVigentes.ricmsPr,
+      rtcStatus.normasVigentes.lcReforma,
+    ];
+    const callerTrace = body.payload.rastreabilidadeSnapshot;
+    const payload: ParametrosErpPayload = {
+      ...body.payload,
+      rastreabilidadeSnapshot: {
+        mode: callerTrace?.mode || rtcStatus.mode,
+        updatedAt: callerTrace?.updatedAt || rtcStatus.updatedAt || new Date().toISOString(),
+        snapshotSha256: callerTrace?.snapshotSha256 || rtcStatus.snapshotSha256 || 'N/A',
+        normasVigentes: Array.isArray(callerTrace?.normasVigentes) && callerTrace.normasVigentes.length > 0
+          ? callerTrace.normasVigentes
+          : normasList,
+        rascunhoNaoOficial: rtcStatus.mode === 'hardcoded' && permitirSimulacaoHardcoded,
+      },
+    };
     const mode: 'resumido' | 'detalhado' = body.mode === 'detalhado' ? 'detalhado' : 'resumido';
     const format: 'html' | 'txt' = body.format === 'txt' ? 'txt' : 'html';
     const asAttachment: boolean = Boolean(body.asAttachment);

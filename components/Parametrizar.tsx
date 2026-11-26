@@ -28,7 +28,12 @@ import {
   type CustoCpc16Segregado,
   type ItemFiscalAuditado,
 } from '@/lib/types/item-fiscal-auditado';
-import type { SaneamentoNcmAuditado } from '@/lib/fiscal/saneamento-ncm';
+import {
+  DEFAULT_NORMAS_VIGENTES_SANEAMENTO,
+  resolverRastreabilidadeSnapshot,
+  type RastreabilidadeSnapshotFiscal,
+  type SaneamentoNcmAuditado,
+} from '@/lib/fiscal/saneamento-ncm';
 
 function baixarArquivo(conteudo: string, nomeArquivo: string, mime: string) {
   if (typeof window === 'undefined' || !window.URL?.createObjectURL) return;
@@ -58,6 +63,7 @@ function extrairPayloadErp(
   emitenteNome?: string,
   custoCpc16?: CustoCpc16Segregado,
   saneamentoNcm?: SaneamentoNcmAuditado,
+  rastreabilidadeSnapshot?: RastreabilidadeSnapshotFiscal,
 ): ParametrosErpPayload {
   const camposProd = p?.campos.find((b) => b.tag === 'prod')?.campos || [];
   const camposIcms = p?.campos.find((b) => b.grupo.startsWith('ICMS'))?.campos || [];
@@ -134,6 +140,7 @@ function extrairPayloadErp(
       },
     },
     itens: [item],
+    ...(rastreabilidadeSnapshot ? { rastreabilidadeSnapshot } : {}),
   };
 }
 
@@ -561,13 +568,21 @@ export default function Parametrizar({ itensImportados, itensAuditados }: Parame
                         </span>
                       </td>
                       <td>
-                        {it.itemAuditado?.tributacaoReforma?.enquadramentoPendente ? (
+                        {it.itemAuditado?.tributacaoReforma?.requerConferenciaAnexoIX ? (
                           <span
                             className="badge media tabular-nums"
                             style={{ fontSize: 10.5 }}
-                            title={it.itemAuditado.tributacaoReforma.observacaoNormativa || 'Conferir enquadramento no Anexo IX LC 214/2025'}
+                            title={it.itemAuditado.tributacaoReforma.observacaoNormativa || 'Posição 8432–8701: conferir subitem específico no Anexo IX da LC 214/2025'}
                           >
-                            {it.cClassTribSugerido ? `${it.cClassTribSugerido} · Anexo IX pendente` : 'Pendente Anexo IX'}
+                            {it.cClassTribSugerido ? `${it.cClassTribSugerido} · Anexo IX LC 214 pendente` : 'Anexo IX LC 214 pendente'}
+                          </span>
+                        ) : it.itemAuditado?.tributacaoReforma?.enquadramentoPendente ? (
+                          <span
+                            className="badge blue tabular-nums"
+                            style={{ fontSize: 10.5 }}
+                            title={it.itemAuditado.tributacaoReforma.observacaoNormativa || 'NCM sem mapeamento automático de cClassTrib na tabela oficial; confirmar enquadramento IBS/CBS'}
+                          >
+                            cClassTrib a confirmar
                           </span>
                         ) : (
                           <span className="badge tabular-nums" style={{ background: 'var(--accent-emerald-glow)', color: 'var(--ok)', borderColor: 'var(--border-emerald-glow)', fontSize: 10.5 }}>
@@ -923,6 +938,16 @@ export default function Parametrizar({ itensImportados, itensAuditados }: Parame
         const custoCpc16Ativo =
           (itemLoteAtivo !== null ? loteItens[itemLoteAtivo]?.custoCpc16 : loteItens[0]?.custoCpc16) ||
           audAtivo?.custoCpc16;
+        const rastreabilidadeErp = resolverRastreabilidadeSnapshot({
+          mode: 'deterministico-local',
+          snapshotSha256: ds?.meta?.versao || erp?.sha256 || 'N/A',
+          normasVigentes: [
+            ...DEFAULT_NORMAS_VIGENTES_SANEAMENTO,
+            ...(ds?.meta?.ncm_ato && !DEFAULT_NORMAS_VIGENTES_SANEAMENTO.some((n) => n.includes(ds.meta.ncm_ato))
+              ? [ds.meta.ncm_ato]
+              : []),
+          ],
+        });
         const payloadRelatorio = extrairPayloadErp(
           ctx,
           rec,
@@ -930,7 +955,8 @@ export default function Parametrizar({ itensImportados, itensAuditados }: Parame
           texto,
           empresaAtiva?.razaoSocial,
           custoCpc16Ativo,
-          audAtivo?.saneamentoNcm
+          audAtivo?.saneamentoNcm,
+          rastreabilidadeErp
         );
         const relatorioHtml = modalRelatorio.modo === 'resumido'
           ? gerarRelatorioErpResumidoHtml(payloadRelatorio)

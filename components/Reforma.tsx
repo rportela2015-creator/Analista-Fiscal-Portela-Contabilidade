@@ -31,11 +31,32 @@ export default function ReformaTab() {
   const [pagina, setPagina] = useState(1);
   const [linhasPorPagina, setLinhasPorPagina] = useState(25);
   const [copiado, setCopiado] = useState(false);
+  const [rtcStatus, setRtcStatus] = useState<{
+    mode: 'live' | 'snapshot' | 'hardcoded';
+    stale: boolean;
+    ageDays: number | null;
+    snapshotSha256?: string | null;
+    updatedAt?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     loadReforma()
       .then(setRf)
       .catch(() => setRf(null));
+  }, []);
+
+  useEffect(() => {
+    if (typeof fetch !== 'function') return;
+    let ativo = true;
+    fetch('/api/rtc/status', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (ativo && data?.rtcStatus) {
+          setRtcStatus(data.rtcStatus);
+        }
+      })
+      .catch(() => { /* offline/smoke sem API */ });
+    return () => { ativo = false; };
   }, []);
 
   const lista: ClassTrib[] = useMemo(() => {
@@ -141,6 +162,30 @@ export default function ReformaTab() {
             <span className="st-badge-norma">LC 227/2026</span>
             <span className="st-badge-norma">NT 2026.008</span>
             <span className="st-badge-norma">2026–2033</span>
+            {rtcStatus && (
+              <span
+                className={`st-infra-pill tabular-nums ${
+                  rtcStatus.mode === 'hardcoded'
+                    ? 'is-err'
+                    : rtcStatus.mode === 'live' || !rtcStatus.stale
+                      ? 'is-ok'
+                      : 'is-warn'
+                }`}
+                style={{ minHeight: '32px', padding: '4px 10px', cursor: 'default' }}
+                title={rtcStatus.snapshotSha256 ? `SHA-256 Snapshot: ${rtcStatus.snapshotSha256}` : 'Modo RTC ativo'}
+              >
+                <span className="st-infra-dot" aria-hidden="true" />
+                <span>
+                  {rtcStatus.mode === 'live'
+                    ? '✓ RFB Live'
+                    : rtcStatus.mode === 'hardcoded'
+                      ? '⛔ Hardcoded — Fechamento Bloqueado'
+                      : rtcStatus.stale
+                        ? `⚠️ Snapshot Vencido (${rtcStatus.ageDays ?? '?'}d)`
+                        : `✓ Snapshot Validado (${rtcStatus.ageDays ?? 0}d)`}
+                </span>
+              </span>
+            )}
           </div>
           <p className="hint" style={{ margin: '4px 0 0' }}>
             IBS, CBS e Imposto Seletivo — catálogos oficiais de classificação tributária e cronograma de transição.

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { OperacaoInputSchema } from '@/lib/integracoes/rtc-regime-regular/schema';
 import { calcularRegimeRegularComFallback } from '@/lib/integracoes/rtc-regime-regular/client';
-import { ErroIntegracaoRfb } from '@/lib/integracoes/rfb-health';
+import { ErroIntegracaoRfb, getRtcMode } from '@/lib/integracoes/rfb-health';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const rtcStatus = await getRtcMode();
   try {
     const rawBody = await req.json();
     const parseResult = OperacaoInputSchema.safeParse(rawBody);
@@ -38,13 +39,14 @@ export async function POST(req: NextRequest) {
           sucesso: false,
           mensagem: 'Payload de operação inválido para o Regime Geral',
           erros: parseResult.error.flatten(),
+          rtcStatus,
         },
         { status: 400 }
       );
     }
 
     const resultado = await calcularRegimeRegularComFallback(parseResult.data);
-    return NextResponse.json(resultado, { status: 200 });
+    return NextResponse.json({ ...resultado, rtcStatus }, { status: 200 });
   } catch (err: any) {
     if (err instanceof ErroIntegracaoRfb) {
       return NextResponse.json(
@@ -55,6 +57,7 @@ export async function POST(req: NextRequest) {
           codigo: err.codigo,
           problemDetail: err.problemDetail,
           circuitBreakerState: err.circuitBreakerState,
+          rtcStatus,
         },
         { status: err.status || 503 }
       );
@@ -65,6 +68,7 @@ export async function POST(req: NextRequest) {
         sucesso: false,
         mensagem: 'Erro interno ao processar cálculo do Regime Geral',
         detalhes: err.message,
+        rtcStatus,
       },
       { status: 500 }
     );

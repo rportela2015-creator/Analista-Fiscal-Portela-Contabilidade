@@ -6,7 +6,12 @@
 
 import { esc } from './relatorio';
 import type { CustoCpc16Segregado } from './types/item-fiscal-auditado';
-import type { SaneamentoNcmAuditado } from './fiscal/saneamento-ncm';
+import {
+  formatarStatusReformaSaneamento,
+  resolverRastreabilidadeSnapshot,
+  type RastreabilidadeSnapshotFiscal,
+  type SaneamentoNcmAuditado,
+} from './fiscal/saneamento-ncm';
 import {
   PORTELA_COPYRIGHT,
   PORTELA_FOOTER_CSS,
@@ -96,11 +101,17 @@ function renderBlocoCustoCpc16Html(custo?: CustoCpc16Segregado): string {
       </div>`;
 }
 
-function renderBlocoSaneamentoNcmTxt(san?: SaneamentoNcmAuditado, ncmEntradaFallback?: string): string {
+function renderBlocoSaneamentoNcmTxt(
+  san?: SaneamentoNcmAuditado,
+  ncmEntradaFallback?: string,
+  rastreabilidade?: Partial<RastreabilidadeSnapshotFiscal> | null
+): string {
   if (!san) return '';
   if (!san.overrideAtivo && san.aderencia.statusAderencia === 'ADERENTE') return '';
   const orig = ncmEntradaFallback || san.aderencia.ncmInformado || 'N/A';
+  const trace = resolverRastreabilidadeSnapshot(rastreabilidade);
   let s = `  [DIVERGÊNCIAS DE CLASSIFICAÇÃO & SANEAMENTO NCM (ENTRADA XML × SAÍDA ERP)]\n`;
+  s += `    - Rastreabilidade Snapshot: mode=${trace.mode} | snapshotSha256=${trace.snapshotSha256} | normasVigentes=${trace.normasVigentes.join('; ')}\n`;
   s += `    - Aderência xProd × NCM: ${san.aderencia.statusAderencia} (Score: ${san.aderencia.scoreAderencia}%)\n`;
   s += `    - NCM Entrada XML (Imutável): ${orig} | NCM Saneado Saída: ${san.ncmSaneadoSaida || 'Não aplicado'}\n`;
   if (san.justificativaPericial) {
@@ -108,23 +119,37 @@ function renderBlocoSaneamentoNcmTxt(san?: SaneamentoNcmAuditado, ncmEntradaFall
   }
   if (san.impactoAntesDepois) {
     const imp = san.impactoAntesDepois;
-    s += `    - Impacto Antes × Depois: Δ ICMS PR ${imp.deltaAliqIcmsPrPct >= 0 ? '+' : ''}${imp.deltaAliqIcmsPrPct}% | Δ DIFAL ${fmtBrlCpc(imp.deltaDifalTotal)} | Δ CMV Unit. ${fmtBrlCpc(imp.deltaCmvUnitario)}\n`;
+    const refAntes = formatarStatusReformaSaneamento(imp.antes).rotulo;
+    const refDepois = formatarStatusReformaSaneamento(imp.depois).rotulo;
+    s += `    - Impacto Antes × Depois: Δ ICMS PR ${imp.deltaAliqIcmsPrPct >= 0 ? '+' : ''}${imp.deltaAliqIcmsPrPct}% | Δ DIFAL ${fmtBrlCpc(imp.deltaDifalTotal)} | Δ CMV Unit. ${fmtBrlCpc(imp.deltaCmvUnitario)} | LC 214: ${refAntes} -> ${refDepois}\n`;
   }
   s += `    - Orientação CC-e: ${san.orientacaoOperacional}\n`;
   return s;
 }
 
-function renderBlocoSaneamentoNcmHtml(san?: SaneamentoNcmAuditado, ncmEntradaFallback?: string): string {
+function renderBlocoSaneamentoNcmHtml(
+  san?: SaneamentoNcmAuditado,
+  ncmEntradaFallback?: string,
+  rastreabilidade?: Partial<RastreabilidadeSnapshotFiscal> | null
+): string {
   if (!san) return '';
   if (!san.overrideAtivo && san.aderencia.statusAderencia === 'ADERENTE') return '';
   const orig = ncmEntradaFallback || san.aderencia.ncmInformado || 'N/A';
   const imp = san.impactoAntesDepois;
+  const trace = resolverRastreabilidadeSnapshot(rastreabilidade);
+  const reformaResumo = imp
+    ? `${formatarStatusReformaSaneamento(imp.antes).rotulo} → ${formatarStatusReformaSaneamento(imp.depois).rotulo}`
+    : '';
   return `
       <div style="margin: 12px 16px; padding: 12px 14px; background: #fffbeb; border: 1px solid #fcd34d; border-left: 4px solid #d97706; border-radius: 6px; font-size: 0.84rem;">
         <div style="font-weight: 700; color: #92400e; margin-bottom: 6px;">Divergências de Classificação &amp; Saneamento NCM (Entrada XML × Saída ERP)</div>
+        <div style="margin-bottom: 6px; padding: 6px 8px; background: #fef3c7; border-radius: 4px; font-size: 0.78rem; color: #78350f;">
+          <strong>Rastreabilidade Snapshot:</strong> <code>mode=${esc(trace.mode)}</code> &middot; <strong>snapshotSha256:</strong> <span class="mono">${esc(trace.snapshotSha256)}</span><br/>
+          <strong>normasVigentes:</strong> ${esc(trace.normasVigentes.join(' | '))}
+        </div>
         <div><strong>Status Aderência:</strong> ${esc(san.aderencia.statusAderencia)} (${esc(String(san.aderencia.scoreAderencia))}%) &middot; <strong>Entrada XML:</strong> <span class="mono">${esc(orig)}</span> &middot; <strong>Saída Saneada:</strong> <span class="mono">${esc(san.ncmSaneadoSaida || 'Pendente')}</span></div>
         ${san.justificativaPericial ? `<div style="margin-top: 4px;"><strong>Justificativa Pericial:</strong> ${esc(san.justificativaPericial)}</div>` : ''}
-        ${imp ? `<div style="margin-top: 4px;"><strong>Impacto Antes × Depois:</strong> Δ ICMS PR ${esc(String(imp.deltaAliqIcmsPrPct))}% &middot; Δ DIFAL ${esc(fmtBrlCpc(imp.deltaDifalTotal))} &middot; Δ CMV Unit. ${esc(fmtBrlCpc(imp.deltaCmvUnitario))}</div>` : ''}
+        ${imp ? `<div style="margin-top: 4px;"><strong>Impacto Antes × Depois:</strong> Δ ICMS PR ${esc(String(imp.deltaAliqIcmsPrPct))}% &middot; Δ DIFAL ${esc(fmtBrlCpc(imp.deltaDifalTotal))} &middot; Δ CMV Unit. ${esc(fmtBrlCpc(imp.deltaCmvUnitario))} &middot; <strong>LC 214:</strong> ${esc(reformaResumo)}</div>` : ''}
         <div style="margin-top: 6px; color: #78350f; font-size: 0.8rem;"><strong>Orientação Legal CC-e:</strong> ${esc(san.orientacaoOperacional)}</div>
       </div>`;
 }
@@ -158,6 +183,7 @@ export interface ParametrosErpContexto {
 export interface ParametrosErpPayload {
   contexto: ParametrosErpContexto;
   itens: ParametrosErpItem[];
+  rastreabilidadeSnapshot?: Partial<RastreabilidadeSnapshotFiscal>;
 }
 
 export interface CampoLegalErp {
@@ -325,11 +351,17 @@ export function gerarRelatorioErpResumidoTxt(payload: ParametrosErpPayload, agor
       txt += renderBlocoCustoCpc16Txt(item.custoCpc16);
     }
     if (item.saneamentoNcm) {
-      txt += renderBlocoSaneamentoNcmTxt(item.saneamentoNcm, item.ncm);
+      txt += renderBlocoSaneamentoNcmTxt(item.saneamentoNcm, item.ncm, payload.rastreabilidadeSnapshot);
     }
     txt += `\n`;
   });
 
+  const traceFooter = resolverRastreabilidadeSnapshot(payload.rastreabilidadeSnapshot);
+  if (traceFooter.rascunhoNaoOficial) {
+    txt += `[AVISO] RASCUNHO NÃO OFICIAL (MODO HARDCODED)\n`;
+  }
+  txt += `Rastreabilidade: Modo=${traceFooter.mode} | Atualizado em=${traceFooter.updatedAt || agora.toISOString()} | Hash SHA-256=${traceFooter.snapshotSha256}\n`;
+  txt += `Normas Vigentes: ${traceFooter.normasVigentes.join(' | ')}\n`;
   txt += `================================================================================\n`;
   txt += `Fim do Relatório Resumido para Parametrização de ERP.\n`;
   txt += `MargemReal Portela ${PORTELA_VERSION} — ${PORTELA_COPYRIGHT}\n`;
@@ -338,9 +370,12 @@ export function gerarRelatorioErpResumidoTxt(payload: ParametrosErpPayload, agor
 
 export function gerarRelatorioErpResumidoHtml(payload: ParametrosErpPayload, agora: Date = new Date()): string {
   const { contexto, itens } = payload;
+  const traceFooter = resolverRastreabilidadeSnapshot(payload.rastreabilidadeSnapshot);
   const headerHtml = renderHeaderPortela({
     titulo: 'Parametrização de ERP - Modo Resumido',
-    subtitulo: 'Parâmetros e Códigos para Sistema Emissor de DF-e',
+    subtitulo: traceFooter.rascunhoNaoOficial
+      ? 'RASCUNHO NÃO OFICIAL — Modo Hardcoded (Snapshot RFB ausente)'
+      : 'Parâmetros e Códigos para Sistema Emissor de DF-e',
     dataHora: agora.toLocaleString('pt-BR'),
     documentoRef: `Ano Base ${contexto.operacao?.anoReforma || 2026}`,
     empresaNome: contexto.emitente?.nome,
@@ -349,6 +384,13 @@ export function gerarRelatorioErpResumidoHtml(payload: ParametrosErpPayload, ago
   });
   const footerHtml = renderFooterPortela({
     versao: PORTELA_VERSION,
+    rastreabilidade: {
+      mode: traceFooter.mode,
+      updatedAt: traceFooter.updatedAt || agora.toISOString(),
+      snapshotSha256: traceFooter.snapshotSha256,
+      normasVigentes: traceFooter.normasVigentes,
+      rascunhoNaoOficial: traceFooter.rascunhoNaoOficial,
+    },
   });
 
   return `<!DOCTYPE html>
@@ -407,7 +449,7 @@ export function gerarRelatorioErpResumidoHtml(payload: ParametrosErpPayload, ago
         </tbody>
       </table>
       ${renderBlocoCustoCpc16Html(item.custoCpc16)}
-      ${renderBlocoSaneamentoNcmHtml(item.saneamentoNcm, item.ncm)}
+      ${renderBlocoSaneamentoNcmHtml(item.saneamentoNcm, item.ncm, payload.rastreabilidadeSnapshot)}
       ${item.instrucao ? `<div class="instrucao"><strong>Instrução ERP:</strong> ${esc(item.instrucao)}</div>` : ''}
     </div>
     `;
@@ -463,11 +505,17 @@ export function gerarRelatorioErpDetalhadoTxt(payload: ParametrosErpPayload, ago
       txt += `\n`;
     }
     if (item.saneamentoNcm) {
-      txt += renderBlocoSaneamentoNcmTxt(item.saneamentoNcm, item.ncm);
+      txt += renderBlocoSaneamentoNcmTxt(item.saneamentoNcm, item.ncm, payload.rastreabilidadeSnapshot);
       txt += `\n`;
     }
   });
 
+  const traceFooter = resolverRastreabilidadeSnapshot(payload.rastreabilidadeSnapshot);
+  if (traceFooter.rascunhoNaoOficial) {
+    txt += `[AVISO] RASCUNHO NÃO OFICIAL (MODO HARDCODED)\n`;
+  }
+  txt += `Rastreabilidade: Modo=${traceFooter.mode} | Atualizado em=${traceFooter.updatedAt || agora.toISOString()} | Hash SHA-256=${traceFooter.snapshotSha256}\n`;
+  txt += `Normas Vigentes: ${traceFooter.normasVigentes.join(' | ')}\n`;
   txt += `================================================================================\n`;
   txt += `DECLARAÇÃO DE RESPONSABILIDADE TÉCNICA:\n`;
   txt += `A parametrização fiscal acima consubstancia a melhor subsunção jurídica entre os fatos\n`;
@@ -481,9 +529,12 @@ export function gerarRelatorioErpDetalhadoTxt(payload: ParametrosErpPayload, ago
 
 export function gerarRelatorioErpDetalhadoHtml(payload: ParametrosErpPayload, agora: Date = new Date()): string {
   const { contexto, itens } = payload;
+  const traceFooter = resolverRastreabilidadeSnapshot(payload.rastreabilidadeSnapshot);
   const headerHtml = renderHeaderPortela({
     titulo: 'Laudo Pericial de Parametrização Fiscal de ERP (Modo Detalhado)',
-    subtitulo: 'Contabilidade Portela (Desde 1970) · Consultoria Fiscal Pericial',
+    subtitulo: traceFooter.rascunhoNaoOficial
+      ? 'RASCUNHO NÃO OFICIAL — Modo Hardcoded (Snapshot RFB ausente)'
+      : 'Contabilidade Portela (Desde 1970) · Consultoria Fiscal Pericial',
     dataHora: agora.toLocaleString('pt-BR'),
     documentoRef: `Ano Base ${contexto.operacao?.anoReforma || 2026}`,
     empresaNome: contexto.emitente?.nome,
@@ -492,6 +543,13 @@ export function gerarRelatorioErpDetalhadoHtml(payload: ParametrosErpPayload, ag
   });
   const footerHtml = renderFooterPortela({
     versao: PORTELA_VERSION,
+    rastreabilidade: {
+      mode: traceFooter.mode,
+      updatedAt: traceFooter.updatedAt || agora.toISOString(),
+      snapshotSha256: traceFooter.snapshotSha256,
+      normasVigentes: traceFooter.normasVigentes,
+      rascunhoNaoOficial: traceFooter.rascunhoNaoOficial,
+    },
     notaLegal: 'Este relatório técnico foi gerado pelo MargemReal Portela (Contabilidade Portela). As fundamentações legais baseiam-se na LC 214/2025, LC 227/2026, Convênios CONFAZ e Resoluções Gecex vigentes.',
   });
 
@@ -562,7 +620,7 @@ export function gerarRelatorioErpDetalhadoHtml(payload: ParametrosErpPayload, ag
           </div>
         `).join('')}
         ${renderBlocoCustoCpc16Html(item.custoCpc16)}
-        ${renderBlocoSaneamentoNcmHtml(item.saneamentoNcm, item.ncm)}
+        ${renderBlocoSaneamentoNcmHtml(item.saneamentoNcm, item.ncm, payload.rastreabilidadeSnapshot)}
         ${item.instrucao ? `<div style="background: #ebf8ff; border-left: 4px solid #3182ce; padding: 12px; border-radius: 4px; font-size: 0.9rem; margin-top: 14px;"><strong>Parecer do Auditor:</strong> ${esc(item.instrucao)}</div>` : ''}
       </div>
       `;

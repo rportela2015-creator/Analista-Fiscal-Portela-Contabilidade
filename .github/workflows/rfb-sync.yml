@@ -1,0 +1,58 @@
+name: RFB Snapshot Weekly Sync
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  rfb-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refresh RFB & NCM snapshot with floor checks
+        run: node scripts/rfb-refresh.mjs --force
+
+      - name: Run fiscal conformity & governance test suites
+        run: npm test
+
+      - name: Optional RFB Docker parity verification (when upstream containers are enabled)
+        if: ${{ vars.ENABLE_RFB_DOCKER_PARITY == 'true' }}
+        run: |
+          if [ -f services/rfb-manifest.json ]; then
+            docker compose up -d --wait rtc-regime-regular rtc-simples
+            RTC_LIVE_PROBE=true node scripts/run-paridade.mjs || (docker compose down && exit 1)
+            docker compose down
+          fi
+
+      - name: Create Pull Request with updated snapshot
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore(data): update RFB/Reforma/NCM snapshot'
+          branch: bot/rfb-snapshot
+          delete-branch: true
+          title: 'chore(data): atualização semanal do snapshot RFB/Reforma'
+          body: |
+            Atualização automatizada semanal do snapshot oficial em `public/data/` com validação estrita contra `rules/snapshot-floors.json` e execução completa de `npm test`.
+          add-paths: |
+            public/data/**

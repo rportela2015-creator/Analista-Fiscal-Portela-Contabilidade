@@ -61,6 +61,87 @@ export interface ImpactoSaneamentoNcm {
   itemRecalculado: ItemFiscalAuditado;
 }
 
+export interface RastreabilidadeSnapshotFiscal {
+  mode: string;
+  updatedAt?: string;
+  snapshotSha256: string;
+  normasVigentes: string[];
+  rascunhoNaoOficial?: boolean;
+}
+
+export const DEFAULT_NORMAS_VIGENTES_SANEAMENTO: readonly string[] = [
+  'EC nº 132/2023 e LC nº 214/2025 (IBS/CBS e Anexo IX)',
+  'RICMS/PR Dec. 7.871/2017 (Anexo IX e Art. 14)',
+  'Decretos PR nº 6.048/2024 e nº 12.828/2026 (Exclusões ST)',
+  'Ajuste SINIEF nº 07/2005 Cl. 14ª-A (Limites CC-e)',
+  'Resolução Gecex nº 926/2026 (NCM Siscomex)',
+];
+
+/**
+ * Normaliza o carimbo de rastreabilidade do snapshot para laudos e relatórios de saneamento.
+ */
+export function resolverRastreabilidadeSnapshot(
+  input?: {
+    mode?: string | null;
+    updatedAt?: string | null;
+    snapshotSha256?: string | null;
+    normasVigentes?: (string | null | undefined)[] | null;
+    rascunhoNaoOficial?: boolean | null;
+  } | null,
+  fallbackSha?: string | null
+): RastreabilidadeSnapshotFiscal {
+  const normasLimpas = Array.isArray(input?.normasVigentes)
+    ? input.normasVigentes.map((n) => String(n || '').trim()).filter(Boolean)
+    : [];
+
+  return {
+    mode: (input?.mode || '').trim() || 'deterministico-local',
+    ...(input?.updatedAt && String(input.updatedAt).trim() ? { updatedAt: String(input.updatedAt).trim() } : {}),
+    snapshotSha256: (input?.snapshotSha256 || '').trim() || (fallbackSha || '').trim() || 'N/A',
+    normasVigentes: normasLimpas.length > 0 ? normasLimpas : [...DEFAULT_NORMAS_VIGENTES_SANEAMENTO],
+    ...(input?.rascunhoNaoOficial ? { rascunhoNaoOficial: true } : {}),
+  };
+}
+
+/**
+ * Diferencia explicitamente pendência específica de Anexo IX LC 214 (agropecuária 8432..8701)
+ * de ausência genérica de mapeamento cClassTrib (ex.: 8471.30.12 -> "cClassTrib a confirmar").
+ */
+export function formatarStatusReformaSaneamento(info?: {
+  cClassTrib?: string | null;
+  reducaoIbsCbsPct?: number | null;
+  enquadramentoPendente?: boolean | null;
+  requerConferenciaAnexoIX?: boolean | null;
+} | null): {
+  tipo: 'anexo_ix_pendente' | 'cclasstrib_confirmar' | 'confirmado';
+  rotulo: string;
+} {
+  if (!info) {
+    return { tipo: 'confirmado', rotulo: '—' };
+  }
+  const cod = (info.cClassTrib || '').trim();
+  const red = Number(info.reducaoIbsCbsPct || 0);
+
+  if (info.requerConferenciaAnexoIX === true) {
+    return {
+      tipo: 'anexo_ix_pendente',
+      rotulo: cod ? `${cod} · Anexo IX LC 214 pendente` : 'Anexo IX LC 214 pendente',
+    };
+  }
+
+  if (info.enquadramentoPendente === true) {
+    return {
+      tipo: 'cclasstrib_confirmar',
+      rotulo: 'cClassTrib a confirmar',
+    };
+  }
+
+  return {
+    tipo: 'confirmado',
+    rotulo: `${cod || '—'}${red > 0 ? ` (-${red}%)` : ''}`,
+  };
+}
+
 export interface SaneamentoNcmAuditado {
   aderencia: ResultadoAderenciaNcm;
   overrideAtivo: boolean;

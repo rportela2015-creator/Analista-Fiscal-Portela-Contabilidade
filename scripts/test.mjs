@@ -202,6 +202,7 @@ const ALL_TESTS = [
   'tests/pipeline-conformidade-calculos.test.mjs',
   'tests/fluxo-canonico-item-auditado.test.mjs',
   'tests/saneamento-ncm-aderencia.test.mjs',
+  'tests/rfb-snapshot-governanca.test.mjs',
 ];
 
 // Suporte a execução de suíte única via CLI: node scripts/test.mjs tests/foo.test.mjs

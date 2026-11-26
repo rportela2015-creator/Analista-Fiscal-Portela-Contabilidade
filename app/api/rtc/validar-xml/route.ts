@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { validarXmlRtcRfb } from '@/lib/integracoes/rtc-regime-regular/client';
-import { ErroIntegracaoRfb } from '@/lib/integracoes/rfb-health';
+import { ErroIntegracaoRfb, getRtcMode } from '@/lib/integracoes/rfb-health';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const rtcStatus = await getRtcMode();
   try {
     const contentType = req.headers.get('content-type') || '';
     let xmlContent = '';
@@ -95,6 +96,7 @@ export async function POST(req: NextRequest) {
         tipo,
         subtipo,
         duracaoMs,
+        rtcStatus,
       },
       { status: 200 }
     );
@@ -108,6 +110,7 @@ export async function POST(req: NextRequest) {
           status: err.status,
           problemDetail: err.problemDetail,
           circuitBreakerState: err.circuitBreakerState,
+          rtcStatus,
         },
         { status: err.status || 503 }
       );
@@ -118,6 +121,7 @@ export async function POST(req: NextRequest) {
         sucesso: false,
         mensagem: 'Erro interno ao validar XML fiscal',
         detalhes: err.message,
+        rtcStatus,
       },
       { status: 500 }
     );

@@ -24,7 +24,11 @@ import {
 } from '@/lib/custos';
 import { RegimeTributario, DestinacaoMercadoria, loadMarcoLegal, type MarcoLegal } from '@/lib/marco-legal';
 import { loadDataset, type Dataset } from '@/lib/data';
-import { aplicarSaneamentoNcmNoItem } from '@/lib/fiscal/saneamento-ncm';
+import {
+  DEFAULT_NORMAS_VIGENTES_SANEAMENTO,
+  aplicarSaneamentoNcmNoItem,
+  resolverRastreabilidadeSnapshot,
+} from '@/lib/fiscal/saneamento-ncm';
 import { auditarDifalNotaEntrada } from '@/lib/engine/difal-pr';
 import {
   apurarDemonstrativoDifalEntradaPR,
@@ -627,6 +631,7 @@ export default function AuditoriaEntrada() {
         };
       });
 
+      const shaReport = (extractedInvoice as any)?.sha256 || resultadoOrquestracao?.sha256Xml || datasetSaneamento?.meta?.versao || undefined;
       const payloadRelatorio = {
         ...auditResult,
         itens: itensEnriquecidos,
@@ -644,7 +649,18 @@ export default function AuditoriaEntrada() {
           : undefined,
         resumoDifalEntrada: apuracaoDifalNota?.resumoDifalNota,
         orquestracaoDag: resultadoOrquestracao || undefined,
-        sha256: (extractedInvoice as any)?.sha256 || resultadoOrquestracao?.sha256Xml || undefined,
+        sha256: shaReport,
+        rastreabilidadeSnapshot: resolverRastreabilidadeSnapshot({
+          mode: resultadoOrquestracao ? 'orquestrador-local-dag' : 'deterministico-local',
+          snapshotSha256: shaReport || datasetSaneamento?.meta?.versao || 'N/A',
+          normasVigentes: [
+            ...DEFAULT_NORMAS_VIGENTES_SANEAMENTO,
+            ...(datasetSaneamento?.meta?.ncm_ato &&
+            !DEFAULT_NORMAS_VIGENTES_SANEAMENTO.some((n) => n.includes(datasetSaneamento.meta.ncm_ato))
+              ? [datasetSaneamento.meta.ncm_ato]
+              : []),
+          ],
+        }),
         format,
       };
 

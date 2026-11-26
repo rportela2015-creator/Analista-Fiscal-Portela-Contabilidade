@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { esc } from '@/lib/html';
 import {
+  formatarStatusReformaSaneamento,
+  resolverRastreabilidadeSnapshot,
+} from '@/lib/fiscal/saneamento-ncm';
+import {
+  getRtcMode,
+  MENSAGEM_BLOQUEIO_HARDCODED,
+} from '@/lib/integracoes/rfb-health';
+import {
   PORTELA_COPYRIGHT,
   PORTELA_FOOTER_CSS,
   PORTELA_HEADER_CSS,
@@ -117,6 +125,13 @@ const relatorioPayloadSchema = z.object({
   auditoriaNfse: z.any().optional().nullable(),
   paridadeRfb: z.any().optional().nullable(),
   sha256: z.string().optional().nullable(),
+  rastreabilidadeSnapshot: z.object({
+    mode: z.string().optional().nullable(),
+    updatedAt: z.string().optional().nullable(),
+    snapshotSha256: z.string().optional().nullable(),
+    normasVigentes: z.array(z.string()).optional().nullable(),
+  }).passthrough().optional().nullable(),
+  permitirSimulacaoHardcoded: z.boolean().optional().default(false),
   tituloDocumento: z.string().optional().nullable(),
   // Contexto de Empresa Ativa e NF-e
   empresaAtiva: empresaEntitySchema,
@@ -164,11 +179,42 @@ export async function POST(req: Request) {
     const format = data.format;
     const dataHoraFormatada = new Date().toLocaleString('pt-BR');
 
+    const rtcStatus = await getRtcMode();
+    const isRascunhoHardcoded = rtcStatus.mode === 'hardcoded' && Boolean(data.permitirSimulacaoHardcoded);
+    if (rtcStatus.mode === 'hardcoded' && !data.permitirSimulacaoHardcoded) {
+      return NextResponse.json(
+        {
+          error: MENSAGEM_BLOQUEIO_HARDCODED,
+          codigo: 'RTC_HARDCODED_BLOQUEADO',
+          rtcStatus,
+        },
+        { status: 503 }
+      );
+    }
+
     // Extrair dados do DAG, NFS-e e Paridade
     const dag = data.orquestracaoDag;
     const nfse = data.auditoriaNfse;
     const paridade = data.paridadeRfb || dag?.etapas?.rtc?.paridadeRfb;
-    const sha256Calculado = data.sha256 || dag?.sha256Xml || nfse?.extracao?.sha256 || 'N/A';
+    const sha256Calculado = data.sha256 || dag?.sha256Xml || nfse?.extracao?.sha256 || rtcStatus.snapshotSha256 || 'N/A';
+    const rtcNormasArr = [
+      rtcStatus.normasVigentes.ntNfe,
+      rtcStatus.normasVigentes.ricmsPr,
+      rtcStatus.normasVigentes.lcReforma,
+    ];
+    const rastreabilidadeSaneamento = resolverRastreabilidadeSnapshot(
+      {
+        mode: data.rastreabilidadeSnapshot?.mode || rtcStatus.mode,
+        updatedAt: data.rastreabilidadeSnapshot?.updatedAt || rtcStatus.updatedAt || new Date().toISOString(),
+        snapshotSha256: data.rastreabilidadeSnapshot?.snapshotSha256 || rtcStatus.snapshotSha256 || sha256Calculado,
+        normasVigentes:
+          Array.isArray(data.rastreabilidadeSnapshot?.normasVigentes) && data.rastreabilidadeSnapshot.normasVigentes.length > 0
+            ? data.rastreabilidadeSnapshot.normasVigentes
+            : rtcNormasArr,
+        rascunhoNaoOficial: isRascunhoHardcoded,
+      },
+      sha256Calculado
+    );
     const resumoDifal = data.resumoDifalEntrada || data.relatorioDifal;
 
     // Resolver empresa ativa / partes da NF-e / contexto operacional
@@ -217,11 +263,14 @@ export async function POST(req: Request) {
           : 'Laudo Técnico de Auditoria Fiscal e Tributária'
       );
 
-      const subtituloHeader = nfse
+      const subtituloBase = nfse
         ? 'Auditoria de Tomador de Serviços — Reforma Tributária (LC 214/2025) e Retenções Federais'
         : dag
         ? 'Auditoria Canônica em 6 Etapas: RFB RTC, ICMS/PR, Créditos 3 Camadas e 4 Regimes'
         : 'Auditoria de Entrada de Documento Fiscal Eletrônico (DF-e)';
+      const subtituloHeader = isRascunhoHardcoded
+        ? `RASCUNHO NÃO OFICIAL (MODO HARDCODED) — ${subtituloBase}`
+        : subtituloBase;
 
       const docRefHeader = nfse
         ? `NFS-e / DPS: ${esc(nfse.extracao?.identificacao?.nNFSe || nfse.extracao?.identificacao?.nDPS || 'Sem número')}`
@@ -758,6 +807,10 @@ export async function POST(req: Request) {
       const saneamentoHtml = itensSaneamento.length > 0 ? `
       <div class="section" style="background-color:#fffbeb; border:1px solid #fcd34d; border-left:4px solid #d97706;">
         <h2>Divergências de Classificação &amp; Saneamento NCM (Entrada XML × Saída ERP)</h2>
+        <div style="margin-bottom:10px; padding:8px 10px; background:#fef3c7; border:1px solid #f59e0b; border-radius:4px; font-size:0.78rem; color:#78350f;">
+          <div><strong>Rastreabilidade Snapshot:</strong> <code>mode=${esc(rastreabilidadeSaneamento.mode)}</code> &middot; <strong>snapshotSha256:</strong> <span class="monospace-sm">${esc(rastreabilidadeSaneamento.snapshotSha256)}</span></div>
+          <div style="margin-top:3px;"><strong>normasVigentes:</strong> ${esc(rastreabilidadeSaneamento.normasVigentes.join(' | '))}</div>
+        </div>
         <table class="tabela-dag">
           <thead>
             <tr>
@@ -774,9 +827,14 @@ export async function POST(req: Request) {
               const san = aud.saneamentoNcm;
               const ad = san.aderencia || {};
               const imp = san.impactoAntesDepois;
+              const reformaStatusStr = imp
+                ? `LC 214: ${formatarStatusReformaSaneamento(imp.antes).rotulo} → ${formatarStatusReformaSaneamento(imp.depois).rotulo}`
+                : aud.tributacaoReforma
+                  ? `LC 214: ${formatarStatusReformaSaneamento(aud.tributacaoReforma).rotulo}`
+                  : '';
               const impactoStr = imp
-                ? `Δ ICMS PR ${imp.deltaAliqIcmsPrPct >= 0 ? '+' : ''}${imp.deltaAliqIcmsPrPct}% | Δ DIFAL ${fmtMoeda(imp.deltaDifalTotal)} | Δ CMV Unit. ${fmtMoeda(imp.deltaCmvUnitario)}`
-                : 'Simulação pendente';
+                ? `Δ ICMS PR ${imp.deltaAliqIcmsPrPct >= 0 ? '+' : ''}${imp.deltaAliqIcmsPrPct}% | Δ DIFAL ${fmtMoeda(imp.deltaDifalTotal)} | Δ CMV Unit. ${fmtMoeda(imp.deltaCmvUnitario)}${reformaStatusStr ? ` | ${reformaStatusStr}` : ''}`
+                : `Simulação pendente${reformaStatusStr ? ` | ${reformaStatusStr}` : ''}`;
               const orig = aud.ncmEscrituradoEntrada || aud.ncm || '—';
               const saida = san.overrideAtivo && san.ncmSaneadoSaida ? san.ncmSaneadoSaida : 'Não aplicado';
               return `
@@ -796,10 +854,15 @@ export async function POST(req: Request) {
       // 7. Rodapé Técnico de Governança Pericial
       const rodapeTecnicoHtml = `
       <div class="rodape-tecnico">
+        ${isRascunhoHardcoded ? '<div style="margin-bottom:8px; padding:6px 10px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; font-weight:700; border-radius:4px;">⚠️ RASCUNHO NÃO OFICIAL — Gerado em modo hardcoded (snapshot oficial RFB/Reforma ausente).</div>' : ''}
         <div class="rodape-linha">
           <div><b>Emissão:</b> ${esc(dataHoraFormatada)}</div>
           <div><b>Plataforma:</b> MargemReal Portela <span class="tag-versao">${esc(PORTELA_VERSION)}</span></div>
           <div><b>Integridade SHA-256:</b> <span class="monospace-sm">${esc(sha256Calculado)}</span></div>
+        </div>
+        <div class="rodape-motores" style="background:#f8fafc; padding:6px 8px; border:1px solid #e2e8f0; border-radius:4px;">
+          <b>Rastreabilidade Snapshot:</b> <code>Modo=${esc(rastreabilidadeSaneamento.mode)}</code> | <b>Atualizado em:</b> ${esc(rastreabilidadeSaneamento.updatedAt || dataHoraFormatada)} | <b>Hash SHA-256:</b> <span class="monospace-sm">${esc(rastreabilidadeSaneamento.snapshotSha256)}</span><br/>
+          <b>Normas Vigentes:</b> ${esc(rastreabilidadeSaneamento.normasVigentes.join(' | '))}
         </div>
         <div class="rodape-motores">
           <b>Motores Integrados:</b> RFB RTC Regime Regular v1.0 | RFB RTC Simples Nacional v1.0 | Gerador DANFSE v1.0.0 | Motor ICMS/PR v5.0.0
@@ -1114,18 +1177,26 @@ export async function POST(req: Request) {
           (aud.saneamentoNcm.overrideAtivo || aud.saneamentoNcm.aderencia?.statusAderencia !== 'ADERENTE')
       );
       if (itensSanTxt.length > 0) {
-        txtContent += `## Divergências de Classificação & Saneamento NCM (Entrada XML × Saída ERP)\n\n`;
+        txtContent += `## Divergências de Classificação & Saneamento NCM (Entrada XML × Saída ERP)\n`;
+        txtContent += `Rastreabilidade Snapshot: mode=${rastreabilidadeSaneamento.mode} | snapshotSha256=${rastreabilidadeSaneamento.snapshotSha256} | normasVigentes=${rastreabilidadeSaneamento.normasVigentes.join('; ')}\n\n`;
         itensSanTxt.forEach((aud, idx) => {
           const san = aud.saneamentoNcm;
           const ad = san.aderencia || {};
           const imp = san.impactoAntesDepois;
+          const reformaStatusTxt = imp
+            ? `${formatarStatusReformaSaneamento(imp.antes).rotulo} -> ${formatarStatusReformaSaneamento(imp.depois).rotulo}`
+            : aud.tributacaoReforma
+              ? formatarStatusReformaSaneamento(aud.tributacaoReforma).rotulo
+              : '';
           txtContent += `- Item ${idx + 1}: ${aud.cProd || 'S/N'} - ${aud.xProd || 'Produto'}\n`;
           txtContent += `  Aderência: ${ad.statusAderencia || 'REQUER_PERICIA'} (${ad.scoreAderencia ?? 0}%) | Entrada XML: ${aud.ncmEscrituradoEntrada || aud.ncm} | Saída Saneada: ${san.ncmSaneadoSaida || 'Não aplicado'}\n`;
           if (san.justificativaPericial) {
             txtContent += `  Justificativa: ${san.justificativaPericial}\n`;
           }
           if (imp) {
-            txtContent += `  Impacto Antes × Depois: Δ ICMS PR ${imp.deltaAliqIcmsPrPct}% | Δ DIFAL ${fmtMoeda(imp.deltaDifalTotal)} | Δ CMV Unit. ${fmtMoeda(imp.deltaCmvUnitario)}\n`;
+            txtContent += `  Impacto Antes × Depois: Δ ICMS PR ${imp.deltaAliqIcmsPrPct}% | Δ DIFAL ${fmtMoeda(imp.deltaDifalTotal)} | Δ CMV Unit. ${fmtMoeda(imp.deltaCmvUnitario)}${reformaStatusTxt ? ` | LC 214: ${reformaStatusTxt}` : ''}\n`;
+          } else if (reformaStatusTxt) {
+            txtContent += `  LC 214: ${reformaStatusTxt}\n`;
           }
           txtContent += `  Orientação CC-e: ${san.orientacaoOperacional || ''}\n\n`;
         });
@@ -1147,6 +1218,11 @@ export async function POST(req: Request) {
       });
     }
 
+    if (isRascunhoHardcoded) {
+      txtContent += `[AVISO] RASCUNHO NÃO OFICIAL — MODO HARDCODED (SNAPSHOT RFB AUSENTE)\n`;
+    }
+    txtContent += `Rastreabilidade Snapshot: Modo=${rastreabilidadeSaneamento.mode} | Atualizado em=${rastreabilidadeSaneamento.updatedAt || dataHoraFormatada} | Hash SHA-256=${rastreabilidadeSaneamento.snapshotSha256}\n`;
+    txtContent += `Normas Vigentes: ${rastreabilidadeSaneamento.normasVigentes.join(' | ')}\n`;
     txtContent += `\n================================================================================\n`;
     txtContent += `Laudo emitido em estrita conformidade com a EC nº 132/2023, LC nº 214/2025,\n`;
     txtContent += `LC nº 227/2025, RICMS/PR e normas vigentes da Receita Federal do Brasil.\n`;

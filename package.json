@@ -16,6 +16,8 @@
     "db:migrate": "node scripts/db-migrate.mjs",
     "build:reforma": "python3 scripts/baixar_reforma.py && python3 scripts/baixar_is.py && python3 scripts/pipeline.py",
     "reforma": "python3 scripts/baixar_reforma.py",
+    "rfb:refresh": "node scripts/rfb-refresh.mjs",
+    "rfb:verify": "node scripts/rfb-refresh.mjs --skip-download --dry-run",
     "ui:test": "node scripts/ui-smoke.mjs",
     "erp": "python3 scripts/baixar_erp.py && python3 scripts/pipeline.py"
   },

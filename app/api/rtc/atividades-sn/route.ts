@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listarAtividadesSimplesRfb } from '@/lib/integracoes/rtc-simples/client';
-import { ErroIntegracaoRfb } from '@/lib/integracoes/rfb-health';
+import { ErroIntegracaoRfb, getRtcMode } from '@/lib/integracoes/rfb-health';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
  * Retorna o catálogo oficial de atividades do Simples Nacional com suporte a filtros e cache em memória.
  */
 export async function GET(req: NextRequest) {
+  const rtcStatus = await getRtcMode();
   try {
     const { searchParams } = new URL(req.url);
     const data = searchParams.get('data') || undefined;
@@ -43,6 +44,7 @@ export async function GET(req: NextRequest) {
         cached,
         duracaoMs,
         atividades: filtradas,
+        rtcStatus,
       },
       { status: 200 }
     );
@@ -55,6 +57,7 @@ export async function GET(req: NextRequest) {
           servico: err.servico,
           status: err.status,
           circuitBreakerState: err.circuitBreakerState,
+          rtcStatus,
         },
         { status: err.status || 503 }
       );
@@ -65,6 +68,7 @@ export async function GET(req: NextRequest) {
         sucesso: false,
         mensagem: 'Erro ao listar atividades do Simples Nacional',
         detalhes: err.message,
+        rtcStatus,
       },
       { status: 500 }
     );

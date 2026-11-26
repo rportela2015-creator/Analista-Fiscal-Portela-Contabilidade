@@ -23,7 +23,10 @@ import {
   ORIENTACAO_OPERACIONAL_CCE_NCM,
   avaliarAderenciaNcm,
 } from '@/lib/fiscal/aderencia-ncm';
-import { simularImpactoSaneamentoNcm } from '@/lib/fiscal/saneamento-ncm';
+import {
+  formatarStatusReformaSaneamento,
+  simularImpactoSaneamentoNcm,
+} from '@/lib/fiscal/saneamento-ncm';
 import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
 import ItemDetailDrawer from '@/components/ui/ItemDetailDrawer';
 import LegalCitationBlock, { type NormativeCitation } from '@/components/ui/LegalCitationBlock';
@@ -650,15 +653,23 @@ export default function TabelaItensExtracao({
                         {item.sensivelParaAuditoria && (
                           <span className="badge media" style={{ fontSize: 10 }}>⚠️ Sensível</span>
                         )}
-                        {auditado?.tributacaoReforma?.requerConferenciaAnexoIX && (
+                        {auditado?.tributacaoReforma?.requerConferenciaAnexoIX ? (
                           <span
                             className="badge media"
                             style={{ fontSize: 10 }}
-                            title={auditado.tributacaoReforma.observacaoNormativa}
+                            title={auditado.tributacaoReforma.observacaoNormativa || 'Posição 8432–8701: conferir subitem específico no Anexo IX da LC 214/2025'}
                           >
-                            Anexo IX pendente
+                            Anexo IX LC 214 pendente
                           </span>
-                        )}
+                        ) : auditado?.tributacaoReforma?.enquadramentoPendente ? (
+                          <span
+                            className="badge blue"
+                            style={{ fontSize: 10 }}
+                            title={auditado.tributacaoReforma.observacaoNormativa || 'NCM sem mapeamento automático de cClassTrib na tabela oficial; confirmar enquadramento IBS/CBS'}
+                          >
+                            cClassTrib a confirmar
+                          </span>
+                        ) : null}
                         {auditado?.cteFobVinculado && auditado.custoCpc16.freteCteFob > 0 && (
                           <span className="badge blue tabular-nums" style={{ fontSize: 10 }}>
                             CT-e FOB: +{formatarBrl(auditado.custoCpc16.freteCteFob)}
@@ -1228,8 +1239,8 @@ export default function TabelaItensExtracao({
                         </tr>
                         <tr>
                           <td>cClassTrib / Red.</td>
-                          <td className="is-right">{impactoSimulado.antes.cClassTrib || 'Pendente'} ({impactoSimulado.antes.reducaoIbsCbsPct}%)</td>
-                          <td className="is-right">{impactoSimulado.depois.cClassTrib || 'Pendente'} ({impactoSimulado.depois.reducaoIbsCbsPct}%)</td>
+                          <td className="is-right">{formatarStatusReformaSaneamento(impactoSimulado.antes).rotulo}</td>
+                          <td className="is-right">{formatarStatusReformaSaneamento(impactoSimulado.depois).rotulo}</td>
                           <td className="is-right">—</td>
                         </tr>
                         <tr>

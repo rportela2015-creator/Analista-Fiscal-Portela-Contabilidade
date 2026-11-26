@@ -107,6 +107,13 @@ export interface FooterPortelaOptions {
   versao?: string;
   sha256?: string;
   notaLegal?: string;
+  rastreabilidade?: {
+    mode: string;
+    updatedAt?: string | null;
+    snapshotSha256: string;
+    normasVigentes: string[];
+    rascunhoNaoOficial?: boolean;
+  };
 }
 
 /**
@@ -115,6 +122,16 @@ export interface FooterPortelaOptions {
  */
 export function renderFooterPortela(opts: FooterPortelaOptions = {}): string {
   const versao = opts.versao || PORTELA_VERSION;
+  const r = opts.rastreabilidade;
+  const traceHtml = r
+    ? `<div class="rel-footer__hash" style="margin-top:6px;">`
+      + (r.rascunhoNaoOficial ? `<strong style="color:#b91c1c;">[RASCUNHO NÃO OFICIAL — MODO HARDCODED]</strong> &middot; ` : '')
+      + `<strong>Modo:</strong> ${esc(r.mode)}`
+      + (r.updatedAt ? ` &middot; <strong>Atualizado em:</strong> ${esc(r.updatedAt)}` : '')
+      + ` &middot; <strong>Hash SHA-256:</strong> ${esc(r.snapshotSha256)}`
+      + `<br/><strong>Normas Vigentes:</strong> ${esc(r.normasVigentes.join(' | '))}`
+      + `</div>`
+    : '';
   return `
   <footer class="rel-footer">
     <div class="rel-footer__row">
@@ -122,6 +139,7 @@ export function renderFooterPortela(opts: FooterPortelaOptions = {}): string {
       <span class="rel-footer__copy">${esc(PORTELA_COPYRIGHT)}</span>
     </div>
     ${opts.sha256 ? `<div class="rel-footer__hash"><strong>SHA-256:</strong> ${esc(opts.sha256)}</div>` : ''}
+    ${traceHtml}
     ${opts.notaLegal ? `<div class="rel-footer__legal">${esc(opts.notaLegal)}</div>` : ''}
   </footer>
   `.trim();

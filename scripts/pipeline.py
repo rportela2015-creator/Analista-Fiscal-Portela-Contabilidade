@@ -11,6 +11,7 @@ Fontes oficiais (baixadas em runtime por baixar_fontes.py):
 Saída: public/data/*.json
 """
 import json
+import os
 import re
 import sys
 import unicodedata
@@ -18,7 +19,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
-OUT = ROOT / "public" / "data"
+_out_env = os.environ.get("PIPELINE_OUT_DIR")
+OUT = Path(_out_env).resolve() if _out_env else (ROOT / "public" / "data")
 RULES_PATH = ROOT / "rules" / "rules.json"
 OUT.mkdir(parents=True, exist_ok=True)
 
