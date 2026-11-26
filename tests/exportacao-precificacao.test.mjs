@@ -640,21 +640,21 @@ t('Etapa 10: Conversão converterItemExtracaoParaParametrizacao e parametrizarLo
 
   // Item 1 (Máquina Agrícola NCM 8433)
   const it1 = resultadoLote.itensParametrizados[0];
-  assert.equal(it1.cClassTribSugerido, '200003', 'cClassTrib de Máquinas Agrícolas');
+  assert.equal(it1.cClassTribSugerido, '200038', 'cClassTrib oficial de Máquinas Agrícolas (Anexo IX)');
   assert.equal(it1.reducaoIbsCbsPct, 60.0, 'Redução 60% IBS/CBS');
   assert.equal(it1.beneficioIcmsPr, 'CONV-ICMS-52-1991', 'Convênio 52/91 vinculado');
   assert.equal(it1.cfopEntradaSugerido, '2102', 'CFOP 6102 de SP para PR revenda -> 2102');
 
   // Item 2 (Arroz NCM 1006)
   const it2 = resultadoLote.itensParametrizados[1];
-  assert.equal(it2.cClassTribSugerido, '100001', 'cClassTrib Cesta Básica Nacional');
+  assert.equal(it2.cClassTribSugerido, '200003', 'cClassTrib oficial Cesta Básica Nacional (Anexo I)');
   assert.equal(it2.reducaoIbsCbsPct, 100.0, 'Alíquota Zero de IBS/CBS');
   assert.equal(it2.cstIbsCbsSugerido, '02', 'CST 02 para alíquota zero');
 });
 
 t('Etapa 12: Detecção de reduções da Reforma e Convênio 52/1991 (dispensa de estorno na entrada)', () => {
   const reducoes = detectarReducoesFiscaisPorNcm('84335100', marco);
-  assert.equal(reducoes.reforma.cClassTrib, '200003');
+  assert.equal(reducoes.reforma.cClassTrib, '200038');
   assert.equal(reducoes.reforma.reducaoIbsCbsPct, 60.0);
   assert.equal(reducoes.icms.convenioCorrelato, 'CONV-ICMS-52-1991');
   assert.equal(reducoes.icms.dispensaEstornoEntrada, true);

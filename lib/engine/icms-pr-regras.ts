@@ -5,7 +5,8 @@
  * Convênio ICMS 142/2018, Convênio ICMS 35/2011, e Consultas Tributárias SEFA/PR nº 43/2023, 51/2021 e 018/2026.
  */
 
-import { verificarExclusaoStPr } from './matriz-icms-pr';
+import { resolverAliquotaPrBitemporal, verificarExclusaoStPr } from './matriz-icms-pr';
+import { consultarMvaStPr, resolverCbenefPr } from './tabelas-pr';
 
 export const r2 = (v: number): number => Math.round((v + Number.EPSILON) * 100) / 100;
 export const r4 = (v: number): number => Math.round((v + Number.EPSILON) * 10000) / 10000;
@@ -55,7 +56,10 @@ export function calcularDiferimentoParcialPR(
   const ufO = (input.ufOrigem || 'PR').trim().toUpperCase();
   const ufD = (input.ufDestino || 'PR').trim().toUpperCase();
   const crtD = Number(input.crtDestinatario ?? 3);
-  const aliq = Number(input.aliqInternaPct || 19.5);
+  const aliq =
+    input.aliqInternaPct !== undefined && Number(input.aliqInternaPct) > 0
+      ? Number(input.aliqInternaPct)
+      : resolverAliquotaPrBitemporal('00000000', new Date().toISOString().slice(0, 10)).aliquotaIcmsPct;
   const valor = Number(input.valorOperacao || 0);
 
   // 1. Travas Automáticas de Bloqueio
@@ -173,6 +177,11 @@ export function calcularDiferimentoParcialPR(
   memoriaCalculo.push(`ICMS Diferido (Recolhimento Postergado): R$ ${icmsDiferido.toFixed(2)}`);
   memoriaCalculo.push(`Dispensa expressa de estorno de crédito da entrada na operação antecedente (Art. 28 Anexo VIII).`);
 
+  const cBenefDiferimento = resolverCbenefPr({
+    tipoBeneficio: 'diferimento_parcial_art28',
+    cst: '51',
+  });
+
   return {
     aplicavel: true,
     cargaEfetiva: 12.0,
@@ -183,7 +192,7 @@ export function calcularDiferimentoParcialPR(
     icmsDestacado,
     icmsDiferido,
     cst: '51',
-    cBenefReferencia: 'PR830001 (validar Tabela 5.2 SEFA/PR)',
+    cBenefReferencia: cBenefDiferimento.cBenef,
     exigeEstornoCredito: false,
     dispositivoLegal: 'Art. 28, inciso I, alínea "a" do Anexo VIII do RICMS/PR (Decreto nº 5.143/2024).',
     memoriaCalculo,
@@ -241,7 +250,10 @@ export function calcularReducaoBcEEstornoPR(
   input: EntradaReducaoBcEEstornoPR
 ): DiagnosticoReducaoBcEEstornoPR {
   const memoriaCalculo: string[] = [];
-  const aliq = Number(input.aliqInternaPct || 19.5);
+  const aliq =
+    input.aliqInternaPct !== undefined && Number(input.aliqInternaPct) > 0
+      ? Number(input.aliqInternaPct)
+      : resolverAliquotaPrBitemporal('00000000', new Date().toISOString().slice(0, 10)).aliquotaIcmsPct;
   const valor = Number(input.valorOperacao || 0);
   const creditoEntrada = Number(input.creditoIcmsEntrada || 0);
 
@@ -522,8 +534,15 @@ export function calcularIcmsStPR(input: EntradaIcmsStPR): DiagnosticoIcmsStPR {
   const crtE = Number(input.crtEmitente ?? 3);
   const data = input.dataFatoGerador || new Date().toISOString().slice(0, 10);
 
-  const aliqPr = Number(input.aliqInternaPrPct || 19.5);
-  const aliqFec = Number(input.aliqFecopPrPct || 0);
+  const dadosPrItem = resolverAliquotaPrBitemporal(input.ncm, data);
+  const aliqPr =
+    input.aliqInternaPrPct !== undefined && Number(input.aliqInternaPrPct) > 0
+      ? Number(input.aliqInternaPrPct)
+      : dadosPrItem.aliquotaIcmsPct;
+  const aliqFec =
+    input.aliqFecopPrPct !== undefined
+      ? Number(input.aliqFecopPrPct)
+      : dadosPrItem.aliquotaFecopPct;
   const aliqPrTotal = aliqPr + aliqFec;
   const aliqInter = Number(input.aliqInterestadualPct ?? (ufO === 'PR' ? aliqPr : 12.0));
 
@@ -534,6 +553,32 @@ export function calcularIcmsStPR(input: EntradaIcmsStPR): DiagnosticoIcmsStPR {
   const vDesc = Number(input.vDesc || 0);
   const vIpi = Number(input.vIpi || 0);
   const qtd = Number(input.quantidade || 1);
+
+  // 0. Trava para Combustíveis Monofásicos ad rem (LC 192/2022 e Convênios ICMS 127/2026 e 128/2026)
+  if (dadosPrItem.ehCombustivelMonofasico) {
+    const msgMono = `Combustível NCM ${input.ncm} sujeito à tributação monofásica ad rem (${dadosPrItem.aliquotaAdRem} ${dadosPrItem.unidadeAdRem}, CST 61) — vedada aplicação de ST percentual/MVA.`;
+    memoriaCalculo.push(msgMono);
+    return {
+      sujeitoSt: false,
+      criterioBase: 'NAO_APLICAVEL',
+      mvaOriginalPct: 0,
+      fatorRedutorMva: 1.0,
+      mvaAposRedutorPct: 0,
+      mvaAjustada: false,
+      mvaEfetivaPct: 0,
+      basePartidaSt: 0,
+      bcSt: 0,
+      aliquotaInternaPrTotalPct: 0,
+      debitoTotalSt: 0,
+      creditoOrigemDedutivel: 0,
+      valorIcmsSt: 0,
+      valorFecopSt: 0,
+      valorTotalRecolherSt: 0,
+      alerta: msgMono,
+      fundamentacaoLegal: `${dadosPrItem.dispositivoLegal} (Tributação Monofásica Ad Rem — CST 61).`,
+      memoriaCalculo,
+    };
+  }
 
   // 1. Verificação Bitemporal de Exclusão de ST
   const exclusao = verificarExclusaoStPr(input.ncm, input.cest, data);
@@ -571,7 +616,10 @@ export function calcularIcmsStPR(input: EntradaIcmsStPR): DiagnosticoIcmsStPR {
   let bcSt = 0;
   const basePartidaSt = r2(vProd - vDesc + vFrete + vSeg + vOutro + vIpi);
 
-  let mvaOriginalPct = Number(input.mvaOriginalPct || 0);
+  let mvaOriginalPct =
+    input.mvaOriginalPct !== undefined
+      ? Number(input.mvaOriginalPct)
+      : consultarMvaStPr({ ncm: input.ncm, cest: input.cest, dataFatoGerador: data }).mvaOriginalPct;
   let fatorRedutorMva = 1.0;
   let mvaAposRedutorPct = mvaOriginalPct;
   let mvaAjustada = false;

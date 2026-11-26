@@ -9,7 +9,9 @@ import matrizData from '../../rules/icms-pr-matriz.json';
 
 export interface ResultadoAliquotaPr {
   aliquotaIcmsPct: number;
+  aliquotaBasePct: number;
   aliquotaFecopPct: number;
+  fecopPct: number;
   aliquotaTotalPct: number;
   sujeitoFecop: boolean;
   ehCombustivelMonofasico: boolean;
@@ -17,6 +19,9 @@ export interface ResultadoAliquotaPr {
   unidadeAdRem?: string;
   dispositivoLegal: string;
   tipoAliquota: 'modal' | 'seletiva' | 'monofasica';
+  validacaoNormativa?: 'validado' | 'pendente_conferencia_lei_11580';
+  requerConferenciaNormativa?: boolean;
+  motivoConferenciaNormativa?: string;
 }
 
 export interface ResultadoExclusaoStPr {
@@ -80,7 +85,9 @@ export function resolverAliquotaPrBitemporal(
           if (comb?.prefixos_ncm?.some((prefixo: string) => ncmLimpo.startsWith(prefixo))) {
             return {
               aliquotaIcmsPct: 0,
+              aliquotaBasePct: 0,
               aliquotaFecopPct: 0,
+              fecopPct: 0,
               aliquotaTotalPct: 0,
               sujeitoFecop: false,
               ehCombustivelMonofasico: true,
@@ -88,6 +95,7 @@ export function resolverAliquotaPrBitemporal(
               unidadeAdRem: comb.unidade,
               dispositivoLegal: periodo.dispositivo_legal,
               tipoAliquota: 'monofasica',
+              validacaoNormativa: 'validado',
             };
           }
         }
@@ -97,10 +105,14 @@ export function resolverAliquotaPrBitemporal(
 
   // 2. Verificação de Alíquota Seletiva e Incidência de FECOP (Art. 14 e 14-A Lei 11.580/1996)
   let aliquotaIcmsPct: number | null = null;
+  let aliquotaSeletivaOriginal: number | null = null;
   let aliquotaFecopPct: number = 0;
   let sujeitoFecop: boolean = false;
   let dispositivoLegal: string = '';
   let tipoAliquota: 'modal' | 'seletiva' | 'monofasica' = 'modal';
+  let validacaoNormativa: 'validado' | 'pendente_conferencia_lei_11580' = 'validado';
+  let requerConferenciaNormativa = false;
+  let motivoConferenciaNormativa: string | undefined;
 
   // Verifica se há enquadramento em alíquotas seletivas (7%, 12%, 18%, 25%, 29%)
   if (matrizData.aliquotas_seletivas_pr) {
@@ -111,8 +123,19 @@ export function resolverAliquotaPrBitemporal(
       if (seletiva.excluir_ncms?.some((exc: string) => ncmLimpo === exc || ncmLimpo.startsWith(exc))) {
         continue;
       }
+      const prefixosAmplo = (seletiva as any).prefixos_exigem_ncm_8d as string[] | undefined;
+      const ncms8dValidados = (seletiva as any).ncms_8d_validados as string[] | undefined;
+      if (prefixosAmplo?.some((pref: string) => ncmLimpo.startsWith(pref))) {
+        const listado8d = ncms8dValidados?.some((n8: string) => ncmLimpo === n8);
+        if (!listado8d) {
+          requerConferenciaNormativa = true;
+          motivoConferenciaNormativa = `Prefixo amplo ${prefixosAmplo.find((p) => ncmLimpo.startsWith(p))} exige NCM de 8 dígitos listado na legislação (Lei 11.580/96 Art. 14, I); alíquota reduzida não presumida.`;
+          continue;
+        }
+      }
       if (seletiva.prefixos_ncm?.some((prefixo: string) => ncmLimpo.startsWith(prefixo))) {
         aliquotaIcmsPct = seletiva.aliquota_pct;
+        aliquotaSeletivaOriginal = seletiva.aliquota_pct;
         dispositivoLegal = seletiva.dispositivo_legal;
         tipoAliquota = 'seletiva';
         break;
@@ -132,11 +155,27 @@ export function resolverAliquotaPrBitemporal(
 
       if (itemFecop.prefixos_ncm?.some((pref: string) => ncmLimpo.startsWith(pref))) {
         sujeitoFecop = true;
-        aliquotaFecopPct = itemFecop.fecop_pct;
+        const fecopItem = Number((itemFecop as any).fecopPct ?? itemFecop.fecop_pct ?? 0);
+        const baseItemRaw = (itemFecop as any).aliquotaBasePct ?? itemFecop.base_icms_pct;
+        aliquotaFecopPct = fecopItem;
 
-        // Se o item FECOP definir base ICMS específica (ex: perfumaria 23% ICMS + 2% FECOP = 25% total)
-        if (itemFecop.base_icms_pct !== undefined) {
-          aliquotaIcmsPct = itemFecop.base_icms_pct;
+        // Trava estrutural: FECOP nunca pode reduzir o total abaixo da alíquota seletiva original
+        if (baseItemRaw !== undefined) {
+          let baseCalculada = Number(baseItemRaw);
+          if (aliquotaSeletivaOriginal !== null && baseCalculada + fecopItem < aliquotaSeletivaOriginal) {
+            baseCalculada = Number((aliquotaSeletivaOriginal - fecopItem).toFixed(2));
+          }
+          aliquotaIcmsPct = baseCalculada;
+        } else if (aliquotaSeletivaOriginal !== null) {
+          aliquotaIcmsPct = Number(Math.max(0, aliquotaSeletivaOriginal - fecopItem).toFixed(2));
+        }
+
+        if ((itemFecop as any).validacaoNormativa === 'pendente_conferencia_lei_11580') {
+          validacaoNormativa = 'pendente_conferencia_lei_11580';
+          requerConferenciaNormativa = true;
+          motivoConferenciaNormativa =
+            motivoConferenciaNormativa ||
+            `Composição ICMS base (${aliquotaIcmsPct}%) + FECOP (${aliquotaFecopPct}%) marcada para conferência normativa na Lei nº 11.580/1996.`;
         }
         tipoAliquota = 'seletiva';
         dispositivoLegal = `${dispositivoLegal ? dispositivoLegal + ' c/c ' : ''}${matrizData.fecop_anexo_xii.dispositivo_legal}`;
@@ -173,12 +212,16 @@ export function resolverAliquotaPrBitemporal(
 
   return {
     aliquotaIcmsPct,
+    aliquotaBasePct: aliquotaIcmsPct,
     aliquotaFecopPct,
+    fecopPct: aliquotaFecopPct,
     aliquotaTotalPct,
     sujeitoFecop,
     ehCombustivelMonofasico: false,
     dispositivoLegal,
     tipoAliquota,
+    validacaoNormativa,
+    ...(requerConferenciaNormativa ? { requerConferenciaNormativa, motivoConferenciaNormativa } : {}),
   };
 }
 

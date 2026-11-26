@@ -46,6 +46,8 @@ import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
 import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
 import { useParametrosPrecificacao } from '@/lib/hooks/useParametrosPrecificacao';
 import { obterFontesNormativasPorAba } from '@/lib/fiscal/fontes-normativas';
+import { resolverAliquotaPrBitemporal, verificarExclusaoStPr } from '@/lib/engine/matriz-icms-pr';
+import { consultarMvaStPr } from '@/lib/engine/tabelas-pr';
 import {
   KpiStrip,
   StickyActionBar,
@@ -526,8 +528,13 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
       }
     }
 
+    const dataRef = `${ano}-06-15`;
+    const dadosPrOrig = ufOrigem.toUpperCase() === 'PR' ? resolverAliquotaPrBitemporal(itemAtual.ncm, dataRef) : null;
+    const dadosPrDest = ufDestino.toUpperCase() === 'PR' ? resolverAliquotaPrBitemporal(itemAtual.ncm, dataRef) : null;
     const isInterna = ufOrigem.toUpperCase() === ufDestino.toUpperCase();
-    const aliqNominal = isInterna ? 19.5 : (['PR', 'SP', 'RJ', 'MG', 'RS', 'SC'].includes(ufOrigem.toUpperCase()) ? 12.0 : 7.0);
+    const aliqNominal = isInterna
+      ? (dadosPrOrig ? (dadosPrOrig.ehCombustivelMonofasico ? 0 : dadosPrOrig.aliquotaIcmsPct) : 18.0)
+      : (['PR', 'SP', 'RJ', 'MG', 'RS', 'SC'].includes(ufOrigem.toUpperCase()) ? 12.0 : 7.0);
     let aliqEfetiva = aliqNominal;
     let pRedBC = 0;
     let diferimentoPct = 0;
@@ -608,22 +615,30 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
       normaId = 'RICMS-PR-ANEXO-II-ISENCAO';
     }
 
-    // Reforma Tributária
-    const cClassTrib = itemAtual.cClassTrib || reducaoAuto?.reforma?.cClassTrib || '000001';
+    // Reforma Tributária (sem fallback silencioso '000001')
+    const cClassTrib = itemAtual.cClassTrib || reducaoAuto?.reforma?.cClassTrib || '';
+    const enquadramentoPendente = !cClassTrib;
     const reducaoIbsCbsPct = reducaoAuto?.reforma?.reducaoIbsCbsPct ?? 0;
-    const cstIbsCbs = reducaoIbsCbsPct === 100 ? '02' : reducaoIbsCbsPct > 0 ? '01' : '01';
+    const cstIbsCbs = enquadramentoPendente ? '' : reducaoIbsCbsPct === 100 ? '02' : '01';
     const exigeTribRegular = reducaoIbsCbsPct > 0;
-    const temaReforma = reducaoAuto?.reforma?.tema || (reducaoIbsCbsPct > 0 ? 'Regime Diferenciado da Reforma' : 'Regime Regular Geral');
+    const temaReforma =
+      reducaoAuto?.reforma?.tema ||
+      (enquadramentoPendente
+        ? 'Enquadramento pendente de conferência na tabela oficial'
+        : reducaoIbsCbsPct > 0
+        ? 'Regime Diferenciado da Reforma'
+        : 'Regime Regular Geral');
 
     // Apuração do DIFAL quando destinação for consumo ou ativo
     let difalInfo: ResultadoDifalDetalhado | null = null;
     const exigeDifal = (destinacao === 'uso_consumo' || destinacao === 'ativo_imobilizado') && ufOrigem !== ufDestino;
     if (exigeDifal) {
       const metodologia = regime === 'simples' ? 'base_unica' : 'base_dupla';
+      const aliqDestinoDifal = dadosPrDest ? dadosPrDest.aliquotaIcmsPct : 18.0;
       difalInfo = calcularDifalDetalhado({
         valorOperacao: compCusto.valorProdutoBruto || 100,
         aliqInterestadualPct: aliqNominal,
-        aliqInternaDestinoPct: 19.5,
+        aliqInternaDestinoPct: aliqDestinoDifal,
         ufDestino,
         metodologia,
         incluirFcp: true,
@@ -637,6 +652,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
         cstIbsCbs,
         reducaoIbsCbsPct,
         exigeTribRegular,
+        enquadramentoPendente,
         tema: temaReforma,
         normaId: reducaoAuto?.reforma?.normaId || 'LC214-ANEXOS-REDUCOES',
       },
@@ -665,6 +681,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
     regime,
     compCusto.valorProdutoBruto,
     marco,
+    ano,
   ]);
 
   // ---------------------------------------------------------------------------
@@ -705,33 +722,44 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   // ---------------------------------------------------------------------------
   const simulacaoDualStack = useMemo(() => {
     const pLiq = compCusto.custoUnitarioReal > 0 ? compCusto.custoUnitarioReal : 100;
-    const aliqIcms = sugestao?.aliquotasAplicadas.icmsVendaPct ?? (ufDestino === 'PR' ? 19.5 : 12.0);
+    const dadosPrSim = resolverAliquotaPrBitemporal(itemAtual.ncm || '', `${ano}-06-15`);
+    const aliqIcms =
+      sugestao?.aliquotasAplicadas.icmsVendaPct ??
+      (ufDestino.toUpperCase() === 'PR' ? dadosPrSim.aliquotaIcmsPct : 12.0);
     const aliqCbs = sugestao?.aliquotasAplicadas.cbsPct ?? 8.8;
     const aliqIbs = sugestao?.aliquotasAplicadas.ibsPct ?? 0.1;
     const aliqIs = sugestao?.aliquotasAplicadas.isPct ?? 0;
     return simularPrecificacaoDualStack2027PR({
       precoLiquidoSemTributos: pLiq,
       aliquotaIcmsPrPct: aliqIcms,
-      aliquotaFecopPrPct: 0,
+      aliquotaFecopPrPct: ufDestino.toUpperCase() === 'PR' ? dadosPrSim.aliquotaFecopPct : 0,
       aliquotaCbsPct: aliqCbs,
       aliquotaIbsPct: aliqIbs,
       aliquotaIsPct: aliqIs,
       incluirIbsCbsBcIcms,
     });
-  }, [compCusto.custoUnitarioReal, sugestao, ufDestino, incluirIbsCbsBcIcms]);
+  }, [compCusto.custoUnitarioReal, sugestao, ufDestino, incluirIbsCbsBcIcms, itemAtual.ncm, ano]);
 
   const resultadoMesaCompras = useMemo(() => {
+    const dataRef = `${ano}-06-15`;
+    const ncmMesa = itemAtual.ncm || '87082999';
+    const exclusaoMesa = verificarExclusaoStPr(ncmMesa, itemAtual.cest, dataRef);
+    const mvaMesa = consultarMvaStPr({ ncm: ncmMesa, cest: itemAtual.cest, dataFatoGerador: dataRef });
+    const sujeitoStEfetivo =
+      !exclusaoMesa.excluidoDaSt &&
+      !mvaMesa.ehMonofasico &&
+      Boolean((deParaCfop?.temSt || itemAtual.temSt) && mvaMesa.mvaOriginalPct > 0);
     return compararFornecedoresCustoAterrissadoPR({
       regimeComprador: regime === 'simples' ? 'SIMPLES_NACIONAL' : (regime === 'real' ? 'LUCRO_REAL' : 'LUCRO_PRESUMIDO'),
-      ncm: itemAtual.ncm || '87082999',
-      dataFatoGerador: `${ano}-06-15`,
-      sujeitoStPr: Boolean(deParaCfop?.temSt || itemAtual.temSt),
-      mvaOriginalPct: 40,
+      ncm: ncmMesa,
+      dataFatoGerador: dataRef,
+      sujeitoStPr: sujeitoStEfetivo,
+      mvaOriginalPct: sujeitoStEfetivo ? (itemAtual.pMVAST ?? mvaMesa.mvaOriginalPct) : 0,
       taxaCapitalGiroMensalPct: taxaCapGiroMesa,
       prazoMedioEstoqueDias: prazoEstoqueMesa,
       cotacoes: cotacoesMesa,
     });
-  }, [regime, itemAtual.ncm, itemAtual.temSt, ano, deParaCfop, taxaCapGiroMesa, prazoEstoqueMesa, cotacoesMesa]);
+  }, [regime, itemAtual.ncm, itemAtual.cest, itemAtual.pMVAST, itemAtual.temSt, ano, deParaCfop, taxaCapGiroMesa, prazoEstoqueMesa, cotacoesMesa]);
 
   const impactoDiesel2027 = useMemo(() => {
     return simularImpactoCombustivelAdRem2027('DIESEL_BIODIESEL', 10000);

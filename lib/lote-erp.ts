@@ -25,6 +25,12 @@ import {
   calcularMvaAjustada,
   type MarcoLegal,
 } from './marco-legal';
+import {
+  resolverAliquotaPrBitemporal,
+  verificarExclusaoStPr,
+} from './engine/matriz-icms-pr';
+import { consultarMvaStPr, resolverCbenefPr } from './engine/tabelas-pr';
+import { validarClassTribOficial } from './fiscal/reforma-tabela-oficial';
 
 export type RegimeSaidaLote = 'simples' | 'simples_hibrido' | 'presumido' | 'real';
 
@@ -35,6 +41,7 @@ export interface ContextoSaidaLote {
   finalidadeSaida: 'revenda' | 'consumidor_final' | 'industrializacao';
   anoCalendario: 2026 | 2027 | 2029 | 2033;
   temStRetidaAnteriormente?: boolean;
+  dataFatoGerador?: string;
 }
 
 export interface LinhaLoteErp {
@@ -76,6 +83,11 @@ export interface LinhaLoteErp {
   aliqCbsEfetivaPct: number;
   aliqIbsEfetivaPct: number;
   aliqIsPct: number;
+  enquadramentoPendente?: boolean;
+  justificativaEnquadramento?: string;
+  validacaoNormativaIcms?: 'validado' | 'pendente_conferencia_lei_11580';
+  requerConferenciaNormativaIcms?: boolean;
+  observacaoCbenef?: string;
 
   // Governança de Parametrização do ERP
   aderenciaErpPct: number;
@@ -247,11 +259,23 @@ export function gerarParametrizacaoErpResumida(
   const isInterestadual = ctx.ufOrigem.toUpperCase() !== ctx.ufDestino.toUpperCase();
   const ufOrig = ctx.ufOrigem.toUpperCase();
   const ufDest = ctx.ufDestino.toUpperCase();
+  const dataRef = ctx.dataFatoGerador || `${ctx.anoCalendario}-06-01`;
 
-  // 1. CEST e Substituição Tributária (ST)
+  // 0. Fonte Única Bitemporal PR + Exclusões ST + Monofásicos Ad Rem
+  const dadosPr = resolverAliquotaPrBitemporal(d8, dataRef);
   const cestsDisponiveis = rec?.cest || [];
-  const cest = cestsDisponiveis.length > 0 ? cestsDisponiveis[0] : '';
-  const temSt = Boolean(ctx.temStRetidaAnteriormente || cest.length > 0);
+  const cestBruto = cestsDisponiveis.length > 0 ? cestsDisponiveis[0] : '';
+  const exclusaoSt = verificarExclusaoStPr(d8, cestBruto, dataRef);
+  const mvaInfo = consultarMvaStPr({ ncm: d8, cest: cestBruto, dataFatoGerador: dataRef });
+
+  // 1. CEST e Substituição Tributária (ST) — vedado em monofásico ad rem ou NCM excluído por Decreto
+  const aplicaExclusaoPr = (ufOrig === 'PR' || ufDest === 'PR') && exclusaoSt.excluidoDaSt;
+  const ehMonofasico = dadosPr.ehCombustivelMonofasico;
+  const temSt =
+    !ehMonofasico &&
+    !aplicaExclusaoPr &&
+    Boolean(ctx.temStRetidaAnteriormente || mvaInfo.sujeitoSt);
+  const cest = temSt ? cestBruto || mvaInfo.cestTabela || '' : '';
 
   // 2. CFOP de Saída
   const cfopSaida = determinarCfop({
@@ -265,58 +289,103 @@ export function gerarParametrizacaoErpResumida(
   // 3. CST / CSOSN do ICMS
   let cstOuCsosnIcms = '00';
   if (ctx.regimeSaida === 'simples' || ctx.regimeSaida === 'simples_hibrido') {
-    cstOuCsosnIcms = temSt ? '500' : '102';
+    cstOuCsosnIcms = ehMonofasico ? '500' : temSt ? '500' : '102';
   } else {
-    cstOuCsosnIcms = temSt ? '60' : '00';
+    cstOuCsosnIcms = ehMonofasico ? '61' : temSt ? '60' : '00';
   }
 
-  // 4. Benefício Fiscal ICMS / Paraná
+  // 4. Benefício Fiscal ICMS / Paraná via Matriz Bitemporal e Tabela 5.2 (cBenef)
   const reducoes = detectarReducoesFiscaisPorNcm(d8, ufDest, marco);
   let cBenefPr = 'SEM_CBENEF';
+  let observacaoCbenef: string | undefined;
   let redBcIcmsPct = 0;
 
-  let aliqIcmsNominalPct = 19.5;
-  if (marco) {
-    aliqIcmsNominalPct = isInterestadual
-      ? icmsInterestadual(marco, ufOrig, ufDest, false)
-      : icmsInternoUf(marco, ufOrig);
+  let aliqIcmsNominalPct = 0;
+  if (ehMonofasico) {
+    aliqIcmsNominalPct = 0; // tributação ad rem (LC 192/2022 / Convênios 127 e 128/2026)
+  } else if (isInterestadual) {
+    aliqIcmsNominalPct = marco ? icmsInterestadual(marco, ufOrig, ufDest, false) : 12.0;
+  } else if (ufOrig === 'PR') {
+    aliqIcmsNominalPct = dadosPr.aliquotaIcmsPct;
   } else {
-    aliqIcmsNominalPct = isInterestadual ? 12.0 : (ufOrig === 'PR' ? 19.5 : 18.0);
+    aliqIcmsNominalPct = marco ? icmsInternoUf(marco, ufOrig) : 18.0;
   }
 
-  if (reducoes?.icms) {
-    if (reducoes.icms.aliqEfetivaSugeridaPct !== undefined) {
-      const efetiva = reducoes.icms.aliqEfetivaSugeridaPct;
-      redBcIcmsPct = aliqIcmsNominalPct > 0 ? r2((1 - efetiva / aliqIcmsNominalPct) * 100) : 0;
-      if (ufOrig === 'PR') {
-        cBenefPr = 'PR820001';
-      }
-      if (ctx.regimeSaida === 'presumido' || ctx.regimeSaida === 'real') {
-        cstOuCsosnIcms = '20';
-      }
-    } else if (reducoes.icms.diferimentoPct) {
-      if (ufOrig === 'PR') {
-        cBenefPr = 'PR800092';
-      }
+  if (!ehMonofasico && reducoes?.icms) {
+    if (reducoes.icms.diferimentoPct && reducoes.icms.diferimentoPct > 0) {
       if (ctx.regimeSaida === 'presumido' || ctx.regimeSaida === 'real') {
         cstOuCsosnIcms = '51';
+      }
+      if (ufOrig === 'PR') {
+        const resCb = resolverCbenefPr({
+          tipoBeneficio: 'diferimento_total_insumos_agro',
+          cst: cstOuCsosnIcms,
+          ncm: d8,
+          dataFatoGerador: dataRef,
+        });
+        cBenefPr = resCb.cBenef;
+        observacaoCbenef = resCb.observacaoConferencia;
+      }
+    } else if (reducoes.icms.aliqEfetivaSugeridaPct !== undefined) {
+      const efetiva = reducoes.icms.aliqEfetivaSugeridaPct;
+      redBcIcmsPct = aliqIcmsNominalPct > 0 ? r2((1 - efetiva / aliqIcmsNominalPct) * 100) : 0;
+
+      if (redBcIcmsPct >= 100) {
+        // Redução integral nunca pode gerar CST 20; mapeia para isenção (CST 40)
+        redBcIcmsPct = 100;
+        if (ctx.regimeSaida === 'presumido' || ctx.regimeSaida === 'real') {
+          cstOuCsosnIcms = '40';
+        }
+        if (ufOrig === 'PR') {
+          const resCb = resolverCbenefPr({
+            tipoBeneficio: 'isencao_insumos_agro_conv100',
+            cst: cstOuCsosnIcms,
+            ncm: d8,
+            dataFatoGerador: dataRef,
+          });
+          cBenefPr = resCb.cBenef;
+          observacaoCbenef = resCb.observacaoConferencia;
+        }
+      } else if (redBcIcmsPct > 0) {
+        if (ctx.regimeSaida === 'presumido' || ctx.regimeSaida === 'real') {
+          cstOuCsosnIcms = '20';
+        }
+        if (ufOrig === 'PR') {
+          const resCb = resolverCbenefPr({
+            tipoBeneficio: 'reducao_bc_anexo_vi',
+            cst: cstOuCsosnIcms,
+            ncm: d8,
+            dataFatoGerador: dataRef,
+          });
+          cBenefPr = resCb.cBenef;
+          observacaoCbenef = resCb.observacaoConferencia;
+        }
       }
     }
   }
 
-  const fcpPct = obterFcpPorUf(ufDest, marco);
+  const fcpPct = ehMonofasico
+    ? 0
+    : ufDest === 'PR'
+    ? dadosPr.aliquotaFecopPct
+    : obterFcpPorUf(ufDest, marco);
+
   const cargaIcmsEfetivaPct =
-    ctx.regimeSaida === 'simples' || ctx.regimeSaida === 'simples_hibrido'
-      ? 0
-      : temSt
+    ehMonofasico || ctx.regimeSaida === 'simples' || ctx.regimeSaida === 'simples_hibrido' || temSt
       ? 0
       : r2((aliqIcmsNominalPct + fcpPct) * (1 - redBcIcmsPct / 100));
 
-  // MVA
-  const mvaOriginalPct = temSt ? 40.0 : 0;
+  // MVA exclusivamente da tabela Anexo IX PR (zero em monofásico ou excluído por Decreto)
+  const mvaOriginalPct = temSt ? mvaInfo.mvaOriginalPct : 0;
+  const aliqDestinoPrOuUf =
+    ufDest === 'PR'
+      ? dadosPr.aliquotaTotalPct
+      : marco
+      ? icmsInternoUf(marco, ufDest)
+      : 18.0;
   const mvaAjustadaPct =
-    temSt && isInterestadual
-      ? calcularMvaAjustada(mvaOriginalPct, aliqIcmsNominalPct, 19.5)
+    temSt && isInterestadual && mvaOriginalPct > 0
+      ? calcularMvaAjustada(mvaOriginalPct, aliqIcmsNominalPct, aliqDestinoPrOuUf)
       : mvaOriginalPct;
 
   // 5. PIS / COFINS conforme Regime e Ano
@@ -346,13 +415,15 @@ export function gerarParametrizacaoErpResumida(
     aliqCofinsPct = 0;
   }
 
-  // 6. Reforma Tributária (IBS / CBS / IS)
-  let cstIbsCbs = '01';
-  let cClassTrib = '000001';
+  // 6. Reforma Tributária (IBS / CBS / IS) — validado em reforma.json, sem fallback silencioso '000001'
+  let cstIbsCbs = '';
+  let cClassTrib = '';
   let redIbsCbsPct = 0;
   let aliqCbsEfetivaPct = 0;
   let aliqIbsEfetivaPct = 0;
   let aliqIsPct = 0;
+  let enquadramentoPendente = false;
+  let justificativaEnquadramento: string | undefined;
 
   let aliqCbsNominal = 0.9;
   let aliqIbsNominal = 0.1;
@@ -372,11 +443,23 @@ export function gerarParametrizacaoErpResumida(
   }
 
   if (reducoes?.reforma) {
-    cClassTrib = reducoes.reforma.cClassTrib;
-    redIbsCbsPct = reducoes.reforma.reducaoIbsCbsPct;
-    if (redIbsCbsPct === 100) {
-      cstIbsCbs = '02'; // Imune / Alíquota Zero
+    const checkCt = validarClassTribOficial(
+      reducoes.reforma.cClassTrib,
+      reducoes.reforma.reducaoIbsCbsPct
+    );
+    if (checkCt.valido) {
+      cClassTrib = checkCt.codigo;
+      redIbsCbsPct = checkCt.reducaoOficialPct;
+      cstIbsCbs = redIbsCbsPct === 100 ? '02' : checkCt.cstOficial || '01';
+    } else {
+      enquadramentoPendente = true;
+      justificativaEnquadramento =
+        checkCt.motivo || 'cClassTrib sem validação determinística em reforma.json.';
     }
+  } else {
+    enquadramentoPendente = true;
+    justificativaEnquadramento =
+      'NCM sem mapeamento determinístico na tabela oficial (reforma.json); enquadramento IBS/CBS pendente de conferência fiscal (não atribuído 000001 sem validação).';
   }
 
   // Imposto Seletivo
@@ -460,6 +543,10 @@ export function gerarParametrizacaoErpResumida(
     aliqCbsEfetivaPct,
     aliqIbsEfetivaPct,
     aliqIsPct,
+    ...(enquadramentoPendente ? { enquadramentoPendente, justificativaEnquadramento } : {}),
+    ...(dadosPr.validacaoNormativa ? { validacaoNormativaIcms: dadosPr.validacaoNormativa } : {}),
+    ...(dadosPr.requerConferenciaNormativa ? { requerConferenciaNormativaIcms: true } : {}),
+    ...(observacaoCbenef ? { observacaoCbenef } : {}),
 
     aderenciaErpPct,
     requerCodificacaoIaErp,

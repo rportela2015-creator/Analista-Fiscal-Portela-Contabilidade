@@ -7,6 +7,10 @@
  * Nada de NCM ou percentual hardcoded aqui (AGENTS.md §1).
  */
 import type { ClassTrib, Reforma } from './data';
+import {
+  buscarClassTribPorNcmOficial,
+  validarClassTribOficial,
+} from './fiscal/reforma-tabela-oficial';
 
 export type StatusNorma = 'confirmado' | 'confirmado_fonte_secundaria' | 'conhecimento_geral' | 'nao_verificado';
 
@@ -700,40 +704,48 @@ export function detectarReducoesFiscaisPorNcm(
   const mapping = (marco?.parametros as any)?.reforma_reducoes_mapeamento?.prefixos;
   let regraEncontrada: any = null;
 
-  // Busca em O(1) pelo prefixo de 4 dígitos
+  // Busca em O(1) pelo prefixo de 4 dígitos e validação obrigatória contra reforma.json
   const p4 = ncm.substring(0, 4);
-  if (mapping && mapping[p4]) {
-    regraEncontrada = mapping[p4];
-  }
+  const mapeamentoOficial = buscarClassTribPorNcmOficial(ncm);
 
-  if (!regraEncontrada) {
-    // Tenta fallback hardcoded dos 12 prefixos cadastrados
-    const fallbackPrefixos: Record<string, any> = {
-      '3105': { tema: 'Fertilizantes e Adubos', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200001', convenio_icms_correlato: 'CONV-ICMS-100-1997' },
-      '3101': { tema: 'Adubos Orgânicos', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200001', convenio_icms_correlato: 'CONV-ICMS-100-1997' },
-      '3808': { tema: 'Defensivos Agrícolas', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200002', convenio_icms_correlato: 'CONV-ICMS-100-1997' },
-      '8432': { tema: 'Máquinas de Plantio e Preparo', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200003', convenio_icms_correlato: 'CONV-ICMS-52-1991' },
-      '8433': { tema: 'Colheitadeiras e Trilhadeiras', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200003', convenio_icms_correlato: 'CONV-ICMS-52-1991' },
-      '8436': { tema: 'Outras Máquinas Agrícolas', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200003', convenio_icms_correlato: 'CONV-ICMS-52-1991' },
-      '8437': { tema: 'Máquinas para Seleção de Grãos', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200003', convenio_icms_correlato: 'CONV-ICMS-52-1991' },
-      '8701': { tema: 'Tratores Agrícolas', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200003', convenio_icms_correlato: 'CONV-ICMS-52-1991' },
-      '3004': { tema: 'Medicamentos Humanos', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200004' },
-      '3003': { tema: 'Medicamentos Compostos', reducao_ibs_cbs_pct: 60.0, cClassTrib: '200004' },
-      '1006': { tema: 'Arroz (Cesta Básica)', reducao_ibs_cbs_pct: 100.0, cClassTrib: '100001' },
-      '0713': { tema: 'Feijão (Cesta Básica)', reducao_ibs_cbs_pct: 100.0, cClassTrib: '100001' },
-    };
-    if (fallbackPrefixos[p4]) {
-      regraEncontrada = fallbackPrefixos[p4];
+  if (mapping && mapping[p4]) {
+    const candidato = mapping[p4];
+    const check = validarClassTribOficial(
+      candidato.cClassTrib,
+      candidato.reducao_ibs_cbs_pct
+    );
+    if (check.valido) {
+      regraEncontrada = candidato;
+    } else if (mapeamentoOficial) {
+      regraEncontrada = {
+        tema: mapeamentoOficial.tema,
+        reducao_ibs_cbs_pct: mapeamentoOficial.reducaoIbsCbsPct,
+        cClassTrib: mapeamentoOficial.cClassTrib,
+        convenio_icms_correlato: mapeamentoOficial.convenioIcmsCorrelato,
+      };
     }
+  } else if (mapeamentoOficial) {
+    regraEncontrada = {
+      tema: mapeamentoOficial.tema,
+      reducao_ibs_cbs_pct: mapeamentoOficial.reducaoIbsCbsPct,
+      cClassTrib: mapeamentoOficial.cClassTrib,
+      convenio_icms_correlato: mapeamentoOficial.convenioIcmsCorrelato,
+    };
   }
 
   if (!regraEncontrada) return null;
 
+  const checkFinal = validarClassTribOficial(
+    regraEncontrada.cClassTrib,
+    regraEncontrada.reducao_ibs_cbs_pct
+  );
+  if (!checkFinal.valido) return null;
+
   const resultado: ReducoesFiscaisPorNcm = {
     ncm,
     reforma: {
-      reducaoIbsCbsPct: regraEncontrada.reducao_ibs_cbs_pct,
-      cClassTrib: regraEncontrada.cClassTrib,
+      reducaoIbsCbsPct: checkFinal.reducaoOficialPct,
+      cClassTrib: checkFinal.codigo,
       tema: regraEncontrada.tema,
       normaId: 'LC214-ANEXOS-REDUCOES',
     },

@@ -1,5 +1,5 @@
 {
-  "versao_matriz": "2026.1",
+  "versao_matriz": "2026.2",
   "descricao": "Matriz Normativa Bitemporal do ICMS/PR - Lei 11.580/1996, Lei 21.850/2023, Decretos e Convênios",
   "aliquota_modal_pr": [
     {
@@ -29,8 +29,10 @@
       "prefixos_ncm": [
         "0201", "0202", "0203", "0204", "0207",
         "0701", "0702", "0703", "0704", "0706", "0707", "0708", "0709",
-        "1001", "1005", "1006", "1101", "190120", "190590"
+        "1001", "1005", "1006", "1101", "190120"
       ],
+      "prefixos_exigem_ncm_8d": ["190590"],
+      "ncms_8d_validados": [],
       "excluir_ncms": []
     },
     {
@@ -104,26 +106,57 @@
     ],
     "itens": [
       {
-        "id": "FECOP_AGUAS_MINERAIS_E_JOIAS",
-        "base_icms_pct": 17.5,
+        "id": "FECOP_AGUAS_MINERAIS",
+        "aliquotaBasePct": 18.0,
+        "fecopPct": 2.0,
+        "base_icms_pct": 18.0,
         "fecop_pct": 2.0,
-        "total_efetivo_pct": 19.5,
-        "prefixos_ncm": ["2201", "2204", "7113", "7114"],
+        "total_efetivo_pct": 20.0,
+        "validacaoNormativa": "pendente_conferencia_lei_11580",
+        "prefixos_ncm": ["2201"],
         "excluir_ncms": []
       },
       {
         "id": "FECOP_BEBIDAS_HIDROETILICAS_E_REFRIGERANTES",
+        "aliquotaBasePct": 18.0,
+        "fecopPct": 2.0,
         "base_icms_pct": 18.0,
         "fecop_pct": 2.0,
         "total_efetivo_pct": 20.0,
+        "validacaoNormativa": "pendente_conferencia_lei_11580",
         "prefixos_ncm": ["2202"],
         "excluir_ncms": []
       },
       {
-        "id": "FECOP_COSMETICOS_E_PERFUMARIA",
+        "id": "FECOP_VINHOS",
+        "aliquotaBasePct": 27.0,
+        "fecopPct": 2.0,
+        "base_icms_pct": 27.0,
+        "fecop_pct": 2.0,
+        "total_efetivo_pct": 29.0,
+        "validacaoNormativa": "pendente_conferencia_lei_11580",
+        "prefixos_ncm": ["2204"],
+        "excluir_ncms": []
+      },
+      {
+        "id": "FECOP_JOIAS_E_OURIVESARIA",
+        "aliquotaBasePct": 23.0,
+        "fecopPct": 2.0,
         "base_icms_pct": 23.0,
         "fecop_pct": 2.0,
         "total_efetivo_pct": 25.0,
+        "validacaoNormativa": "pendente_conferencia_lei_11580",
+        "prefixos_ncm": ["7113", "7114"],
+        "excluir_ncms": []
+      },
+      {
+        "id": "FECOP_COSMETICOS_E_PERFUMARIA",
+        "aliquotaBasePct": 23.0,
+        "fecopPct": 2.0,
+        "base_icms_pct": 23.0,
+        "fecop_pct": 2.0,
+        "total_efetivo_pct": 25.0,
+        "validacaoNormativa": "validado",
         "prefixos_ncm": ["3303", "3304", "3305", "3307"],
         "excluir_ncms": [
           "33051000",
@@ -134,9 +167,12 @@
       },
       {
         "id": "FECOP_BEBIDAS_ALCOOLICAS_E_FUMO",
+        "aliquotaBasePct": 27.0,
+        "fecopPct": 2.0,
         "base_icms_pct": 27.0,
         "fecop_pct": 2.0,
         "total_efetivo_pct": 29.0,
+        "validacaoNormativa": "validado",
         "prefixos_ncm": [
           "2203", "2205", "2206", "2208",
           "2401", "2402", "2403", "2404", "2499"

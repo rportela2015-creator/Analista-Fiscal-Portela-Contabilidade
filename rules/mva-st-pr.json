@@ -1,0 +1,87 @@
+{
+  "versao": "2026.1",
+  "fonte": "Anexo IX do RICMS/PR (Decreto Estadual nº 7.871/2017) e Convênio ICMS 142/2018",
+  "itens": [
+    {
+      "ncm": "22021000",
+      "prefixoNcm": "2202",
+      "cest": "0300700",
+      "mvaOriginalPct": 40.0,
+      "segmento": "Bebidas não alcoólicas (águas saborizadas/refrigerantes)",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null
+    },
+    {
+      "ncm": "22030000",
+      "prefixoNcm": "2203",
+      "cest": "0302100",
+      "mvaOriginalPct": 40.0,
+      "segmento": "Cervejas e chopes",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null
+    },
+    {
+      "ncm": "22011000",
+      "prefixoNcm": "2201",
+      "cest": "0300300",
+      "mvaOriginalPct": 40.0,
+      "segmento": "Águas minerais",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null
+    },
+    {
+      "ncm": "22042100",
+      "prefixoNcm": "2204",
+      "cest": "0202400",
+      "mvaOriginalPct": 65.0,
+      "segmento": "Vinhos e bebidas alcoólicas",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null
+    },
+    {
+      "ncm": "33030010",
+      "prefixoNcm": "3303",
+      "cest": "2000700",
+      "mvaOriginalPct": 58.0,
+      "segmento": "Perfumaria e cosméticos",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null
+    },
+    {
+      "ncm": "87082999",
+      "prefixoNcm": "8708",
+      "cest": "0100100",
+      "mvaOriginalPct": 59.6,
+      "segmento": "Autopeças",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null
+    },
+    {
+      "ncm": "87032310",
+      "prefixoNcm": "8703",
+      "cest": "2500600",
+      "mvaOriginalPct": 30.0,
+      "segmento": "Veículos automotores novos",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null
+    },
+    {
+      "ncm": "30049069",
+      "prefixoNcm": "3004",
+      "cest": "1300100",
+      "mvaOriginalPct": 38.24,
+      "segmento": "Medicamentos e produtos farmacêuticos",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null
+    },
+    {
+      "ncm": "19059090",
+      "prefixoNcm": "1905",
+      "cest": "1703100",
+      "mvaOriginalPct": 40.0,
+      "segmento": "Produtos alimentícios (panificação/biscoitos)",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null
+    }
+  ]
+}

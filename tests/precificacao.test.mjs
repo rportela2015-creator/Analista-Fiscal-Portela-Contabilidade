@@ -769,7 +769,7 @@ t('Etapa 9: detectarReducoesFiscaisPorNcm em O(1) vinculando Reforma e ICMS', ()
   const resMaq = detectarReducoesFiscaisPorNcm('8432.10.00', 'PR', marco);
   assert.ok(resMaq !== null, 'NCM 8432 deve ser reconhecido');
   assert.equal(resMaq?.reforma?.reducaoIbsCbsPct, 60.0, 'Reforma concede 60% de redução');
-  assert.equal(resMaq?.reforma?.cClassTrib, '200003', 'cClassTrib para máquinas agrícolas é 200003');
+  assert.equal(resMaq?.reforma?.cClassTrib, '200038', 'cClassTrib oficial para máquinas/insumos agrícolas Anexo IX é 200038');
   assert.equal(resMaq?.icms?.convenioCorrelato, 'CONV-ICMS-52-1991', 'ICMS correlato é Convênio 52/91');
   assert.equal(resMaq?.icms?.aliqEfetivaSugeridaPct, 5.6, 'ICMS interno PR efetivo é 5,6%');
   assert.equal(resMaq?.icms?.dispensaEstornoEntrada, true, 'Dispensa estorno na entrada');
@@ -778,7 +778,7 @@ t('Etapa 9: detectarReducoesFiscaisPorNcm em O(1) vinculando Reforma e ICMS', ()
   const resFert = detectarReducoesFiscaisPorNcm('31052000', 'PR', marco);
   assert.ok(resFert !== null, 'NCM 3105 deve ser reconhecido');
   assert.equal(resFert?.reforma?.reducaoIbsCbsPct, 60.0, 'Reforma reduz 60% para fertilizantes');
-  assert.equal(resFert?.reforma?.cClassTrib, '200001', 'cClassTrib de fertilizantes é 200001');
+  assert.equal(resFert?.reforma?.cClassTrib, '200038', 'cClassTrib oficial de fertilizantes Anexo IX é 200038');
   assert.equal(resFert?.icms?.convenioCorrelato, 'CONV-ICMS-100-1997', 'Convênio correlato 100/97');
   assert.equal(resFert?.icms?.diferimentoPct, 100, 'Diferimento interno PR de 100%');
   assert.equal(resFert?.icms?.cstSugerido, '51', 'CST 51 para fertilizantes no PR');
@@ -787,7 +787,7 @@ t('Etapa 9: detectarReducoesFiscaisPorNcm em O(1) vinculando Reforma e ICMS', ()
   const resArroz = detectarReducoesFiscaisPorNcm('1006.10.92', 'PR', marco);
   assert.ok(resArroz !== null, 'NCM 1006 deve ser reconhecido');
   assert.equal(resArroz?.reforma?.reducaoIbsCbsPct, 100.0, 'Alíquota Zero / Redução 100%');
-  assert.equal(resArroz?.reforma?.cClassTrib, '100001', 'cClassTrib 100001 cesta básica');
+  assert.equal(resArroz?.reforma?.cClassTrib, '200003', 'cClassTrib oficial 200003 cesta básica (Anexo I alíquota zero)');
 });
 
 t('Etapa 9: calcularDifalDetalhado com Base Dupla, Base Única e FCP Destino', () => {

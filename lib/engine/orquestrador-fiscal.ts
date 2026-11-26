@@ -76,7 +76,7 @@ import type {
   DiagnosticoDifalEntrada,
   ResumoDifalNfeEntrada,
 } from '../types/motor-tributario';
-import { verificarExclusaoStPr } from './matriz-icms-pr';
+import { resolverAliquotaPrBitemporal, verificarExclusaoStPr } from './matriz-icms-pr';
 import {
   calcularIcmsStPR,
   type DiagnosticoIcmsStPR,
@@ -529,14 +529,16 @@ export async function orquestrarAnaliseNfeCompleta(
       );
     }
 
-    // Se houver ST destacada ou responsabilidade
+    // Se houver ST destacada ou responsabilidade (consumindo alíquota e FECOP da matriz PR bitemporal)
     if ((it.tributos?.vICMSST ?? 0) > 0 || (it.tributos?.pMVAST ?? 0) > 0) {
+      const dadosPrSt = resolverAliquotaPrBitemporal(it.ncm, dataEmissao.slice(0, 10));
       const diagSt = calcularIcmsStPR({
         ncm: it.ncm,
         cest: it.cest,
         dataFatoGerador: dataEmissao.slice(0, 10),
         vProd: it.vProd,
-        aliqInternaPrPct: 19.5,
+        aliqInternaPrPct: dadosPrSt.aliquotaIcmsPct,
+        aliqFecopPrPct: dadosPrSt.aliquotaFecopPct,
         aliqInterestadualPct: it.tributos?.pICMS || 12,
         vFrete: it.vFrete,
         vIpi: it.tributos?.vIPI,
@@ -1046,12 +1048,16 @@ function gerarComparativoQuatroRegimes(
   );
 
   // 3. LUCRO PRESUMIDO
+  const aliqModalPrAno = resolverAliquotaPrBitemporal('00000000', `${ano}-06-01`).aliquotaIcmsPct;
   const credPresumido = arredondarMoedaRfbNum(
     camadasCredito.totalCreditoEfetivadoCusto.icms +
       (ano >= 2027 ? camadasCredito.totalCreditoEfetivadoCusto.ibs + camadasCredito.totalCreditoEfetivadoCusto.cbs : 0)
   );
   const cmvPresumido = arredondarMoedaRfbNum(custoAterrissadoBruto - credPresumido);
-  const aliqPresumidoSaida = ano >= 2027 ? 22.5 : 25.43; // ICMS 19.5% + PIS 0.65% + COF 3.0% + IRPJ/CSLL 2.28%
+  const aliqPresumidoSaida =
+    ano >= 2027
+      ? arredondarMoedaRfbNum(aliqModalPrAno + 3.0)
+      : arredondarMoedaRfbNum(aliqModalPrAno + 0.65 + 3.0 + 2.28);
   const divisorPresumido = new DecimalHalfEven(100)
     .minus(aliqPresumidoSaida)
     .minus(despesasVariaveisPct)
@@ -1067,7 +1073,10 @@ function gerarComparativoQuatroRegimes(
   // 4. LUCRO REAL
   const credReal = camadasCredito.totalCreditoEfetivadoCusto.total;
   const cmvReal = arredondarMoedaRfbNum(custoAterrissadoBruto - credReal);
-  const aliqRealSaida = ano >= 2027 ? 24.5 : 28.75; // ICMS 19.5% + PIS/COF 9.25%
+  const aliqRealSaida =
+    ano >= 2027
+      ? arredondarMoedaRfbNum(aliqModalPrAno + 5.0)
+      : arredondarMoedaRfbNum(aliqModalPrAno + 9.25);
   const divisorReal = new DecimalHalfEven(100)
     .minus(aliqRealSaida)
     .minus(despesasVariaveisPct)

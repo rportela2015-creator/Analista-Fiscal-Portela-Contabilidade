@@ -1195,72 +1195,77 @@
       ],
       "prefixos": {
         "3105": {
-          "tema": "Fertilizantes e Adubos Minerais ou Químicos",
+          "tema": "Fertilizantes e Adubos Minerais ou Químicos (Anexo IX LC 214/2025)",
           "reducao_ibs_cbs_pct": 60.0,
-          "cClassTrib": "200001",
+          "cClassTrib": "200038",
           "convenio_icms_correlato": "CONV-ICMS-100-1997"
         },
         "3101": {
-          "tema": "Adubos de Origem Animal ou Vegetal",
+          "tema": "Adubos de Origem Animal ou Vegetal (Anexo IX LC 214/2025)",
           "reducao_ibs_cbs_pct": 60.0,
-          "cClassTrib": "200001",
+          "cClassTrib": "200038",
           "convenio_icms_correlato": "CONV-ICMS-100-1997"
         },
         "3808": {
-          "tema": "Defensivos Agrícolas, Inseticidas, Fungicidas e Herbicidas",
+          "tema": "Defensivos Agrícolas, Inseticidas, Fungicidas e Herbicidas (Anexo IX LC 214/2025)",
           "reducao_ibs_cbs_pct": 60.0,
-          "cClassTrib": "200002",
+          "cClassTrib": "200038",
           "convenio_icms_correlato": "CONV-ICMS-100-1997"
         },
         "8432": {
-          "tema": "Máquinas e Aparelhos de Uso Agrícola, Hortícola ou Florestal",
+          "tema": "Máquinas e Aparelhos de Uso Agrícola, Hortícola ou Florestal (Anexo IX LC 214/2025)",
           "reducao_ibs_cbs_pct": 60.0,
-          "cClassTrib": "200003",
+          "cClassTrib": "200038",
           "convenio_icms_correlato": "CONV-ICMS-52-1991"
         },
         "8433": {
-          "tema": "Máquinas e Aparelhos de Colheita, Debulha e Limpeza de Produtos Agrícolas",
+          "tema": "Máquinas e Aparelhos de Colheita, Debulha e Limpeza de Produtos Agrícolas (Anexo IX LC 214/2025)",
           "reducao_ibs_cbs_pct": 60.0,
-          "cClassTrib": "200003",
+          "cClassTrib": "200038",
           "convenio_icms_correlato": "CONV-ICMS-52-1991"
         },
         "8436": {
-          "tema": "Outras Máquinas e Aparelhos para Agricultura, Horticultura e Avicultura",
+          "tema": "Outras Máquinas e Aparelhos para Agricultura, Horticultura e Avicultura (Anexo IX LC 214/2025)",
           "reducao_ibs_cbs_pct": 60.0,
-          "cClassTrib": "200003",
+          "cClassTrib": "200038",
           "convenio_icms_correlato": "CONV-ICMS-52-1991"
         },
         "8437": {
-          "tema": "Máquinas para Limpeza, Seleção ou Peneiração de Grãos",
+          "tema": "Máquinas para Limpeza, Seleção ou Peneiração de Grãos (Anexo IX LC 214/2025)",
           "reducao_ibs_cbs_pct": 60.0,
-          "cClassTrib": "200003",
+          "cClassTrib": "200038",
           "convenio_icms_correlato": "CONV-ICMS-52-1991"
         },
         "8701": {
-          "tema": "Tratores Agrícolas e Florestais",
+          "tema": "Tratores Agrícolas e Florestais (Anexo IX LC 214/2025)",
           "reducao_ibs_cbs_pct": 60.0,
-          "cClassTrib": "200003",
+          "cClassTrib": "200038",
           "convenio_icms_correlato": "CONV-ICMS-52-1991"
         },
         "3004": {
-          "tema": "Medicamentos para Medicina Humana",
+          "tema": "Medicamentos Registrados na Anvisa (LC 214/2025)",
           "reducao_ibs_cbs_pct": 60.0,
-          "cClassTrib": "200004"
+          "cClassTrib": "200032"
         },
         "3003": {
-          "tema": "Medicamentos Compostos",
+          "tema": "Medicamentos Compostos Registrados na Anvisa (LC 214/2025)",
           "reducao_ibs_cbs_pct": 60.0,
-          "cClassTrib": "200004"
+          "cClassTrib": "200032"
         },
         "1006": {
-          "tema": "Arroz para Alimentação Humana (Cesta Básica Nacional)",
+          "tema": "Arroz para Alimentação Humana (Cesta Básica Nacional Anexo I)",
           "reducao_ibs_cbs_pct": 100.0,
-          "cClassTrib": "100001"
+          "cClassTrib": "200003"
         },
         "0713": {
-          "tema": "Feijão e Leguminosas (Cesta Básica Nacional)",
+          "tema": "Feijão e Leguminosas (Cesta Básica Nacional Anexo I)",
           "reducao_ibs_cbs_pct": 100.0,
-          "cClassTrib": "100001"
+          "cClassTrib": "200003"
+        },
+        "0901": {
+          "tema": "Café para Alimentação Humana (Cesta Básica Nacional Anexo I)",
+          "reducao_ibs_cbs_pct": 100.0,
+          "cClassTrib": "200003"
         }
       }
     },

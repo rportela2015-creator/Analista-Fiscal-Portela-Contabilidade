@@ -3,6 +3,8 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { getApiKey, getModels } from '@/lib/ai/config';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { getServerDataset } from '@/lib/ai/ncm-server';
+import { sanearCodificacaoErpIA } from '@/lib/ai/sanear-classificacao';
+import { resolverAliquotaPrBitemporal, verificarExclusaoStPr } from '@/lib/engine/matriz-icms-pr';
 import { r2 } from '@/lib/lote-erp';
 
 export async function POST(req: Request) {
@@ -96,15 +98,15 @@ REGRAS OBRIGATÓRIAS:
      * Lucro Presumido: CST 01 (ou 04 monofásico / 06 alíquota zero), PIS 0.65%, COFINS 3.00%.
      * Lucro Real: CST 01 (ou 04/06), PIS 1.65%, COFINS 7.60%.
 3. CEST:
-   - Se a mercadoria for sujeita ao regime de Substituição Tributária (ex: autopeças, ferramentas, alimentos listados no Anexo do Convênio ICMS 142/2018), informe o código CEST oficial de 7 dígitos sem pontos (ex: "0100100").
-   - Se NÃO estiver sujeita a ST, retorne string vazia "".
+   - Se a mercadoria for sujeita ao regime de Substituição Tributária no Anexo IX RICMS/PR (e NÃO excluída pelos Decretos PR 6.048/2024 e 12.828/2026 nem combustível monofásico), informe o código CEST oficial de 7 dígitos sem pontos.
+   - Se NÃO estiver sujeita a ST, retorne string vazia "" e mvaOriginalPct = 0.
 4. Benefício Fiscal Paraná (cBenefPr):
-   - Se houver redução de base de cálculo (ex: máquinas, cesta de alimentos no RICMS/PR), informe o código de benefício no padrão 'PR820001' ou 'PR800092' (diferimento parcial).
-   - Caso não haja benefício específico, retorne 'SEM_CBENEF'.
+   - Informe somente código validado na Tabela 5.2 da SEFA/PR compatível com o CST (jamais informe cBenef em CST 00, 10, 60 ou 61 — Rejeição 928).
+   - Caso não haja benefício específico validado, retorne 'SEM_CBENEF'.
 5. Reforma Tributária (IBS/CBS/IS - LC 214/2025):
-   - cstIbsCbs: 01 (Tributação normal), 02 (Alíquota zero / Imune).
-   - cClassTrib: Código oficial de 6 dígitos numéricos (ex: 000001 para padrão, ou código específico de anexo da LC 214/2025 com redução).
-   - redIbsCbsPct: 0, 30, 60 ou 100 conforme o cClassTrib.
+   - cstIbsCbs: conforme tabela oficial de classificação tributária (ex: 000 para tributação integral, 200 para alíquota reduzida/zero).
+   - cClassTrib: Código oficial de 6 dígitos existente na tabela oficial (ex: 000001 somente quando confirmada tributação integral; 200038 insumos/máq. agro -60%; 200032 medicamentos -60%; 200003 cesta básica alíquota zero). Se incerto, retorne vazio "".
+   - redIbsCbsPct: compatível com o cClassTrib oficial (0, 30, 40, 50, 60, 70, 80 ou 100).
 6. Aderência:
    - Como especialista, avalie a aderência e retorne aderenciaErpPct entre 90 e 98 para as definições cravadas.`;
 
@@ -168,7 +170,7 @@ REGRAS OBRIGATÓRIAS:
     const parsedJson = JSON.parse(response.text || '{}');
     const resultados = parsedJson?.resultados || [];
 
-    // Mapeia e reconcilia os resultados com os itens de entrada
+    // Mapeia e reconcilia os resultados com validação determinística anti-alucinação
     const itensReconciliados = itens.map((itemEntrada: any, idx: number) => {
       const match = resultados.find((r: any) => r.index === idx || r.codigo === itemEntrada.codigo);
       if (!match) {
@@ -179,31 +181,69 @@ REGRAS OBRIGATÓRIAS:
         };
       }
 
-      // Validação formal de CFOP e CST/CSOSN
-      const cfopEfetivo = (/^\d{4}$/.test(match.cfopSaida) ? match.cfopSaida : itemEntrada.parametrosAtuais?.cfopSaida || '5102');
-      const cstEfetivo = String(match.cstOuCsosnIcms || itemEntrada.parametrosAtuais?.cstOuCsosnIcms || '00');
-      const cestEfetivo = match.cest ? String(match.cest).replace(/\D/g, '').padStart(7, '0').slice(0, 7) : '';
-      const cClassTribEfetivo = match.cClassTrib ? String(match.cClassTrib).replace(/\D/g, '').padStart(6, '0').slice(0, 6) : '000001';
+      const dataRef = `${itemEntrada.anoCalendario || 2026}-06-01`;
+      const dadosPr = resolverAliquotaPrBitemporal(itemEntrada.ncm || '', dataRef);
+      const exclusaoSt = verificarExclusaoStPr(itemEntrada.ncm || '', match.cest || itemEntrada.parametrosAtuais?.cest, dataRef);
+
+      // Validação formal de CFOP, CST/CSOSN, cBenef, MVA e cClassTrib
+      const ehExcluidoOuMono = exclusaoSt.excluidoDaSt || dadosPr.ehCombustivelMonofasico;
+      const cfopBruto = /^\d{4}$/.test(match.cfopSaida) ? match.cfopSaida : itemEntrada.parametrosAtuais?.cfopSaida || '5102';
+      const cfopEfetivo =
+        ehExcluidoOuMono && (cfopBruto === '5405' || cfopBruto === '6405')
+          ? (cfopBruto.startsWith('6') ? '6102' : '5102')
+          : cfopBruto;
+
+      const saneado = sanearCodificacaoErpIA(
+        {
+          ncm: match.ncm || itemEntrada.ncm,
+          cest: ehExcluidoOuMono ? '' : match.cest,
+          cstOuCsosnIcms: match.cstOuCsosnIcms || itemEntrada.parametrosAtuais?.cstOuCsosnIcms,
+          cBenefPr: match.cBenefPr,
+          mvaOriginalPct: match.mvaOriginalPct,
+          redBcIcmsPct: match.redBcIcmsPct,
+          cClassTrib: match.cClassTrib,
+          cstIbsCbs: match.cstIbsCbs,
+          redIbsCbsPct: match.redIbsCbsPct,
+        },
+        {
+          regime: itemEntrada.regimeSaida,
+          ncmFallback: itemEntrada.ncm,
+          cest: ehExcluidoOuMono ? '' : match.cest,
+          dataFatoGerador: dataRef,
+        }
+      );
+
+      const cestEfetivo =
+        !ehExcluidoOuMono && match.cest
+          ? String(match.cest).replace(/\D/g, '').padStart(7, '0').slice(0, 7)
+          : '';
+      const aliqIcmsFinal = dadosPr.ehCombustivelMonofasico
+        ? 0
+        : Number(itemEntrada.parametrosAtuais?.aliqIcmsNominalPct ?? dadosPr.aliquotaIcmsPct);
 
       return {
         ...itemEntrada,
         cest: cestEfetivo,
         cfopSaida: cfopEfetivo,
-        cstOuCsosnIcms: cstEfetivo,
-        cBenefPr: match.cBenefPr || 'SEM_CBENEF',
-        aliqIcmsNominalPct: Number(match.aliqIcmsNominalPct || itemEntrada.parametrosAtuais?.aliqIcmsNominalPct || 19.5),
+        cstOuCsosnIcms: saneado.cstOuCsosnIcms,
+        cBenefPr: saneado.cBenefPr,
+        aliqIcmsNominalPct: r2(aliqIcmsFinal),
         redBcIcmsPct: Number(match.redBcIcmsPct || 0),
-        mvaOriginalPct: Number(match.mvaOriginalPct || (cestEfetivo ? 40 : 0)),
+        mvaOriginalPct: Number(saneado.mvaOriginalPct || 0),
         cstPisCofins: match.cstPisCofins || '01',
         aliqPisPct: match.aliqPisPct !== undefined ? Number(match.aliqPisPct) : itemEntrada.parametrosAtuais?.aliqPisPct || 0,
         aliqCofinsPct: match.aliqCofinsPct !== undefined ? Number(match.aliqCofinsPct) : itemEntrada.parametrosAtuais?.aliqCofinsPct || 0,
-        cstIbsCbs: match.cstIbsCbs || '01',
-        cClassTrib: cClassTribEfetivo,
-        redIbsCbsPct: Number(match.redIbsCbsPct || 0),
+        cstIbsCbs: saneado.cstIbsCbs || '',
+        cClassTrib: saneado.cClassTrib || '',
+        redIbsCbsPct: Number(saneado.redIbsCbsPct || 0),
+        enquadramentoPendente: Boolean(saneado.enquadramentoPendente),
+        avisosSaneamento: saneado.avisosSaneamento,
         aderenciaErpPct: Math.max(90, Math.min(98, Number(match.aderenciaErpPct || 95))),
-        requerCodificacaoIaErp: false,
+        requerCodificacaoIaErp: Boolean(saneado.enquadramentoPendente),
         origemParam: 'IA_ASSISTIDA',
-        statusErp: 'PRONTO_PARAMETRIZAR (Reconciliado por IA)',
+        statusErp: saneado.enquadramentoPendente
+          ? 'PENDENTE_CONFERENCIA_FISCAL (cClassTrib não validado)'
+          : 'PRONTO_PARAMETRIZAR (Reconciliado e Validado)',
         justificativaIa: match.justificativa,
       };
     });

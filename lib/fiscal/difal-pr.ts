@@ -9,7 +9,8 @@
  * - Consulta de Contribuinte SEFA/PR nº 48/2026 (Transição IBS/CBS/IS na BC do ICMS)
  */
 
-import { resolverAliquotaPrBitemporal, verificarExclusaoStPr } from '../engine/matriz-icms-pr';
+import { resolverAliquotaPrBitemporal } from '../engine/matriz-icms-pr';
+import { apurarDifalEntradaPR, normalizarDestinacaoDifalPR } from '../engine/difal-pr';
 
 const r2 = (v: number): number => Math.round((v + Number.EPSILON) * 100) / 100;
 
@@ -240,7 +241,8 @@ export function calcularPrazoRecolhimentoDifalPR(
 }
 
 /**
- * Calcula o demonstrativo unitário do DIFAL de entrada (Base Dupla + FECOP) para um item.
+ * Calcula o demonstrativo unitário do DIFAL de entrada (Base Dupla + FECOP) para um item,
+ * delegando 100% da engrenagem tributária ao núcleo canônico `apurarDifalEntradaPR`.
  */
 export function calcularDifalItemEntradaPR(input: EntradaItemDifalPR): ItemDemonstrativoDifalPR {
   const nItem = input.nItem ?? 1;
@@ -251,7 +253,21 @@ export function calcularDifalItemEntradaPR(input: EntradaItemDifalPR): ItemDemon
   const ufE = String(input.ufEmitente || '').trim().toUpperCase();
   const ufD = String(input.ufDestinatario || 'PR').trim().toUpperCase();
   const data = normalizarDataIso(input.dataFatoGerador);
-  const destinacao = input.destinacao || inferirDestinacaoPorCfop(cfop, 'comercializacao');
+
+  const destNormRes = normalizarDestinacaoDifalPR(
+    input.destinacao,
+    cfop,
+    'comercializacao'
+  );
+  const destinacao: DestinacaoItemDifalPR = destNormRes.destinacao;
+
+  const dadosPr = resolverAliquotaPrBitemporal(ncm, data);
+  const aliqIntraPR = input.aliqIntraPrOverridePct ?? dadosPr.aliquotaIcmsPct;
+  const fecop = input.fecopOverridePct ?? dadosPr.aliquotaFecopPct;
+  const origNum = Number(input.origemMercadoria ?? 0);
+  const aliqInter = input.pIcmsOrigemPct !== undefined
+    ? Number(input.pIcmsOrigemPct)
+    : ([1, 2, 3, 8].includes(origNum) ? 4.0 : 12.0);
 
   const vProd = Number(input.vProd || 0);
   const vFrete = Number(input.vFrete || 0);
@@ -259,179 +275,63 @@ export function calcularDifalItemEntradaPR(input: EntradaItemDifalPR): ItemDemon
   const vDesc = Number(input.vDesc || 0);
   const vOutro = Number(input.vOutro || 0);
   const vIpi = Number(input.vIpi || 0);
-
   const ano = parseInt(data.slice(0, 4), 10) || 2026;
   const incluirIva = input.incluirIbsCbsBcIcms ?? (ano >= 2027);
   const parcelaIva2027 = ano >= 2027 && incluirIva
     ? r2((input.vIbs ?? 0) + (input.vCbs ?? 0) + (input.vIs ?? 0))
     : 0;
+  const vOperacaoFallback = r2(Math.max(0, vProd - vDesc + vFrete + vSeg + vOutro + vIpi + parcelaIva2027));
 
-  const vOperacao = r2(Math.max(0, vProd - vDesc + vFrete + vSeg + vOutro + vIpi + parcelaIva2027));
+  const diag = apurarDifalEntradaPR({
+    nItem,
+    xProd,
+    ncm,
+    cest: input.cest,
+    cfop,
+    cstIcms: input.cstIcms,
+    csosn: input.csosn,
+    temStAnterior: input.temStAnterior,
+    origemMercadoria: origNum as any,
+    finalidadeEntrada: input.destinacao ? String(input.destinacao) : destinacao,
+    crtEmitente: 3,
+    crtDestinatario: 3,
+    ufEmitente: ufE,
+    ufDestinatario: ufD,
+    dataFatoGerador: data,
+    vProd,
+    vFrete,
+    vSeg,
+    vDesc,
+    vOutro,
+    vIpi,
+    pIcmsOrigemPct: aliqInter,
+    vIcmsOrigem: input.vIcmsOrigem,
+    vIcmsStDestacado: input.vIcmsStDestacado,
+    sujeitoStInternaPr: false,
+    incluirIbsCbsBcIcms: input.incluirIbsCbsBcIcms,
+    vIbs: input.vIbs,
+    vCbs: input.vCbs,
+    vIs: input.vIs,
+    aliqInternaPrOverridePct: input.aliqIntraPrOverridePct,
+    aliqFecopPrOverridePct: input.fecopOverridePct,
+  });
 
-  const origNum = Number(input.origemMercadoria ?? 0);
-  const aliqInter = input.pIcmsOrigemPct !== undefined
-    ? Number(input.pIcmsOrigemPct)
-    : ([1, 2, 3, 8].includes(origNum) ? 4.0 : 12.0);
+  const ehUsoOuAtivo = destinacao === 'uso_consumo' || destinacao === 'ativo_imobilizado';
+  const exigeRecolhimento = ehUsoOuAtivo && Boolean(diag.sujeitoDifal && diag.exigeRecolhimento);
 
-  const dadosPr = resolverAliquotaPrBitemporal(ncm, data);
-  const aliqIntraPR = input.aliqIntraPrOverridePct ?? dadosPr.aliquotaIcmsPct;
-  const fecop = input.fecopOverridePct ?? dadosPr.aliquotaFecopPct;
-
-  const alertas: string[] = [];
-  const memoriaCalculo: string[] = [];
-
-  // Verifica exclusão da ST pelos Decretos PR 6.048/2024 e 12.828/2026
-  const exclusaoSt = verificarExclusaoStPr(ncm, input.cest, data);
-  const possuiStDeclarada =
-    input.cstIcms === '60' ||
-    input.csosn === '500' ||
-    (input.vIcmsStDestacado ?? 0) > 0 ||
-    Boolean(input.temStAnterior);
-
-  if (exclusaoSt.excluidoDaSt && (input.vIcmsStDestacado ?? 0) > 0) {
-    alertas.push(
-      `NCM ${ncm} excluída da ST no PR desde ${exclusaoSt.dataExclusao} (${exclusaoSt.decreto}): destaque de ICMS-ST de R$ ${(input.vIcmsStDestacado ?? 0).toFixed(2)} indevido.`
-    );
+  let motivoDispensa: string | undefined;
+  let fundamento = diag.fundamentacaoLegal;
+  if (!exigeRecolhimento) {
+    if (!ufE || ufE === 'PR' || ufD !== 'PR') {
+      motivoDispensa = diag.memoriaCalculo[0] || 'Operação interna no Paraná ou destino em outra UF — DIFAL de entrada interestadual dispensado.';
+      fundamento = 'RICMS/PR Art. 3º — incidência restrita a entradas interestaduais destinadas ao PR.';
+    } else if (!ehUsoOuAtivo) {
+      motivoDispensa = `Destinação "${destinacao}" (comercialização/industrialização): não sujeita ao DIFAL de uso/consumo ou ativo imobilizado.`;
+      fundamento = 'RICMS/PR Art. 3º e Art. 8º, § 12 — DIFAL de entrada incide sobre uso/consumo e ativo imobilizado.';
+    } else {
+      motivoDispensa = diag.memoriaCalculo[0] || diag.fundamentacaoLegal;
+    }
   }
-
-  // Regra 1: Operação não é interestadual para o PR
-  if (!ufE || ufE === 'PR' || ufD !== 'PR') {
-    const motivo = 'Operação interna no Paraná ou destino em outra UF — DIFAL de entrada interestadual dispensado.';
-    return {
-      nItem,
-      cProd,
-      xProd,
-      NCM: ncm,
-      CFOP: cfop,
-      destinacao,
-      vOperacao,
-      aliqInter,
-      aliqIntraPR,
-      fecop,
-      baseDupla: 0,
-      valorDifalPrincipal: 0,
-      valorFecop: 0,
-      valorDifalTotal: 0,
-      exigeRecolhimento: false,
-      fundamento: 'RICMS/PR Art. 3º — incidência restrita a entradas interestaduais destinadas ao PR.',
-      motivoDispensa: motivo,
-      codigosEfd: [],
-      memoriaCalculo: [motivo],
-      alertas,
-    };
-  }
-
-  // Regra 2: Destinação para revenda ou industrialização (fora de uso/consumo e ativo)
-  if (destinacao !== 'uso_consumo' && destinacao !== 'ativo_imobilizado') {
-    const motivo = `Destinação "${destinacao}" (comercialização/industrialização): não sujeita ao DIFAL de uso/consumo ou ativo imobilizado.`;
-    return {
-      nItem,
-      cProd,
-      xProd,
-      NCM: ncm,
-      CFOP: cfop,
-      destinacao,
-      vOperacao,
-      aliqInter,
-      aliqIntraPR,
-      fecop,
-      baseDupla: 0,
-      valorDifalPrincipal: 0,
-      valorFecop: 0,
-      valorDifalTotal: 0,
-      exigeRecolhimento: false,
-      fundamento: 'RICMS/PR Art. 3º e Art. 8º, § 12 — DIFAL de entrada incide sobre uso/consumo e ativo imobilizado.',
-      motivoDispensa: motivo,
-      codigosEfd: [],
-      memoriaCalculo: [motivo],
-      alertas,
-    };
-  }
-
-  // Regra 3: ST anterior válida encerrando tributação (exceto quando excluída pelos Decretos PR 6.048/24 e 12.828/26)
-  if (possuiStDeclarada && !exclusaoSt.excluidoDaSt) {
-    const motivo = 'Mercadoria com ICMS-ST retido/recolhido anteriormente (CST 60/CSOSN 500 ou vICMSST destacado), encerrando a cadeia tributária.';
-    return {
-      nItem,
-      cProd,
-      xProd,
-      NCM: ncm,
-      CFOP: cfop,
-      destinacao,
-      vOperacao,
-      aliqInter,
-      aliqIntraPR,
-      fecop,
-      baseDupla: 0,
-      valorDifalPrincipal: 0,
-      valorFecop: 0,
-      valorDifalTotal: 0,
-      exigeRecolhimento: false,
-      fundamento: 'RICMS/PR Anexo IX — substituição tributária anterior com encerramento da tributação.',
-      motivoDispensa: motivo,
-      codigosEfd: [],
-      memoriaCalculo: [motivo],
-      alertas,
-    };
-  }
-
-  // Regra 4: Cálculo Base Dupla ("por dentro") + FECOP
-  const vIcmsOrigem = input.vIcmsOrigem !== undefined
-    ? Number(input.vIcmsOrigem)
-    : r2(Math.max(0, vProd - vDesc + vFrete + vSeg + vOutro) * (aliqInter / 100));
-
-  const vSemIcmsOrigem = Math.max(0, r2(vOperacao - vIcmsOrigem));
-  const somaAliqDestino = aliqIntraPR + fecop;
-  const divisor = 1 - somaAliqDestino / 100;
-
-  if (divisor <= 0 || somaAliqDestino <= aliqInter) {
-    const motivo = `Alíquota interna efetiva (${somaAliqDestino}%) não excede a alíquota interestadual (${aliqInter}%) — sem diferencial a recolher.`;
-    return {
-      nItem,
-      cProd,
-      xProd,
-      NCM: ncm,
-      CFOP: cfop,
-      destinacao,
-      vOperacao,
-      aliqInter,
-      aliqIntraPR,
-      fecop,
-      baseDupla: 0,
-      valorDifalPrincipal: 0,
-      valorFecop: 0,
-      valorDifalTotal: 0,
-      exigeRecolhimento: false,
-      fundamento: 'RICMS/PR Art. 8º, § 12 — diferença de alíquota nula ou negativa.',
-      motivoDispensa: motivo,
-      codigosEfd: [],
-      memoriaCalculo: [motivo],
-      alertas,
-    };
-  }
-
-  const baseDupla = r2(vSemIcmsOrigem / divisor);
-  const valorDifalPrincipal = r2(Math.max(0, baseDupla * (aliqIntraPR / 100) - vIcmsOrigem));
-  const valorFecop = r2(baseDupla * (fecop / 100));
-  const valorDifalTotal = r2(valorDifalPrincipal + valorFecop);
-  const exigeRecolhimento = valorDifalTotal > 0;
-
-  memoriaCalculo.push(`Valor da Operação (vProd - vDesc + frete/seg/out + IPI${parcelaIva2027 > 0 ? ' + IBS/CBS/IS' : ''}): R$ ${vOperacao.toFixed(2)}`);
-  memoriaCalculo.push(`ICMS de Origem (${aliqInter}%): R$ ${vIcmsOrigem.toFixed(2)}`);
-  memoriaCalculo.push(`Base sem ICMS Origem: R$ ${vSemIcmsOrigem.toFixed(2)}`);
-  memoriaCalculo.push(`Base Dupla = ${vSemIcmsOrigem.toFixed(2)} / [1 - (${aliqIntraPR}% + ${fecop}%)/100] = R$ ${baseDupla.toFixed(2)}`);
-  memoriaCalculo.push(`DIFAL Principal = (${baseDupla.toFixed(2)} * ${aliqIntraPR}%) - R$ ${vIcmsOrigem.toFixed(2)} = R$ ${valorDifalPrincipal.toFixed(2)}`);
-  if (fecop > 0) {
-    memoriaCalculo.push(`FECOP (${fecop}%): ${baseDupla.toFixed(2)} * ${fecop}% = R$ ${valorFecop.toFixed(2)} (Lei 11.580/96 Art. 14-A / Anexo XII)`);
-  }
-  if (parcelaIva2027 > 0) {
-    memoriaCalculo.push(`Parcela IBS/CBS/IS (R$ ${parcelaIva2027.toFixed(2)}) incluída na BC conforme Consulta SEFA/PR nº 48/2026.`);
-  }
-
-  const fundamentoBase =
-    `RICMS/PR (Decreto nº 7.871/2017) Art. 3º e Art. 8º, § 12 (Base Dupla)` +
-    (fecop > 0 ? '; Art. 14-A Lei nº 11.580/1996 e Anexo XII (FECOP)' : '') +
-    `; ${dadosPr.dispositivoLegal}; NPF nº 052/2018 (E310/E316, PR239999/PR259999).`;
 
   return {
     nItem,
@@ -440,19 +340,20 @@ export function calcularDifalItemEntradaPR(input: EntradaItemDifalPR): ItemDemon
     NCM: ncm,
     CFOP: cfop,
     destinacao,
-    vOperacao,
+    vOperacao: diag.baseCalculoOperacao || vOperacaoFallback,
     aliqInter,
     aliqIntraPR,
     fecop,
-    baseDupla,
-    valorDifalPrincipal,
-    valorFecop,
-    valorDifalTotal,
+    baseDupla: exigeRecolhimento ? (diag.baseCalculoDifal ?? 0) : 0,
+    valorDifalPrincipal: exigeRecolhimento ? (diag.valorDebitoDifal ?? 0) : 0,
+    valorFecop: exigeRecolhimento ? (diag.valorDebitoFecop ?? 0) : 0,
+    valorDifalTotal: exigeRecolhimento ? (diag.valorTotalDebito ?? 0) : 0,
     exigeRecolhimento,
-    fundamento: fundamentoBase,
+    fundamento,
+    ...(motivoDispensa ? { motivoDispensa } : {}),
     codigosEfd: exigeRecolhimento ? ['E310', 'E316', 'PR239999', 'PR259999'] : [],
-    memoriaCalculo,
-    alertas,
+    memoriaCalculo: exigeRecolhimento ? diag.memoriaCalculo : [motivoDispensa || diag.fundamentacaoLegal],
+    alertas: diag.alertasAuditoria || [],
   };
 }
 

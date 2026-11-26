@@ -37,6 +37,8 @@ import {
   type DetalhamentoSimplesHibrido,
 } from './marco-legal';
 import { determinarCfop, type ParametrosCfopResolver } from './cfop-resolver';
+import { resolverAliquotaPrBitemporal, verificarExclusaoStPr } from './engine/matriz-icms-pr';
+import { consultarMvaStPr } from './engine/tabelas-pr';
 
 export const r2 = (x: number): number => {
   const s = x < 0 ? -1 : 1;
@@ -53,6 +55,7 @@ export type ItemPreco = {
   codigo: string;
   descricao: string;
   ncm?: string;
+  cest?: string;
   cst?: string;
   cClassTrib?: string;
   cstIcms?: string;
@@ -62,6 +65,7 @@ export type ItemPreco = {
   modFrete?: '0' | '1' | '2' | '9';
   pesoBruto?: number;
   cfopEntradaMapeado?: string;
+  dataFatoGerador?: string;
   pRedBC?: number;
   pRedBCST?: number;
   vICMSDeson?: number;
@@ -423,11 +427,16 @@ export function sugerirAliquotasPrecificacao(params: {
   dadosNcm?: any;
   dadosReforma?: any;
   marco?: MarcoLegal;
+  dataFatoGerador?: string;
   overrides?: Partial<AliquotasSugeridas>;
 }): SugestaoResultado {
   const { ncm, cClassTrib, ano, regime, dadosNcm, dadosReforma, marco, overrides } = params;
   const ufOrigem = (params.ufOrigem || 'PR').toUpperCase();
   const ufDestino = (params.ufDestino || 'PR').toUpperCase();
+  const dataRef = params.dataFatoGerador || `${ano}-06-01`;
+  const dadosPrOrig = ufOrigem === 'PR' ? resolverAliquotaPrBitemporal(ncm, dataRef) : null;
+  const dadosPrDest = ufDestino === 'PR' ? resolverAliquotaPrBitemporal(ncm, dataRef) : null;
+  const exclusaoStDest = ufDestino === 'PR' ? verificarExclusaoStPr(ncm, undefined, dataRef) : null;
 
   // Consulta O(1) às reduções fiscais e convênios correlatos
   const reducoesNcm = detectarReducoesFiscaisPorNcm(ncm, ufDestino, marco);
@@ -436,34 +445,43 @@ export function sugerirAliquotasPrecificacao(params: {
   const ipiPct = typeof dadosNcm?.ipi === 'number' ? dadosNcm.ipi : 0;
   const iiPct = typeof dadosNcm?.ii === 'number' ? dadosNcm.ii : 0;
 
-  // ICMS compra (interestadual ou interno)
+  // ICMS compra (interestadual ou interno via matriz bitemporal PR)
   let icmsCompraPct = 18;
-  if (marco) {
-    if (ufOrigem !== ufDestino) {
-      icmsCompraPct = icmsInterestadual(marco, ufOrigem, ufDestino, dadosNcm?.importado ?? false);
-    } else {
-      icmsCompraPct = icmsInternoUf(marco, ufOrigem);
-    }
+  if (ufOrigem !== ufDestino) {
+    icmsCompraPct = marco ? icmsInterestadual(marco, ufOrigem, ufDestino, dadosNcm?.importado ?? false) : 12;
+  } else if (dadosPrOrig) {
+    icmsCompraPct = dadosPrOrig.ehCombustivelMonofasico ? 0 : dadosPrOrig.aliquotaIcmsPct;
+  } else if (marco) {
+    icmsCompraPct = icmsInternoUf(marco, ufOrigem);
   }
 
-  // ICMS venda (Regra 2: se ST retida anteriormente ou substituída, ICMS de saída é 0)
+  // ICMS venda (Regra 2: se ST retida anteriormente ou substituída não excluída, ou monofásico, ICMS de saída é 0)
   const isStSubstituido =
-    params.cstIcms === '60' ||
-    params.csosn === '500' ||
-    Boolean(params.temSt);
-  let icmsVendaPct = isStSubstituido ? 0 : (marco ? icmsInternoUf(marco, ufDestino) : 18);
+    !dadosPrDest?.ehCombustivelMonofasico &&
+    !exclusaoStDest?.excluidoDaSt &&
+    (params.cstIcms === '60' || params.csosn === '500' || Boolean(params.temSt));
+  let icmsVendaPct = isStSubstituido
+    ? 0
+    : dadosPrDest
+    ? dadosPrDest.ehCombustivelMonofasico
+      ? 0
+      : dadosPrDest.aliquotaIcmsPct
+    : marco
+    ? icmsInternoUf(marco, ufDestino)
+    : 18;
 
   // Se houver benefício/convênio no PR (ex: Máquinas Agrícolas 5,6% ou diferimento parcial)
-  if (reducoesNcm?.icms?.aliqEfetivaSugeridaPct !== undefined && !isStSubstituido) {
+  if (!dadosPrDest?.ehCombustivelMonofasico && reducoesNcm?.icms?.aliqEfetivaSugeridaPct !== undefined && !isStSubstituido) {
     icmsVendaPct = reducoesNcm.icms.aliqEfetivaSugeridaPct;
   }
 
-  // Diferimento Parcial B2B no Paraná (Art. 28 Anexo VIII RICMS/PR -> 12% efetivo)
+  // Diferimento Parcial B2B no Paraná (Art. 28 Anexo VIII RICMS/PR -> 12% efetivo se alíquota > 12%)
   const isOperacaoB2BPr =
     (params.operacaoInternaPRB2B === true ||
       (ufOrigem === 'PR' && ufDestino === 'PR' && params.destinatarioContribuinte !== false)) &&
-    !isStSubstituido;
-  if (isOperacaoB2BPr && reducoesNcm?.icms?.aliqEfetivaSugeridaPct === undefined) {
+    !isStSubstituido &&
+    !dadosPrDest?.ehCombustivelMonofasico;
+  if (isOperacaoB2BPr && reducoesNcm?.icms?.aliqEfetivaSugeridaPct === undefined && icmsVendaPct > 12) {
     icmsVendaPct = 12.0;
   }
 
@@ -669,9 +687,11 @@ export function calcularCustoAquisicaoReal(
     ufOrigem?: string;
     ufDestino?: string;
     baseReduzidaSaidaPct?: number;
+    dataFatoGerador?: string;
     marco?: MarcoLegal | null;
   } = {}
 ): ComposicaoCusto {
+  const dataRef = opts.dataFatoGerador || it.dataFatoGerador || '2026-06-01';
   const q = it.quantidade > 0 ? it.quantidade : 1;
   const vProd = it.valorBrutoEntrada;
   const vDesc = it.descontoIncondicionalEntrada ?? 0;
@@ -706,7 +726,12 @@ export function calcularCustoAquisicaoReal(
   let difalDevido = 0;
   if (isUsoOuAtivo && ufOrig && ufDest && ufOrig !== ufDest) {
     const aliqInterDifal = ['1', '2', '3', '8'].includes(it.origemMercadoria || '') ? 4 : 12;
-    const aliqIntraDifal = 19.5;
+    const aliqIntraDifal =
+      ufDest === 'PR'
+        ? resolverAliquotaPrBitemporal(it.ncm || '', dataRef).aliquotaIcmsPct
+        : opts.marco
+        ? icmsInternoUf(opts.marco, ufDest)
+        : 18.0;
     const valorBaseOperacao = vProd - vDesc + frete + ipi;
 
     // Real e Presumido: Base Dupla Contribuinte (art. 155 §2º VII CF/88 c/c Lei 190/2021)
@@ -818,7 +843,7 @@ export function calcularCustoAquisicaoReal(
       }
     }
 
-    // Regra 3: Inclusão do IPI na Base de ST e Provisionamento de Antecipação ST no PR
+    // Regra 3: Inclusão do IPI na Base de ST e Provisionamento de Antecipação ST no PR (respeitando matriz, exclusões e tabela MVA)
     const tipoEstab = opts.tipoEstabelecimento || it.tipoEstabelecimento || 'comercio';
     const ufOrig = opts.ufOrigem || it.ufOrigem;
     const ufDest = opts.ufDestino || it.ufDestino || 'PR';
@@ -830,14 +855,19 @@ export function calcularCustoAquisicaoReal(
       ufDest === 'PR' &&
       ufOrig !== 'PR'
     ) {
-      const aliqInterST = ['1', '2', '3', '8'].includes(it.origemMercadoria || '') ? 4 : 12;
-      const aliqIntraPR = 19.5;
-      const mvaOrig = it.pMVAST || 40;
-      const mvaAjustada = calcularMvaAjustada(mvaOrig, aliqInterST, aliqIntraPR);
-      const baseCalculoSt = (vProd - vDesc + frete + ipi) * (1 + mvaAjustada / 100);
-      const icmsProprioOrigem = (vProd - vDesc + frete) * (aliqInterST / 100);
-      const icmsStAntecipado = Math.max(0, r2(baseCalculoSt * (aliqIntraPR / 100) - icmsProprioOrigem));
-      icmsSt += icmsStAntecipado;
+      const dadosPrSt = resolverAliquotaPrBitemporal(it.ncm || '', dataRef);
+      const exclusaoSt = verificarExclusaoStPr(it.ncm || '', it.cest, dataRef);
+      const mvaTab = consultarMvaStPr({ ncm: it.ncm || '', cest: it.cest, dataFatoGerador: dataRef });
+      const mvaOrig = it.pMVAST ?? mvaTab.mvaOriginalPct;
+      if (!dadosPrSt.ehCombustivelMonofasico && !exclusaoSt.excluidoDaSt && mvaOrig > 0) {
+        const aliqInterST = ['1', '2', '3', '8'].includes(it.origemMercadoria || '') ? 4 : 12;
+        const aliqIntraPR = dadosPrSt.aliquotaTotalPct;
+        const mvaAjustada = calcularMvaAjustada(mvaOrig, aliqInterST, aliqIntraPR);
+        const baseCalculoSt = (vProd - vDesc + frete + ipi) * (1 + mvaAjustada / 100);
+        const icmsProprioOrigem = (vProd - vDesc + frete) * (aliqInterST / 100);
+        const icmsStAntecipado = Math.max(0, r2(baseCalculoSt * (aliqIntraPR / 100) - icmsProprioOrigem));
+        icmsSt += icmsStAntecipado;
+      }
     }
 
     // Regra 4: Estorno Proporcional por Redução de Base na Saída (RICMS/PR Anexo II)

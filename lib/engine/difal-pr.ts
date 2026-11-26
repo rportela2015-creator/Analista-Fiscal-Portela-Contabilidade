@@ -14,8 +14,12 @@ export interface EntradaApuracaoDifalPR {
   xProd?: string;
   ncm: string;
   cest?: string;
+  cfop?: string;
+  cstIcms?: string;
+  csosn?: string;
+  temStAnterior?: boolean;
   origemMercadoria?: '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | number;
-  finalidadeEntrada: 'uso_consumo' | 'revenda' | 'comercializacao' | 'industrializacao' | 'ativo_imobilizado';
+  finalidadeEntrada: 'uso_consumo' | 'revenda' | 'comercializacao' | 'industrializacao' | 'ativo_imobilizado' | string;
   crtEmitente: '1' | '2' | '3' | '4' | number;
   crtDestinatario: '1' | '2' | '3' | '4' | number;
   ufEmitente: string;
@@ -39,6 +43,61 @@ export interface EntradaApuracaoDifalPR {
   vCbs?: number;
   vIs?: number;
   aplicarCarga12Art16SN?: boolean;
+}
+
+export type DestinacaoDifalCanonica =
+  | 'uso_consumo'
+  | 'ativo_imobilizado'
+  | 'comercializacao'
+  | 'industrializacao';
+
+export function normalizarDestinacaoDifalPR(
+  raw?: string | null,
+  cfopRaw?: string | null,
+  fallback: DestinacaoDifalCanonica = 'comercializacao'
+): { destinacao: DestinacaoDifalCanonica; alerta?: string } {
+  const texto = String(raw ?? '').trim().toLowerCase();
+
+  if (!texto) {
+    const cfop = String(cfopRaw || '').replace(/\D/g, '');
+    if (cfop.endsWith('556') || cfop.endsWith('407')) return { destinacao: 'uso_consumo' };
+    if (cfop.endsWith('551') || cfop.endsWith('406')) return { destinacao: 'ativo_imobilizado' };
+    if (cfop.endsWith('101') || cfop.endsWith('401')) return { destinacao: 'industrializacao' };
+    if (cfop.endsWith('102') || cfop.endsWith('403')) return { destinacao: 'comercializacao' };
+    return { destinacao: fallback };
+  }
+
+  if (
+    texto === 'uso_consumo' ||
+    texto === 'ativo_imobilizado' ||
+    texto === 'comercializacao' ||
+    texto === 'industrializacao'
+  ) {
+    return { destinacao: texto };
+  }
+
+  if (texto === 'revenda') {
+    return { destinacao: 'comercializacao' };
+  }
+
+  if (texto === 'consumo' || texto === 'uso' || texto === 'uso e consumo' || texto === 'consumo_proprio') {
+    return {
+      destinacao: 'uso_consumo',
+      alerta: `[ALERTA DESTINAÇÃO AMBÍGUA] Destinação "${raw}" normalizada automaticamente para "uso_consumo" — exige conferência de incidência de DIFAL na entrada.`,
+    };
+  }
+
+  if (texto === 'ativo' || texto === 'imobilizado' || texto === 'ativo_fixo' || texto === 'ativo fixo') {
+    return {
+      destinacao: 'ativo_imobilizado',
+      alerta: `[ALERTA DESTINAÇÃO AMBÍGUA] Destinação "${raw}" normalizada automaticamente para "ativo_imobilizado" — exige conferência de DIFAL e crédito CIAP (Bloco G).`,
+    };
+  }
+
+  return {
+    destinacao: fallback,
+    alerta: `[ALERTA DESTINAÇÃO NÃO RECONHECIDA] Destinação "${raw}" não reconhecida para DIFAL PR (aplicado fallback "${fallback}"); revise para evitar omissão indevida de recolhimento.`,
+  };
 }
 
 export interface EntradaDifalNaoContribuintePR {
@@ -77,8 +136,16 @@ export function apurarDifalEntradaPR(input: EntradaApuracaoDifalPR): Diagnostico
   const alertasAuditoria: string[] = [];
   const memoriaCalculo: string[] = [];
 
+  const destNormalizada = normalizarDestinacaoDifalPR(input.finalidadeEntrada, input.cfop, 'comercializacao');
+  const finalidade = destNormalizada.destinacao;
+  if (destNormalizada.alerta) {
+    alertasAuditoria.push(destNormalizada.alerta);
+    memoriaCalculo.push(destNormalizada.alerta);
+  }
+
   // 1. Verificação preliminar de jurisdição
-  if (ufE === 'PR' || ufD !== 'PR') {
+  if (!ufE || ufE === 'PR' || ufD !== 'PR') {
+    const motivo = 'Operação interna no Paraná ou destino em outra UF — DIFAL de entrada interestadual dispensado.';
     return {
       sujeitoDifal: false,
       tipoDifal: 'nao_aplicavel',
@@ -101,9 +168,9 @@ export function apurarDifalEntradaPR(input: EntradaApuracaoDifalPR): Diagnostico
       valorTotalDebito: 0,
       efeitoCaixaLiquido: 0,
       guiaRecolhimento: 'DISPENSADO',
-      memoriaCalculo: ['Operação interna no PR ou destino fora do PR — DIFAL interestadual dispensado.'],
-      fundamentacaoLegal: 'Operação não sujeita ao DIFAL de entrada no Paraná.',
-      alertasAuditoria: [],
+      memoriaCalculo: [motivo],
+      fundamentacaoLegal: 'RICMS/PR Art. 3º — Operação não sujeita ao DIFAL interestadual de entrada no Paraná.',
+      alertasAuditoria,
     };
   }
 
@@ -114,6 +181,10 @@ export function apurarDifalEntradaPR(input: EntradaApuracaoDifalPR): Diagnostico
   const aliqInternaEfetiva = input.pRedBcInternaPrPct
     ? r2(aliqInternaBase * (1 - input.pRedBcInternaPrPct / 100))
     : aliqInternaBase;
+
+  if (dadosPr.requerConferenciaNormativa && dadosPr.motivoConferenciaNormativa) {
+    alertasAuditoria.push(dadosPr.motivoConferenciaNormativa);
+  }
 
   // 3. Resolução da alíquota interestadual de origem e auditoria
   const origNum = Number(input.origemMercadoria ?? 0);
@@ -171,18 +242,86 @@ export function apurarDifalEntradaPR(input: EntradaApuracaoDifalPR): Diagnostico
   // ---------------------------------------------------------------------------
   // MODALIDADE 1: USO/CONSUMO OU ATIVO IMOBILIZADO (Base Dupla Art. 8º, § 12 RICMS/PR)
   // ---------------------------------------------------------------------------
-  if (input.finalidadeEntrada === 'uso_consumo' || input.finalidadeEntrada === 'ativo_imobilizado') {
-    const ehAtivo = input.finalidadeEntrada === 'ativo_imobilizado';
+  if (finalidade === 'uso_consumo' || finalidade === 'ativo_imobilizado') {
+    const ehAtivo = finalidade === 'ativo_imobilizado';
     const tipoDifal = ehAtivo ? 'ativo_imobilizado' : 'uso_consumo';
     const modalidade = ehAtivo ? 'DIFAL_ATIVO_IMOBILIZADO' : 'DIFAL_USO_CONSUMO';
-
     const baseCalculoOperacao = r2(vProd - vDesc + vFrete + vSeg + vOutro + vIpi + parcelaIva2027);
+
+    const possuiStDeclarada =
+      input.cstIcms === '60' ||
+      input.csosn === '500' ||
+      (input.vIcmsStDestacado ?? 0) > 0 ||
+      Boolean(input.temStAnterior);
+
+    if (possuiStDeclarada && !exclusaoSt.excluidoDaSt) {
+      const motivoSt = 'Mercadoria com ICMS-ST retido/recolhido anteriormente (CST 60/CSOSN 500 ou vICMSST destacado), encerrando a cadeia tributária.';
+      return {
+        sujeitoDifal: false,
+        tipoDifal: 'nao_aplicavel',
+        modalidadeBase: 'isento',
+        exigeRecolhimento: false,
+        modalidade: 'DISPENSADO',
+        aliquotaOrigem: pIcmsOrigemPct,
+        aliquotaDestino: aliqInternaBase,
+        aliquotaFecop: aliqFecopPrPct,
+        aliquotaInternaEfetiva: aliqInternaEfetiva,
+        baseCalculoOrigem: baseCalculoOperacao,
+        baseCalculoDestino: 0,
+        baseCalculoOperacao,
+        baseCalculoDifal: 0,
+        valorDifal: 0,
+        valorFecop: 0,
+        valorTotalRecolher: 0,
+        valorDebitoDifal: 0,
+        valorDebitoFecop: 0,
+        valorTotalDebito: 0,
+        efeitoCaixaLiquido: 0,
+        guiaRecolhimento: 'DISPENSADO',
+        alertasAuditoria,
+        memoriaCalculo: [motivoSt],
+        fundamentacaoLegal: 'RICMS/PR Anexo IX — substituição tributária anterior com encerramento da tributação.',
+      };
+    }
+
     const vIcmsOrigem = input.vIcmsOrigem !== undefined
       ? input.vIcmsOrigem
       : r2((vProd - vDesc + vFrete + vSeg + vOutro) * (pIcmsOrigemPct / 100));
 
     const vSemIcmsOrigem = Math.max(0, r2(baseCalculoOperacao - vIcmsOrigem));
-    const divisor = 1 - (aliqInternaEfetiva + aliqFecopPrPct) / 100;
+    const somaAliqDestino = aliqInternaEfetiva + aliqFecopPrPct;
+    const divisor = 1 - somaAliqDestino / 100;
+
+    if (divisor <= 0 || somaAliqDestino <= pIcmsOrigemPct) {
+      const motivoNula = `Alíquota interna efetiva (${somaAliqDestino}%) não excede a alíquota interestadual (${pIcmsOrigemPct}%) — sem diferencial a recolher.`;
+      return {
+        sujeitoDifal: false,
+        tipoDifal,
+        modalidadeBase: 'isento',
+        exigeRecolhimento: false,
+        modalidade: 'DISPENSADO',
+        aliquotaOrigem: pIcmsOrigemPct,
+        aliquotaDestino: aliqInternaBase,
+        aliquotaFecop: aliqFecopPrPct,
+        aliquotaInternaEfetiva: aliqInternaEfetiva,
+        baseCalculoOrigem: baseCalculoOperacao,
+        baseCalculoDestino: 0,
+        baseCalculoOperacao,
+        baseCalculoDifal: 0,
+        valorDifal: 0,
+        valorFecop: 0,
+        valorTotalRecolher: 0,
+        valorDebitoDifal: 0,
+        valorDebitoFecop: 0,
+        valorTotalDebito: 0,
+        efeitoCaixaLiquido: 0,
+        guiaRecolhimento: 'DISPENSADO',
+        alertasAuditoria,
+        memoriaCalculo: [motivoNula],
+        fundamentacaoLegal: 'RICMS/PR Art. 8º, § 12 — diferença de alíquota nula ou negativa.',
+      };
+    }
+
     const baseCalculoDifal = r2(vSemIcmsOrigem / divisor);
 
     const valorDebitoDifal = r2(Math.max(0, baseCalculoDifal * (aliqInternaEfetiva / 100) - vIcmsOrigem));
@@ -256,7 +395,7 @@ export function apurarDifalEntradaPR(input: EntradaApuracaoDifalPR): Diagnostico
       ciapBlocoG,
       alertasAuditoria,
       memoriaCalculo,
-      fundamentacaoLegal: `Art. 8º, § 12 da Lei Estadual nº 11.580/1996 c/c Lei nº 22.190/2024 e Art. 74 RICMS/PR (${dadosPr.dispositivoLegal}).`,
+      fundamentacaoLegal: `RICMS/PR (Decreto nº 7.871/2017) Art. 3º e Art. 8º, § 12 c/c Lei nº 11.580/1996 e Art. 74 (${dadosPr.dispositivoLegal}); NPF nº 052/2018 (E310/E316, PR239999/PR259999).`,
     };
   }
 
@@ -264,7 +403,7 @@ export function apurarDifalEntradaPR(input: EntradaApuracaoDifalPR): Diagnostico
   // MODALIDADE 2: REVENDA/INDÚSTRIA COM ST INTERNA PR SEM RETENÇÃO NA ORIGEM
   // ---------------------------------------------------------------------------
   if (
-    (input.finalidadeEntrada === 'revenda' || input.finalidadeEntrada === 'comercializacao' || input.finalidadeEntrada === 'industrializacao') &&
+    (finalidade === 'comercializacao' || finalidade === 'industrializacao') &&
     input.sujeitoStInternaPr &&
     !exclusaoSt.excluidoDaSt &&
     (input.vIcmsStDestacado ?? 0) === 0
@@ -313,7 +452,7 @@ export function apurarDifalEntradaPR(input: EntradaApuracaoDifalPR): Diagnostico
   const ehGasNatural = input.ncm.replace(/\D/g, '').startsWith('2711');
 
   if (
-    (input.finalidadeEntrada === 'revenda' || input.finalidadeEntrada === 'comercializacao' || input.finalidadeEntrada === 'industrializacao') &&
+    (finalidade === 'comercializacao' || finalidade === 'industrializacao') &&
     (ehImportado4 || ehGasNatural)
   ) {
     const baseCalculoOperacao = r2(vProd - vDesc + vFrete + vSeg + vOutro + parcelaIva2027); // Art. 16 sem IPI
@@ -433,7 +572,7 @@ export function apurarDifalEntradaPR(input: EntradaApuracaoDifalPR): Diagnostico
     guiaRecolhimento: 'DISPENSADO',
     alertasAuditoria,
     memoriaCalculo,
-    fundamentacaoLegal: 'Legislação do Paraná (Decreto nº 7.871/2017) não prevê DIFAL para revenda nacional 12%.',
+    fundamentacaoLegal: 'RICMS/PR (Decreto nº 7.871/2017) Art. 3º e Art. 8º, § 12 — não prevê DIFAL para revenda/industrialização nacional 12%.',
   };
 }
 

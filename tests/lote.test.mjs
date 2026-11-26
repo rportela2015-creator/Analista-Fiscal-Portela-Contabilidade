@@ -105,8 +105,17 @@ const {
   assert.equal(linhaPosIa.origemNcm, 'GEMINI_IA');
   assert.equal(linhaPosIa.confiancaNcmPct, 95);
   assert.equal(linhaPosIa.requerIaNcm, false);
-  assert.equal(linhaPosIa.cfopSaida, '5405', '8471.30.12 possui CEST de informática/eletrônicos (21.028.00) gerando ST 5405');
-  console.log('OK  Teste 2: Descrição vaga (<= 85%) aciona requerIaNcm e calcula parâmetros após IA');
+  assert.equal(linhaPosIa.cfopSaida, '5102', '8471.30.12 foi excluído da ST no PR pelo Decreto 12.828/2026 (01/03/2026) -> CFOP 5102 sem MVA');
+  assert.equal(linhaPosIa.mvaOriginalPct, 0, 'NCM excluído da ST deve ter MVA 0%');
+
+  const linhaComSt = gerarParametrizacaoErpResumida(
+    { codigo: 'REFRI-01', descricao: 'Refrigerante lata 350ml', ncm: '22021000', confiancaNcmPct: 95, origemNcm: 'MOTOR' },
+    { regimeSaida: 'presumido', ufOrigem: 'PR', ufDestino: 'PR', finalidadeSaida: 'revenda', anoCalendario: 2026 },
+    ds
+  );
+  assert.equal(linhaComSt.cfopSaida, '5405', '2202.10.00 sujeito a ST no Anexo IX gera CFOP 5405');
+  assert.equal(linhaComSt.cstOuCsosnIcms, '60');
+  console.log('OK  Teste 2: Descrição vaga (<= 85%) aciona requerIaNcm e calcula parâmetros após IA (respeitando exclusão ST Dec. 12.828/2026)');
 }
 
 // 3. Variação dos códigos gerados conforme regimeSaida (simples vs presumido vs real vs simples_hibrido)

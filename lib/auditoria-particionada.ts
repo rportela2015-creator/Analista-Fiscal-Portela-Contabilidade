@@ -28,7 +28,8 @@ import {
   extrairJsonOllama,
 } from './ollama-client';
 import { getMapaD8 } from './ai/ncm-server';
-import { validarNcmIA } from './ai/validar';
+import { validarNcmIA, validarClassTribIA } from './ai/validar';
+import { buscarClassTribPorNcmOficial } from './fiscal/reforma-tabela-oficial';
 export {
   auditarDifalNotaEntrada,
   type OpcoesAuditoriaDifalEntrada,
@@ -247,7 +248,7 @@ REGRAS DE AUDITORIA:
 2. CFOP Entrada: Converta saída para entrada (5xxx -> 1xxx, 6xxx -> 2xxx). Revenda=1102/2102, ST=1403/2403/1405.
 3. ICMS / Crédito: Se Fornecedor Simples Nacional (CSOSN 102/103), crédito VEDADO (Art. 23 LC 123/2006), sugerir CST entrada '090', aliq '0%', statusItem 'Atenção'. Se Regime Normal para revenda, permite crédito.
 4. Alerta ST / CEST: Se interestadual com ST (vBCST > 0) e CEST ausente, emita alerta obrigatório do Convênio 142/2018 e statusItem 'Inconsistente'.
-5. Reforma Tributária (LC 214/2025): Sugira cClassTrib '000001', cstIbsCbs '000', aliqIbs '0,1%', aliqCbs '0,9%'.
+5. Reforma Tributária (LC 214/2025): Sugira cClassTrib compatível com a tabela oficial (reforma.json) ou vazio "" se incerto; só informe '000001' se confirmada tributação integral padrão, com cstIbsCbs correspondente e aliqIbs '0,1%', aliqCbs '0,9%' em 2026.
 
 Responda ESTRITAMENTE em formato JSON com o seguinte esquema:
 {
@@ -409,7 +410,14 @@ export async function auditarItemOllamaIndividual(
 
   const instrucaoERP = parsed.instrucaoCadastroERP || `Parametrizar produto ${item.cProd} com CFOP ${entradaSugerido} e CST ${cstIcmsEntrada}`;
 
-  const cClassTrib = parsed.cClassTrib || '000001';
+  const mapaReformaNcm = buscarClassTribPorNcmOficial(ncmAuditadoFinal);
+  const ctCheck = validarClassTribIA(parsed.cClassTrib);
+  const cClassTrib = ctCheck.valido
+    ? ctCheck.cClassTrib
+    : (mapaReformaNcm?.cClassTrib || '');
+  const cstIbsCbsResolvido = ctCheck.valido
+    ? ctCheck.cstOficial
+    : (mapaReformaNcm?.cstIbsCbs || '');
   const aliqIbsTeste = parsed.aliqIbsTeste2026 || '0,1%';
   const aliqCbsTeste = parsed.aliqCbsTeste2026 || '0,9%';
   const cstPisCofinsEntrada = parsed.cstPisCofinsEntradaSugerido || (isSimples102 ? '70' : '50');
@@ -450,8 +458,12 @@ export async function auditarItemOllamaIndividual(
     },
     reforma: {
       cClassTrib,
-      descricaoClassTrib: parsed.descricaoClassTrib || 'Tributação Integral Padrão CBS/IBS',
-      cstIbsCbs: parsed.cstIbsCbs || '000',
+      descricaoClassTrib:
+        parsed.descricaoClassTrib ||
+        (ctCheck.valido
+          ? ctCheck.descricaoOficial || 'Classificação validada na tabela oficial'
+          : mapaReformaNcm?.tema || 'Enquadramento IBS/CBS pendente de conferência na tabela oficial'),
+      cstIbsCbs: cstIbsCbsResolvido,
       aliqIbsTeste2026: aliqIbsTeste,
       aliqCbsTeste2026: aliqCbsTeste,
       sujeitoImpostoSeletivo: Boolean(parsed.sujeitoImpostoSeletivo),
@@ -677,7 +689,7 @@ DIRETRIZES PERICIAIS OBRIGATÓRIAS:
 4. ALERTA MANDATÓRIO ST E CEST (Convênio ICMS 142/2018):
    - Se a operação for interestadual com cálculo de ST (vBCST > 0 ou CST 10/70) e a tag CEST estiver ausente/vazia, emitir alertaStDifal: "ALERTA: Mercadoria com ST interestadual sem preenchimento de CEST obrigatório (Convênio 142/2018)" e statusItem: 'Inconsistente'.
 5. PIS/COFINS: Para adquirente em Regime Não-Cumulativo (Lucro Real) em revenda/industrialização: permiteCredito: true, cstPisCofinsEntradaSugerido: '50'. Se fornecedor for Simples, permiteCredito: false, CST 70.
-6. REFORMA TRIBUTÁRIA (LC 214/2025): Sugerir cClassTrib '000001' (Tributação Integral Padrão), cstIbsCbs '000', aliqIbsTeste2026 '0,1%', aliqCbsTeste2026 '0,9%'. Informar se incide Imposto Seletivo (art. 393 LC 214/2025).
+6. REFORMA TRIBUTÁRIA (LC 214/2025): Indicar cClassTrib compatível com a tabela oficial (ou vazio se incerto; usar '000001' apenas se confirmada tributação integral), cstIbsCbs correspondente, aliqIbsTeste2026 '0,1%', aliqCbsTeste2026 '0,9%'. Informar se incide Imposto Seletivo (art. 393 LC 214/2025).
 7. STATUS ITEM: 'Inconsistente' (falta de CEST em ST, NCM inválido, erro grave), 'Atenção' (Simples CSOSN 102 sem crédito), ou 'Regular'.
 8. STATUS GLOBAL: 'Inconsistente' se houver pelo menos um item inconsistente; senão 'Atenção' se houver item atenção; senão 'Regular'.
 
@@ -767,7 +779,14 @@ export async function executarAuditoriaGemini(payload: AuditRequestPayload): Pro
       statusItem = 'Atenção';
     }
 
-    const cClassTrib = itGemini.reforma?.cClassTrib || '000001';
+    const mapaReformaNcm = buscarClassTribPorNcmOficial(ncmValidoSiscomex ? (recSiscomex?.ncm || ncmClean) : origItem.ncm);
+    const ctCheck = validarClassTribIA(itGemini.reforma?.cClassTrib);
+    const cClassTrib = ctCheck.valido
+      ? ctCheck.cClassTrib
+      : (mapaReformaNcm?.cClassTrib || '');
+    const cstIbsCbsResolvido = ctCheck.valido
+      ? ctCheck.cstOficial
+      : (mapaReformaNcm?.cstIbsCbs || '');
     const aliqIbsTeste = itGemini.reforma?.aliqIbsTeste2026 || '0,1%';
     const aliqCbsTeste = itGemini.reforma?.aliqCbsTeste2026 || '0,9%';
     const cstPisCofinsEntrada = itGemini.pisCofins?.cstPisCofinsEntradaSugerido || (isSimples102 ? '70' : '50');
@@ -809,8 +828,12 @@ export async function executarAuditoriaGemini(payload: AuditRequestPayload): Pro
       },
       reforma: {
         cClassTrib,
-        descricaoClassTrib: itGemini.reforma?.descricaoClassTrib || 'Tributação Integral Padrão CBS/IBS',
-        cstIbsCbs: itGemini.reforma?.cstIbsCbs || '000',
+        descricaoClassTrib:
+          itGemini.reforma?.descricaoClassTrib ||
+          (ctCheck.valido
+            ? ctCheck.descricaoOficial || 'Classificação validada na tabela oficial'
+            : mapaReformaNcm?.tema || 'Enquadramento IBS/CBS pendente de conferência na tabela oficial'),
+        cstIbsCbs: cstIbsCbsResolvido,
         aliqIbsTeste2026: aliqIbsTeste,
         aliqCbsTeste2026: aliqCbsTeste,
         sujeitoImpostoSeletivo: Boolean(itGemini.reforma?.sujeitoImpostoSeletivo),

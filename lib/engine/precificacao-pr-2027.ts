@@ -9,7 +9,8 @@
  *  E) Simulação de Virada de Combustíveis Monofásicos Ad Rem em 01/02/2027 (Convênios 127/2026 e 128/2026)
  */
 
-import { resolverAliquotaPrBitemporal } from './matriz-icms-pr';
+import { resolverAliquotaPrBitemporal, verificarExclusaoStPr } from './matriz-icms-pr';
+import { consultarMvaStPr } from './tabelas-pr';
 import { calcularIcmsStPR, r2, r4 } from './icms-pr-regras';
 import { apurarDifalEntradaPR } from './difal-pr';
 
@@ -445,10 +446,17 @@ export function compararFornecedoresCustoAterrissadoPR(
     let justificativa = '';
 
     const aliqPrInfo = resolverAliquotaPrBitemporal(input.ncm, input.dataFatoGerador);
-    const aliqInternaPr = aliqPrInfo.aliquotaTotalPct || 19.5;
+    const aliqInternaPr = aliqPrInfo.ehCombustivelMonofasico ? 0 : aliqPrInfo.aliquotaTotalPct;
+    const exclusaoSt = verificarExclusaoStPr(input.ncm, undefined, input.dataFatoGerador);
+    const mvaTabela =
+      input.mvaOriginalPct ??
+      consultarMvaStPr({ ncm: input.ncm, dataFatoGerador: input.dataFatoGerador }).mvaOriginalPct;
 
     if (isInterna) {
-      if (crtE === 3 && crtCompradorNum === 3) {
+      if (aliqPrInfo.ehCombustivelMonofasico) {
+        icmsDestacado = r2((aliqPrInfo.aliquotaAdRem || 0) * 1);
+        justificativa = `Operação Interna PR (Combustível Monofásico Ad Rem — ${aliqPrInfo.aliquotaAdRem} ${aliqPrInfo.unidadeAdRem}).`;
+      } else if (crtE === 3 && crtCompradorNum === 3 && aliqInternaPr > 12) {
         // Diferimento parcial Art. 28 Anexo VIII: carga 12%
         icmsDestacado = r2(c.precoUnitario * 0.12);
         justificativa = 'Operação Interna PR entre contribuintes normais: Diferimento Parcial para 12% (Art. 28 Anexo VIII).';
@@ -461,15 +469,16 @@ export function compararFornecedoresCustoAterrissadoPR(
       const aliqOrigem = ['SC', 'SP', 'RJ', 'MG', 'RS', 'PR'].includes(c.ufEmitente.toUpperCase()) ? 12 : 7;
       icmsDestacado = r2(c.precoUnitario * (aliqOrigem / 100));
 
-      if (input.sujeitoStPr) {
+      if (input.sujeitoStPr && !exclusaoSt.excluidoDaSt && !aliqPrInfo.ehCombustivelMonofasico && mvaTabela > 0) {
         // Se sujeito à ST no PR
         const calcSt = calcularIcmsStPR({
           vProd: c.precoUnitario,
           vFrete: c.freteUnitario,
           vIpi: c.vIpiUnitario,
           aliqInterestadualPct: aliqOrigem,
-          aliqInternaPrPct: aliqInternaPr,
-          mvaOriginalPct: input.mvaOriginalPct ?? 40,
+          aliqInternaPrPct: aliqPrInfo.aliquotaIcmsPct,
+          aliqFecopPrPct: aliqPrInfo.aliquotaFecopPct,
+          mvaOriginalPct: mvaTabela,
           pmpf: input.pmpf,
           crtEmitente: crtE,
           ufOrigem: c.ufEmitente,
@@ -480,7 +489,7 @@ export function compararFornecedoresCustoAterrissadoPR(
         icmsStEntrada = calcSt.valorTotalRecolherSt;
         justificativa = crtE === 1
           ? `Interestadual ${c.ufEmitente} (Simples Nacional): MVA Original sem ajuste (Convênio ICMS 35/2011). ICMS-ST = R$ ${icmsStEntrada.toFixed(2)}.`
-          : `Interestadual ${c.ufEmitente} (Regime Normal): MVA Ajustada (53,04%). ICMS-ST = R$ ${icmsStEntrada.toFixed(2)}.`;
+          : `Interestadual ${c.ufEmitente} (Regime Normal): MVA Efetiva ${calcSt.mvaEfetivaPct}%. ICMS-ST = R$ ${icmsStEntrada.toFixed(2)}.`;
       } else {
         // Fora da ST - verificar Antecipação Art. 16 ou DIFAL
         const origNum = Number(c.origemTabelaA ?? 0);

@@ -1,0 +1,56 @@
+{
+  "versao": "2026.1",
+  "fonte": "Tabela 5.2 SEFA/PR (cBenef) — NF-e Nota Técnica 2019.001 / RICMS-PR Decreto nº 7.871/2017",
+  "cstsBloqueadosCbenef": ["00", "10", "60", "61"],
+  "regraRejeicao928": {
+    "rejeicao": "928",
+    "descricao": "CST 10 (Tributada e com cobrança do ICMS por substituição tributária) não admite preenchimento de cBenef na SEFA/PR. Bloqueio preventivo obrigatório para evitar Rejeição 928 na SEFAZ.",
+    "cstBloqueado": "10"
+  },
+  "itens": [
+    {
+      "codigo": "PR830001",
+      "cstPermitidos": ["51"],
+      "tipoBeneficio": "diferimento_parcial_art28",
+      "norma": "Art. 28, I, 'a' do Anexo VIII do RICMS/PR (Decreto nº 5.143/2024)",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null,
+      "ncmsOuCriterios": {
+        "criterio": "operacao_interna_pr_b2b_aliq_superior_12"
+      }
+    },
+    {
+      "codigo": "PR830002",
+      "cstPermitidos": ["51"],
+      "tipoBeneficio": "diferimento_total_insumos_agro",
+      "norma": "Art. 31 do Anexo VIII do RICMS/PR c/c Convênio ICMS 100/1997",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null,
+      "ncmsOuCriterios": {
+        "prefixosNcm": ["3101", "3105", "3808"]
+      }
+    },
+    {
+      "codigo": "PR800001",
+      "cstPermitidos": ["40", "41"],
+      "tipoBeneficio": "isencao_insumos_agro_conv100",
+      "norma": "Anexo V do RICMS/PR — Isenção / Não Incidência (Convênio ICMS 100/1997)",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null,
+      "ncmsOuCriterios": {
+        "prefixosNcm": ["3101", "3105", "3808"]
+      }
+    },
+    {
+      "codigo": "PR820001",
+      "cstPermitidos": ["20"],
+      "tipoBeneficio": "reducao_bc_anexo_vi",
+      "norma": "Anexo VI do RICMS/PR — Redução de Base de Cálculo (Convênio ICMS 52/1991 e Cesta Básica)",
+      "vigenciaInicio": "2017-10-01",
+      "vigenciaFim": null,
+      "ncmsOuCriterios": {
+        "prefixosNcm": ["8432", "8433", "8436", "8437", "8701"]
+      }
+    }
+  ]
+}
