@@ -22,7 +22,9 @@ import {
   gerarRelatorioCustosHtml,
   RelatorioCustoEntradaConsolidado,
 } from '@/lib/custos';
-import { RegimeTributario, DestinacaoMercadoria } from '@/lib/marco-legal';
+import { RegimeTributario, DestinacaoMercadoria, loadMarcoLegal, type MarcoLegal } from '@/lib/marco-legal';
+import { loadDataset, type Dataset } from '@/lib/data';
+import { aplicarSaneamentoNcmNoItem } from '@/lib/fiscal/saneamento-ncm';
 import { auditarDifalNotaEntrada } from '@/lib/engine/difal-pr';
 import {
   apurarDemonstrativoDifalEntradaPR,
@@ -199,6 +201,31 @@ export default function AuditoriaEntrada() {
   const [cteFobError, setCteFobError] = useState<string | null>(null);
   const [cteFobNomeArquivo, setCteFobNomeArquivo] = useState<string>('');
 
+  // 8. Saneamento Assistido xProd x NCM (Dual-Track Entrada XML vs. Saída/ERP/Precificação)
+  const [datasetSaneamento, setDatasetSaneamento] = useState<Dataset | null>(null);
+  const [marcoSaneamento, setMarcoSaneamento] = useState<MarcoLegal | null>(null);
+  const [saneamentoOverrides, setSaneamentoOverrides] = useState<
+    Record<number, { ncmSaneado: string; justificativaPericial: string; aplicadoEmIso: string }>
+  >({});
+
+  React.useEffect(() => {
+    let ativo = true;
+    loadDataset()
+      .then(async (ds) => {
+        await ds.pronto.catch(() => null);
+        if (ativo) setDatasetSaneamento(ds);
+      })
+      .catch(() => null);
+    loadMarcoLegal()
+      .then((m) => {
+        if (ativo) setMarcoSaneamento(m);
+      })
+      .catch(() => null);
+    return () => {
+      ativo = false;
+    };
+  }, []);
+
   React.useEffect(() => {
     const novoCrt = regime.toLowerCase().includes('simples') ? '1' : regime.toLowerCase().includes('mei') ? '4' : '3';
     setCrtDestinatario((prev) => (prev === novoCrt ? prev : novoCrt));
@@ -323,6 +350,8 @@ export default function AuditoriaEntrada() {
           destinacaoPadrao,
           destinacaoPorItem,
           cteFob: cteFobData,
+          marco: marcoSaneamento,
+          ds: datasetSaneamento,
           statusExtincaoRtc,
         });
         const itensPrec = sessaoSync.itens.map((aud) => converterAuditadoParaPrecificacao(aud));
@@ -394,6 +423,26 @@ export default function AuditoriaEntrada() {
     setCteFobData(null);
     setCteFobError(null);
     setCteFobNomeArquivo('');
+    setSaneamentoOverrides({});
+  };
+
+  const handleAplicarSaneamentoNcm = (nItem: number, ncmSaneado: string, justificativa: string) => {
+    setSaneamentoOverrides((prev) => ({
+      ...prev,
+      [nItem]: {
+        ncmSaneado,
+        justificativaPericial: justificativa,
+        aplicadoEmIso: new Date().toISOString(),
+      },
+    }));
+  };
+
+  const handleReverterSaneamentoNcm = (nItem: number) => {
+    setSaneamentoOverrides((prev) => {
+      const next = { ...prev };
+      delete next[nItem];
+      return next;
+    });
   };
 
   const handleUploadCteFob = async (cteFile: File | null) => {
@@ -703,7 +752,7 @@ export default function AuditoriaEntrada() {
     return consolidarMultiplasNotasDifalPR(notasDifalSessao);
   }, [notasDifalSessao]);
 
-  // ─── Sessão Canônica Unificada (Empresa Bitemporal dhEmi + CT-e FOB + CPC 16 R1) ───
+  // ─── Sessão Canônica Unificada (Empresa Bitemporal dhEmi + CT-e FOB + CPC 16 R1 + Saneamento Dual-Track) ───
   const notaAuditadaSessao = React.useMemo<NotaFiscalAuditadaSessao | null>(() => {
     if (!extractedInvoice || !extractedInvoice.itens || extractedInvoice.itens.length === 0) return null;
     const ctxEmpresa = resolverContextoEmpresaNaData({
@@ -714,14 +763,34 @@ export default function AuditoriaEntrada() {
       ufFallback: extractedInvoice.destinatario?.uf || 'PR',
       inscritoEstadualPR: contribuinteInscritoPR,
     });
-    return construirNotaFiscalAuditadaSessao({
+    const sessaoBase = construirNotaFiscalAuditadaSessao({
       invoice: extractedInvoice,
       contextoEmpresa: ctxEmpresa,
       destinacaoPadrao,
       destinacaoPorItem,
       cteFob: cteFobData,
+      marco: marcoSaneamento,
+      ds: datasetSaneamento,
       statusExtincaoRtc,
     });
+
+    const temOverrides = Object.keys(saneamentoOverrides).length > 0;
+    if (!temOverrides) return sessaoBase;
+
+    return {
+      ...sessaoBase,
+      itens: sessaoBase.itens.map((aud) => {
+        const ov = saneamentoOverrides[aud.nItem];
+        if (!ov) return aud;
+        return aplicarSaneamentoNcmNoItem(aud, {
+          ncmSaneado: ov.ncmSaneado,
+          justificativaPericial: ov.justificativaPericial,
+          ds: datasetSaneamento,
+          marco: marcoSaneamento,
+          agoraIso: ov.aplicadoEmIso,
+        });
+      }),
+    };
   }, [
     extractedInvoice,
     empresaAtiva,
@@ -731,6 +800,9 @@ export default function AuditoriaEntrada() {
     destinacaoPadrao,
     destinacaoPorItem,
     cteFobData,
+    marcoSaneamento,
+    datasetSaneamento,
+    saneamentoOverrides,
     statusExtincaoRtc,
   ]);
 
@@ -2085,6 +2157,10 @@ export default function AuditoriaEntrada() {
             destinacaoPadrao={destinacaoPadrao}
             diagnosticosDifal={apuracaoDifalNota?.itensDiagnostico}
             itensAuditadosMap={auditadosPorMap}
+            dataset={datasetSaneamento}
+            marco={marcoSaneamento}
+            onAplicarSaneamentoNcm={handleAplicarSaneamentoNcm}
+            onReverterSaneamentoNcm={handleReverterSaneamentoNcm}
           />
 
           {/* Painel Dual Engine Selector (Seletor de Motor Duplo) */}

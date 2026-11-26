@@ -1561,6 +1561,15 @@ export default function Precificar({ itensIniciais, itensAuditados }: Precificar
                 📦 {itens.length} {itens.length === 1 ? 'item da NF-e' : 'itens da NF-e'}
               </span>
             )}
+            {itemAtual.itemAuditado?.saneamentoNcm?.overrideAtivo && itemAtual.itemAuditado.saneamentoNcm.ncmSaneadoSaida && (
+              <span
+                className="badge alta tabular-nums"
+                style={{ fontSize: '12px', padding: '4px 8px' }}
+                title={itemAtual.itemAuditado.saneamentoNcm.orientacaoOperacional}
+              >
+                ✓ NCM Saneado (XML: {itemAtual.itemAuditado.ncmEscrituradoEntrada.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1.$2.$3')})
+              </span>
+            )}
           </div>
         </div>
 

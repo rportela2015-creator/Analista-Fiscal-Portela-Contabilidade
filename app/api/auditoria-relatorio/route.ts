@@ -749,6 +749,50 @@ export async function POST(req: Request) {
         ${totaisCpc ? `<p style="font-size:0.86rem; margin-top:10px;"><strong>Totais Consolidados:</strong> Produtos ${fmtMoeda(totaisCpc.valorProdutosBruto)} | Frete CT-e FOB ${fmtMoeda(totaisCpc.freteCteFobTotal)} | Trib. Não Recup. +${fmtMoeda(totaisCpc.tributosNaoRecuperaveisTotal)} | Créditos -${fmtMoeda(totaisCpc.creditosRecuperaveisTotal)} | <strong>CMV Líquido Total: ${fmtMoeda(totaisCpc.cmvLiquidoTotal)}</strong></p>` : ''}
       </div>` : '';
 
+      // 6c. Bloco Divergências xProd × NCM & Saneamento Dual-Track
+      const itensSaneamento = itensAudLista.filter(
+        (aud: any) =>
+          aud?.saneamentoNcm &&
+          (aud.saneamentoNcm.overrideAtivo || aud.saneamentoNcm.aderencia?.statusAderencia !== 'ADERENTE')
+      );
+      const saneamentoHtml = itensSaneamento.length > 0 ? `
+      <div class="section" style="background-color:#fffbeb; border:1px solid #fcd34d; border-left:4px solid #d97706;">
+        <h2>Divergências de Classificação &amp; Saneamento NCM (Entrada XML × Saída ERP)</h2>
+        <table class="tabela-dag">
+          <thead>
+            <tr>
+              <th>Item / Produto (xProd)</th>
+              <th>Status &amp; Score</th>
+              <th>NCM XML (Entrada)</th>
+              <th>NCM Saneado (Saída)</th>
+              <th>Impacto Antes × Depois</th>
+              <th>Justificativa &amp; Orientação CC-e</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itensSaneamento.map((aud: any) => {
+              const san = aud.saneamentoNcm;
+              const ad = san.aderencia || {};
+              const imp = san.impactoAntesDepois;
+              const impactoStr = imp
+                ? `Δ ICMS PR ${imp.deltaAliqIcmsPrPct >= 0 ? '+' : ''}${imp.deltaAliqIcmsPrPct}% | Δ DIFAL ${fmtMoeda(imp.deltaDifalTotal)} | Δ CMV Unit. ${fmtMoeda(imp.deltaCmvUnitario)}`
+                : 'Simulação pendente';
+              const orig = aud.ncmEscrituradoEntrada || aud.ncm || '—';
+              const saida = san.overrideAtivo && san.ncmSaneadoSaida ? san.ncmSaneadoSaida : 'Não aplicado';
+              return `
+              <tr>
+                <td><strong>${esc(String(aud.cProd || 'S/N'))}</strong> — ${esc(String(aud.xProd || 'Produto'))}</td>
+                <td>${esc(String(ad.statusAderencia || 'REQUER_PERICIA'))} (${esc(String(ad.scoreAderencia ?? 0))}%)</td>
+                <td class="monospace-sm">${esc(String(orig))}</td>
+                <td class="monospace-sm"><strong>${esc(String(saida))}</strong></td>
+                <td>${esc(impactoStr)}</td>
+                <td><div>${esc(String(san.justificativaPericial || ad.motivos?.[0] || ''))}</div><div style="font-size:0.75rem; color:#78350f; margin-top:4px;">${esc(String(san.orientacaoOperacional || ''))}</div></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : '';
+
       // 7. Rodapé Técnico de Governança Pericial
       const rodapeTecnicoHtml = `
       <div class="rodape-tecnico">
@@ -862,6 +906,7 @@ export async function POST(req: Request) {
     ${paridadeHtml}
     ${difalHtml}
     ${cpc16Html}
+    ${saneamentoHtml}
     ${secaoItensHtml}
     ${rodapeTecnicoHtml}
   </div>
@@ -1062,6 +1107,30 @@ export async function POST(req: Request) {
         txtContent += `- CMV Líquido Consolidado da Nota: ${fmtMoeda(tc.cmvLiquidoTotal)} (CT-e FOB: ${fmtMoeda(tc.freteCteFobTotal)})\n`;
       }
       txtContent += `\n--------------------------------------------------------------------------------\n\n`;
+
+      const itensSanTxt = (data.itensAuditados as any[]).filter(
+        (aud) =>
+          aud?.saneamentoNcm &&
+          (aud.saneamentoNcm.overrideAtivo || aud.saneamentoNcm.aderencia?.statusAderencia !== 'ADERENTE')
+      );
+      if (itensSanTxt.length > 0) {
+        txtContent += `## Divergências de Classificação & Saneamento NCM (Entrada XML × Saída ERP)\n\n`;
+        itensSanTxt.forEach((aud, idx) => {
+          const san = aud.saneamentoNcm;
+          const ad = san.aderencia || {};
+          const imp = san.impactoAntesDepois;
+          txtContent += `- Item ${idx + 1}: ${aud.cProd || 'S/N'} - ${aud.xProd || 'Produto'}\n`;
+          txtContent += `  Aderência: ${ad.statusAderencia || 'REQUER_PERICIA'} (${ad.scoreAderencia ?? 0}%) | Entrada XML: ${aud.ncmEscrituradoEntrada || aud.ncm} | Saída Saneada: ${san.ncmSaneadoSaida || 'Não aplicado'}\n`;
+          if (san.justificativaPericial) {
+            txtContent += `  Justificativa: ${san.justificativaPericial}\n`;
+          }
+          if (imp) {
+            txtContent += `  Impacto Antes × Depois: Δ ICMS PR ${imp.deltaAliqIcmsPrPct}% | Δ DIFAL ${fmtMoeda(imp.deltaDifalTotal)} | Δ CMV Unit. ${fmtMoeda(imp.deltaCmvUnitario)}\n`;
+          }
+          txtContent += `  Orientação CC-e: ${san.orientacaoOperacional || ''}\n\n`;
+        });
+        txtContent += `--------------------------------------------------------------------------------\n\n`;
+      }
     }
 
     // Seção Itens Parametrização TXT

@@ -10,6 +10,15 @@
 
 import type Decimal from 'decimal.js';
 import { DecimalHalfEven, somarDecimaisRfb } from '../math/decimal-fiscal';
+import type { Dataset } from '../data';
+import {
+  avaliarAderenciaNcm,
+  ORIENTACAO_OPERACIONAL_CCE_NCM,
+} from '../fiscal/aderencia-ncm';
+import type {
+  ImpactoSaneamentoNcm,
+  SaneamentoNcmAuditado,
+} from '../fiscal/saneamento-ncm';
 import {
   resolverPerfilVigenteNaData,
   sanitizarCnpj,
@@ -164,6 +173,8 @@ export interface ItemFiscalAuditado {
   cProd: string;
   xProd: string;
   ncm: string;
+  /** NCM original escriturado na NF-e de entrada (imutável para EFD C100/C170). */
+  ncmEscrituradoEntrada: string;
   cest?: string;
   uCom: string;
   qCom: number;
@@ -188,6 +199,7 @@ export interface ItemFiscalAuditado {
   cteFobVinculado: boolean;
   chaveCteFob?: string;
   alertasFiscais: string[];
+  saneamentoNcm?: SaneamentoNcmAuditado;
   rawItem?: ExtractedItem;
 }
 
@@ -498,6 +510,7 @@ export interface ConstruirItemAuditadoInput {
   chaveCteFob?: string;
   opcoes?: {
     marco?: MarcoLegal | null;
+    ds?: Dataset | null;
     statusExtincaoRtc?: StatusExtincaoDebitoFornecedor;
     recalcularPisCofinsTema69?: boolean;
     aplicarCarga12Art16SN?: boolean;
@@ -550,6 +563,8 @@ export function construirItemFiscalAuditado(input: ConstruirItemAuditadoInput): 
       ['201', '202', '203', '500'].includes(t.csosn || ''));
 
   const mvaOriginalPrPct = exclusaoStPr.excluidoDaSt ? 0 : mvaPr.mvaOriginalPct;
+  const sujeitoStTabelaPr = !exclusaoStPr.excluidoDaSt && mvaOriginalPrPct > 0;
+  const sujeitoStPrEfetivo = temStAnterior || sujeitoStTabelaPr;
   let mvaAplicadaPrPct = 0;
   let tipoMvaPr: 'original_conv_35_2011' | 'ajustada' | 'nao_aplicavel' = 'nao_aplicavel';
 
@@ -878,6 +893,13 @@ export function construirItemFiscalAuditado(input: ConstruirItemAuditadoInput): 
     cfopSaidaSugerido = temStAnterior ? '5403' : '5102';
   }
 
+  const aderenciaInicial = opcoes.ds ? avaliarAderenciaNcm(item.xProd, item.ncm, opcoes.ds) : null;
+  if (aderenciaInicial && aderenciaInicial.statusAderencia !== 'ADERENTE') {
+    alertasFiscais.push(
+      `Aderência xProd × NCM (${aderenciaInicial.statusAderencia}, score ${aderenciaInicial.scoreAderencia}): ${aderenciaInicial.motivos[0] || 'divergência detectada para conferência/saneamento.'}`
+    );
+  }
+
   return {
     chaveNfe: documento.chaveNfe,
     numeroNf: documento.numeroNf,
@@ -887,6 +909,7 @@ export function construirItemFiscalAuditado(input: ConstruirItemAuditadoInput): 
     cProd: item.cProd,
     xProd: item.xProd,
     ncm: item.ncm,
+    ncmEscrituradoEntrada: item.ncm,
     cest: item.cest,
     uCom: item.uCom || 'UN',
     qCom: q,
@@ -963,7 +986,7 @@ export function construirItemFiscalAuditado(input: ConstruirItemAuditadoInput): 
       cfopSaidaSugerido,
       aliqIcmsPrBitemporalPct: matrizPr.aliquotaIcmsPct,
       fecopPrPct: matrizPr.aliquotaFecopPct,
-      sujeitoStPr: temStAnterior,
+      sujeitoStPr: sujeitoStPrEfetivo,
       excluidoStPr: exclusaoStPr.excluidoDaSt,
       normaExclusaoStPr: exclusaoStPr.decreto,
       mvaOriginalPrPct,
@@ -983,6 +1006,19 @@ export function construirItemFiscalAuditado(input: ConstruirItemAuditadoInput): 
     cteFobVinculado: cteVinculado,
     chaveCteFob: cteVinculado ? input.chaveCteFob : undefined,
     alertasFiscais: Array.from(new Set(alertasFiscais)),
+    ...(aderenciaInicial
+      ? {
+          saneamentoNcm: {
+            aderencia: aderenciaInicial,
+            overrideAtivo: false,
+            ncmSaneadoSaida: null,
+            justificativaPericial: '',
+            aplicadoEmIso: null,
+            impactoAntesDepois: null,
+            orientacaoOperacional: ORIENTACAO_OPERACIONAL_CCE_NCM,
+          },
+        }
+      : {}),
     rawItem: item,
   };
 }
@@ -999,6 +1035,7 @@ export function construirNotaFiscalAuditadaSessao(params: {
   criterioRateioCte?: 'valor' | 'peso' | 'auto';
   emitSnIsentoPr?: boolean;
   marco?: MarcoLegal | null;
+  ds?: Dataset | null;
   statusExtincaoRtc?: StatusExtincaoDebitoFornecedor;
   recalcularPisCofinsTema69?: boolean;
 }): NotaFiscalAuditadaSessao {
@@ -1060,6 +1097,7 @@ export function construirNotaFiscalAuditadaSessao(params: {
       chaveCteFob: cteFob?.chaveAcesso,
       opcoes: {
         marco: params.marco,
+        ds: params.ds,
         statusExtincaoRtc: params.statusExtincaoRtc,
         recalcularPisCofinsTema69: params.recalcularPisCofinsTema69,
       },
@@ -1108,29 +1146,39 @@ export function construirNotaFiscalAuditadaSessao(params: {
 export function converterAuditadoParaPrecificacao(
   auditado: ItemFiscalAuditado
 ): PrecificacaoItemInput {
-  const t = auditado.rawItem?.tributos || {};
-  const c = auditado.custoCpc16;
-  const est = auditado.tributacaoEstadual;
+  const temSaneamento = Boolean(
+    auditado.saneamentoNcm?.overrideAtivo &&
+      auditado.saneamentoNcm.ncmSaneadoSaida &&
+      auditado.saneamentoNcm.impactoAntesDepois?.itemRecalculado
+  );
+  const fonteSaida = temSaneamento
+    ? auditado.saneamentoNcm!.impactoAntesDepois!.itemRecalculado
+    : auditado;
+  const ncmEfetivo = temSaneamento ? auditado.saneamentoNcm!.ncmSaneadoSaida! : auditado.ncm;
+
+  const t = fonteSaida.rawItem?.tributos || auditado.rawItem?.tributos || {};
+  const c = fonteSaida.custoCpc16;
+  const est = fonteSaida.tributacaoEstadual;
 
   const destinacaoPrecif: DestinacaoMercadoria =
-    auditado.destinacaoExplicita === 'revenda'
+    fonteSaida.destinacaoExplicita === 'revenda'
       ? 'comercializacao'
-      : auditado.destinacaoExplicita === 'insumo_industrial'
+      : fonteSaida.destinacaoExplicita === 'insumo_industrial'
       ? 'industrializacao'
-      : auditado.destinacaoExplicita || 'uso_consumo';
+      : fonteSaida.destinacaoExplicita || 'uso_consumo';
 
   return {
     index: auditado.nItem,
     codigo: auditado.cProd || `ITEM-${auditado.nItem}`,
     descricao: auditado.xProd,
-    ncm: auditado.ncm,
-    cest: auditado.cest,
+    ncm: ncmEfetivo,
+    cest: fonteSaida.cest ?? auditado.cest,
     cfop: est.cfopSaidaFornecedor,
-    cfopEntradaMapeado: auditado.cfopEntrada,
+    cfopEntradaMapeado: fonteSaida.cfopEntrada,
     destinacao: destinacaoPrecif,
     tipoEstabelecimento: auditado.contextoEmpresa.tipoEstabelecimento,
-    cClassTrib: auditado.tributacaoReforma.cClassTrib || t.cClassTrib,
-    cstIbsCbs: auditado.tributacaoReforma.cstIbsCbs || t.cstIbsCbs,
+    cClassTrib: fonteSaida.tributacaoReforma.cClassTrib || t.cClassTrib,
+    cstIbsCbs: fonteSaida.tributacaoReforma.cstIbsCbs || t.cstIbsCbs,
     cstIcms: t.cstIcms,
     csosn: t.csosn,
     origemMercadoria: String(auditado.origTabelaA),
@@ -1157,7 +1205,7 @@ export function converterAuditadoParaPrecificacao(
     credPisCofinsEntrada: c.creditosRecuperaveis.pisCofinsTotal,
     credCbsEntrada: c.creditosRecuperaveis.cbs,
     credIbsEntrada: c.creditosRecuperaveis.ibs,
-    auditoriaCreditos: auditado.auditoriaCreditos,
+    auditoriaCreditos: fonteSaida.auditoriaCreditos,
     freteCteFobRateado: c.freteCteFob,
     cmvLiquidoUnitarioAuditado: c.cmvLiquidoUnitario,
     itemAuditado: auditado,
@@ -1193,29 +1241,39 @@ export function converterAuditadoParaParametrizacao(
   auditado: ItemFiscalAuditado,
   marco?: MarcoLegal | null
 ): ParametrizacaoItemInput {
-  const t = auditado.rawItem?.tributos || {};
-  const est = auditado.tributacaoEstadual;
+  const temSaneamento = Boolean(
+    auditado.saneamentoNcm?.overrideAtivo &&
+      auditado.saneamentoNcm.ncmSaneadoSaida &&
+      auditado.saneamentoNcm.impactoAntesDepois?.itemRecalculado
+  );
+  const fonteSaida = temSaneamento
+    ? auditado.saneamentoNcm!.impactoAntesDepois!.itemRecalculado
+    : auditado;
+  const ncmEfetivo = temSaneamento ? auditado.saneamentoNcm!.ncmSaneadoSaida! : auditado.ncm;
+
+  const t = fonteSaida.rawItem?.tributos || auditado.rawItem?.tributos || {};
+  const est = fonteSaida.tributacaoEstadual;
   const fcp = est.fecopPrPct || obterFcpPorUf(auditado.ufDestino, marco);
 
   return {
     codigoProduto: auditado.cProd || `ITEM-${auditado.nItem}`,
     descricao: auditado.xProd,
-    ncm: auditado.ncm,
-    cest: auditado.cest,
+    ncm: ncmEfetivo,
+    cest: fonteSaida.cest ?? auditado.cest,
     cfopOrigem: est.cfopSaidaFornecedor,
     cfopEntradaSugerido: est.cfopEntradaSugerido,
     cfopSaidaSugerido: est.cfopSaidaSugerido,
     cstIcmsOrigem: t.cstIcms,
     csosnOrigem: t.csosn,
-    cClassTribSugerido: auditado.tributacaoReforma.cClassTrib,
-    cstIbsCbsSugerido: auditado.tributacaoReforma.cstIbsCbs,
-    reducaoIbsCbsPct: auditado.tributacaoReforma.reducaoIbsCbsPct,
-    beneficioIcmsPr: auditado.tributacaoReforma.requerConferenciaAnexoIX ? 'CONV-ICMS-52-1991' : undefined,
+    cClassTribSugerido: fonteSaida.tributacaoReforma.cClassTrib,
+    cstIbsCbsSugerido: fonteSaida.tributacaoReforma.cstIbsCbs,
+    reducaoIbsCbsPct: fonteSaida.tributacaoReforma.reducaoIbsCbsPct,
+    beneficioIcmsPr: fonteSaida.tributacaoReforma.requerConferenciaAnexoIX ? 'CONV-ICMS-52-1991' : undefined,
     pRedBC: auditado.rawItem?.pRedBC ?? t.pRedBC,
     fcpPct: fcp,
-    valorUnitario: auditado.vUnCom || auditado.custoCpc16.valorProdutoBruto / auditado.qCom,
+    valorUnitario: auditado.vUnCom || fonteSaida.custoCpc16.valorProdutoBruto / auditado.qCom,
     quantidade: auditado.qCom,
     itemAuditado: auditado,
-    custoCpc16: auditado.custoCpc16,
+    custoCpc16: fonteSaida.custoCpc16,
   };
 }

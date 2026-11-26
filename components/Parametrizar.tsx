@@ -28,6 +28,7 @@ import {
   type CustoCpc16Segregado,
   type ItemFiscalAuditado,
 } from '@/lib/types/item-fiscal-auditado';
+import type { SaneamentoNcmAuditado } from '@/lib/fiscal/saneamento-ncm';
 
 function baixarArquivo(conteudo: string, nomeArquivo: string, mime: string) {
   if (typeof window === 'undefined' || !window.URL?.createObjectURL) return;
@@ -56,6 +57,7 @@ function extrairPayloadErp(
   texto: string,
   emitenteNome?: string,
   custoCpc16?: CustoCpc16Segregado,
+  saneamentoNcm?: SaneamentoNcmAuditado,
 ): ParametrosErpPayload {
   const camposProd = p?.campos.find((b) => b.tag === 'prod')?.campos || [];
   const camposIcms = p?.campos.find((b) => b.grupo.startsWith('ICMS'))?.campos || [];
@@ -104,6 +106,7 @@ function extrairPayloadErp(
     aliqIsAdv: aliqIsAdv,
     instrucao: p?.resumo || 'Parametrização gerada conforme regras oficiais.',
     ...(custoCpc16 ? { custoCpc16 } : {}),
+    ...(saneamentoNcm ? { saneamentoNcm } : {}),
   };
 
   return {
@@ -731,6 +734,21 @@ export default function Parametrizar({ itensImportados, itensAuditados }: Parame
           {rec ? (
             <span className="badge blue tabular-nums">{rec.ncm} — {rec.desc.replace(/^[-–\s]+/, '').slice(0, 62)}</span>
           ) : <span className="badge red">sem NCM válido — o item de mercadoria seria rejeitado</span>}
+          {(() => {
+            const audLoteAtivo =
+              (itemLoteAtivo !== null
+                ? loteItens[itemLoteAtivo]?.itemAuditado || loteAuditados[itemLoteAtivo]
+                : loteItens[0]?.itemAuditado || loteAuditados[0]);
+            if (!audLoteAtivo?.saneamentoNcm?.overrideAtivo || !audLoteAtivo.saneamentoNcm.ncmSaneadoSaida) {
+              return null;
+            }
+            const origFmt = audLoteAtivo.ncmEscrituradoEntrada.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1.$2.$3');
+            return (
+              <span className="badge alta tabular-nums" title={audLoteAtivo.saneamentoNcm.orientacaoOperacional}>
+                ✓ NCM Saneado (XML: {origFmt})
+              </span>
+            );
+          })()}
           {ncmManual && (
             <button className="mini st-touch-target" type="button" onClick={() => setNcmManual('')} title="reverter para NCM automático via descrição">
               limpar NCM manual (×)
@@ -911,7 +929,8 @@ export default function Parametrizar({ itensImportados, itensAuditados }: Parame
           p,
           texto,
           empresaAtiva?.razaoSocial,
-          custoCpc16Ativo
+          custoCpc16Ativo,
+          audAtivo?.saneamentoNcm
         );
         const relatorioHtml = modalRelatorio.modo === 'resumido'
           ? gerarRelatorioErpResumidoHtml(payloadRelatorio)

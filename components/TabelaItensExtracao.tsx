@@ -17,6 +17,13 @@ import type {
 } from '@/lib/extrator-nfe-types';
 import { MOTIVOS_SENSIBILIDADE_MAP } from '@/lib/extrator-nfe-types';
 import type { ItemFiscalAuditado } from '@/lib/types/item-fiscal-auditado';
+import { normalizeNcm, fmtCode, type Dataset } from '@/lib/data';
+import type { MarcoLegal } from '@/lib/marco-legal';
+import {
+  ORIENTACAO_OPERACIONAL_CCE_NCM,
+  avaliarAderenciaNcm,
+} from '@/lib/fiscal/aderencia-ncm';
+import { simularImpactoSaneamentoNcm } from '@/lib/fiscal/saneamento-ncm';
 import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
 import ItemDetailDrawer from '@/components/ui/ItemDetailDrawer';
 import LegalCitationBlock, { type NormativeCitation } from '@/components/ui/LegalCitationBlock';
@@ -69,6 +76,14 @@ export interface TabelaItensExtracaoProps {
   diagnosticosDifal?: Record<string | number, any>;
   /** Contrato canônico por índice do item (CT-e FOB, CMV líquido CPC 16, pendências Anexo IX) */
   itensAuditadosMap?: Record<number, ItemFiscalAuditado>;
+  /** Dataset Siscomex para aderência xProd x NCM e validação RGI de candidatos */
+  dataset?: Dataset | null;
+  /** Marco legal para simulação Antes x Depois */
+  marco?: MarcoLegal | null;
+  /** Callback Dual-Track ao aplicar NCM saneado para Saída/ERP/Precificação */
+  onAplicarSaneamentoNcm?: (nItem: number, ncmSaneado: string, justificativa: string) => void;
+  /** Callback ao reverter NCM saneado para o NCM original do XML */
+  onReverterSaneamentoNcm?: (nItem: number) => void;
 }
 
 /* =========================================================================
@@ -123,6 +138,10 @@ export default function TabelaItensExtracao({
   destinacaoPadrao = 'comercializacao',
   diagnosticosDifal,
   itensAuditadosMap,
+  dataset,
+  marco,
+  onAplicarSaneamentoNcm,
+  onReverterSaneamentoNcm,
 }: TabelaItensExtracaoProps) {
   // ---- Hooks chamados estritamente no topo para cumprir scripts/hookcheck.mjs ----
   const { nivel, isGerencial, isSenior } = useNivelOperacional();
@@ -133,6 +152,9 @@ export default function TabelaItensExtracao({
   const [drawerAberto, setDrawerAberto] = useState<boolean>(false);
   const [drawerTab, setDrawerTab] = useState<string>('tributos');
   const [itemExpandido, setItemExpandido] = useState<number | null>(null);
+  const [ncmCandidatoInput, setNcmCandidatoInput] = useState<string>('');
+  const [justificativaInput, setJustificativaInput] = useState<string>('');
+  const [statusSaneamentoMsg, setStatusSaneamentoMsg] = useState<string>('');
   const masterCheckboxRef = useRef<HTMLInputElement>(null);
 
   // Set para lookup O(1) em render de alta performance (100+ itens)
@@ -241,16 +263,82 @@ export default function TabelaItensExtracao({
 
   // Abrir inspeção no Drawer de 500px
   const handleAbrirInspecao = useCallback(
-    (item: ExtractedItem, e?: React.MouseEvent) => {
+    (item: ExtractedItem, e?: React.MouseEvent, abaInicial: string = 'tributos') => {
       if (e) e.stopPropagation();
       setItemInspecionado(item);
+      setDrawerTab(abaInicial);
       setDrawerAberto(true);
+      const aud = itensAuditadosMap?.[item.index];
+      const ader = aud?.saneamentoNcm?.aderencia || (dataset ? avaliarAderenciaNcm(item.xProd, item.ncm, dataset) : null);
+      const sugInicial =
+        aud?.saneamentoNcm?.ncmSaneadoSaida ||
+        ader?.candidatosRgi?.[0]?.ncm ||
+        item.ncm;
+      setNcmCandidatoInput(normalizeNcm(sugInicial));
+      setJustificativaInput(
+        aud?.saneamentoNcm?.justificativaPericial ||
+          (ader?.candidatosRgi?.[0]?.motivoSugestao ?? '')
+      );
+      setStatusSaneamentoMsg('');
       if (onItemClick) {
         onItemClick(item);
       }
     },
-    [onItemClick]
+    [onItemClick, itensAuditadosMap, dataset]
   );
+
+  const auditadoInspecionado = useMemo(() => {
+    if (!itemInspecionado) return null;
+    return itensAuditadosMap?.[itemInspecionado.index] || null;
+  }, [itemInspecionado, itensAuditadosMap]);
+
+  const aderenciaInspecionada = useMemo(() => {
+    if (!itemInspecionado) return null;
+    if (auditadoInspecionado?.saneamentoNcm?.aderencia) {
+      return auditadoInspecionado.saneamentoNcm.aderencia;
+    }
+    return dataset ? avaliarAderenciaNcm(itemInspecionado.xProd, itemInspecionado.ncm, dataset) : null;
+  }, [itemInspecionado, auditadoInspecionado, dataset]);
+
+  const ncmCandidatoNorm = useMemo(() => normalizeNcm(ncmCandidatoInput), [ncmCandidatoInput]);
+
+  const ncmCandidatoRecord = useMemo(() => {
+    if (ncmCandidatoNorm.length !== 8 || !dataset) return null;
+    return dataset.byD8.get(ncmCandidatoNorm) || null;
+  }, [ncmCandidatoNorm, dataset]);
+
+  const ncmCandidatoValidoSiscomex = useMemo(() => {
+    if (ncmCandidatoNorm.length !== 8) return false;
+    return dataset ? dataset.byD8.has(ncmCandidatoNorm) : true;
+  }, [ncmCandidatoNorm, dataset]);
+
+  const impactoSimulado = useMemo(() => {
+    if (!auditadoInspecionado || !ncmCandidatoValidoSiscomex) return null;
+    return simularImpactoSaneamentoNcm(auditadoInspecionado, ncmCandidatoNorm, {
+      ds: dataset,
+      marco,
+    });
+  }, [auditadoInspecionado, ncmCandidatoValidoSiscomex, ncmCandidatoNorm, dataset, marco]);
+
+  const handleAplicarSaneamentoClick = useCallback(() => {
+    if (!itemInspecionado || !onAplicarSaneamentoNcm || !ncmCandidatoValidoSiscomex) return;
+    onAplicarSaneamentoNcm(
+      itemInspecionado.index,
+      ncmCandidatoNorm,
+      justificativaInput.trim() || `Saneamento RGI aplicado para ${fmtCode(ncmCandidatoNorm)}`
+    );
+    setStatusSaneamentoMsg(
+      `NCM saneado ${fmtCode(ncmCandidatoNorm)} aplicado na saída (ERP e Precificação); NCM ${formatarNcm(itemInspecionado.ncm)} preservado na entrada XML.`
+    );
+  }, [itemInspecionado, onAplicarSaneamentoNcm, ncmCandidatoValidoSiscomex, ncmCandidatoNorm, justificativaInput]);
+
+  const handleReverterSaneamentoClick = useCallback(() => {
+    if (!itemInspecionado || !onReverterSaneamentoNcm) return;
+    onReverterSaneamentoNcm(itemInspecionado.index);
+    setStatusSaneamentoMsg(
+      `Saneamento revertido para o NCM original do XML (${formatarNcm(itemInspecionado.ncm)}).`
+    );
+  }, [itemInspecionado, onReverterSaneamentoNcm]);
 
   const handleFecharDrawer = useCallback(() => {
     setDrawerAberto(false);
@@ -576,6 +664,25 @@ export default function TabelaItensExtracao({
                             CT-e FOB: +{formatarBrl(auditado.custoCpc16.freteCteFob)}
                           </span>
                         )}
+                        {auditado?.saneamentoNcm?.overrideAtivo && auditado.saneamentoNcm.ncmSaneadoSaida ? (
+                          <span className="badge alta tabular-nums" style={{ fontSize: 10 }}>
+                            ✓ Saneado → {formatarNcm(auditado.saneamentoNcm.ncmSaneadoSaida)} (XML: {formatarNcm(auditado.ncmEscrituradoEntrada)})
+                          </span>
+                        ) : auditado?.saneamentoNcm?.aderencia ? (
+                          auditado.saneamentoNcm.aderencia.statusAderencia === 'ADERENTE' ? (
+                            <span className="badge alta tabular-nums" style={{ fontSize: 10 }} title={`Aderência xProd × NCM: ${auditado.saneamentoNcm.aderencia.scoreAderencia}/100`}>
+                              ✓ Aderente ({auditado.saneamentoNcm.aderencia.scoreAderencia}%)
+                            </span>
+                          ) : auditado.saneamentoNcm.aderencia.statusAderencia === 'DIVERGENTE' ? (
+                            <span className="badge baixa tabular-nums" style={{ fontSize: 10 }} title={auditado.saneamentoNcm.aderencia.motivos[0]}>
+                              ⛔ Divergente ({auditado.saneamentoNcm.aderencia.scoreAderencia}%)
+                            </span>
+                          ) : (
+                            <span className="badge media tabular-nums" style={{ fontSize: 10 }} title={auditado.saneamentoNcm.aderencia.motivos[0]}>
+                              ⚠️ Perícia NCM ({auditado.saneamentoNcm.aderencia.scoreAderencia}%)
+                            </span>
+                          )
+                        ) : null}
                       </div>
                     </td>
 
@@ -666,17 +773,37 @@ export default function TabelaItensExtracao({
                     </td>
 
                     <td className="is-center" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={(e) => handleAbrirInspecao(item, e)}
-                        aria-expanded={drawerAberto && itemInspecionado?.index === item.index}
-                        aria-controls="drawer-item-detalhes"
-                        title={`Inspecionar detalhes periciais do item #${item.index}`}
-                        className="btn-inspect"
-                        style={{ minHeight: '44px', minWidth: '88px' }}
-                      >
-                        <span>Inspecionar</span>
-                      </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={(e) => handleAbrirInspecao(item, e, 'tributos')}
+                          aria-expanded={drawerAberto && itemInspecionado?.index === item.index}
+                          aria-controls="drawer-item-detalhes"
+                          title={`Inspecionar detalhes periciais do item #${item.index}`}
+                          className="btn-inspect"
+                          style={{ minHeight: '44px', minWidth: '88px' }}
+                        >
+                          <span>Inspecionar</span>
+                        </button>
+                        {auditado?.saneamentoNcm && auditado.saneamentoNcm.aderencia.statusAderencia !== 'ADERENTE' && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleAbrirInspecao(item, e, 'saneamento')}
+                            className="mini st-touch-target"
+                            style={{
+                              minHeight: '44px',
+                              minWidth: '88px',
+                              background: 'var(--accent-amber-subtle)',
+                              borderColor: 'rgba(245, 158, 11, 0.5)',
+                              color: 'var(--warn)',
+                              fontWeight: 700,
+                            }}
+                            title="Abrir assistente de saneamento xProd × NCM com simulação Antes × Depois"
+                          >
+                            Sanear NCM
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -694,6 +821,7 @@ export default function TabelaItensExtracao({
         subtitle={itemInspecionado?.xProd || ''}
         tabs={[
           { id: 'tributos', label: 'Tributos XML' },
+          { id: 'saneamento', label: 'Saneamento NCM' },
           { id: 'difal-st', label: 'DIFAL & Base Dupla PR' },
           { id: 'creditos', label: 'Créditos LC 214' },
           { id: 'base-legal', label: 'Fundamentação Legal' },
@@ -935,6 +1063,223 @@ export default function TabelaItensExtracao({
                 defaultCollapsed={false}
                 calculationMemory={`Base_1 = Valor_Item (${formatarBrl(itemInspecionado.vProd)}) - ICMS_Origem (${formatarBrl(itemInspecionado.tributos?.vICMS)})\nBase_2 = Base_1 / (1 - 0.195)\nDIFAL = (Base_2 * 0.195) - ICMS_Origem`}
               />
+            )}
+
+            {drawerTab === 'saneamento' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="st-subcard">
+                  <h4 style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink)' }}>
+                    Confronto Entrada XML × Classificação Fiscal
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 6, fontSize: 12 }}>
+                    <div>
+                      <span className="muted">Descrição XML (xProd): </span>
+                      <strong>{itemInspecionado.xProd}</strong>
+                    </div>
+                    <div>
+                      <span className="muted">NCM Escriturado (XML Entrada): </span>
+                      <span className="mono tabular-nums" style={{ fontWeight: 700 }}>
+                        {formatarNcm(auditadoInspecionado?.ncmEscrituradoEntrada || itemInspecionado.ncm)}
+                      </span>
+                      {aderenciaInspecionada?.descricaoOficialNcm && (
+                        <span className="muted"> — {aderenciaInspecionada.descricaoOficialNcm}</span>
+                      )}
+                    </div>
+                    {aderenciaInspecionada && (
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 4 }}>
+                        <span
+                          className={`badge tabular-nums ${
+                            aderenciaInspecionada.statusAderencia === 'ADERENTE'
+                              ? 'alta'
+                              : aderenciaInspecionada.statusAderencia === 'DIVERGENTE'
+                              ? 'baixa'
+                              : 'media'
+                          }`}
+                        >
+                          {aderenciaInspecionada.statusAderencia === 'ADERENTE'
+                            ? `✓ Aderente (${aderenciaInspecionada.scoreAderencia}%)`
+                            : aderenciaInspecionada.statusAderencia === 'DIVERGENTE'
+                            ? `⛔ Divergente (${aderenciaInspecionada.scoreAderencia}%)`
+                            : `⚠️ Perícia NCM (${aderenciaInspecionada.scoreAderencia}%)`}
+                        </span>
+                        {auditadoInspecionado?.saneamentoNcm?.overrideAtivo && auditadoInspecionado.saneamentoNcm.ncmSaneadoSaida && (
+                          <span className="badge blue tabular-nums">
+                            Ativo p/ Saída: {formatarNcm(auditadoInspecionado.saneamentoNcm.ncmSaneadoSaida)}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {aderenciaInspecionada && aderenciaInspecionada.motivos.length > 0 && (
+                      <ul style={{ margin: '4px 0 0', paddingLeft: 18, fontSize: 11.5, color: 'var(--ink-2)' }}>
+                        {aderenciaInspecionada.motivos.map((m, idx) => (
+                          <li key={idx}>{m}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+
+                <div className="st-subcard">
+                  <h4 style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink)' }}>
+                    Top 3 Candidatos RGI &amp; NCM Alternativo
+                  </h4>
+                  {aderenciaInspecionada && aderenciaInspecionada.candidatosRgi.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+                      {aderenciaInspecionada.candidatosRgi.map((cand) => {
+                        const selecionado = ncmCandidatoNorm === cand.ncm;
+                        return (
+                          <button
+                            key={cand.ncm}
+                            type="button"
+                            onClick={() => {
+                              setNcmCandidatoInput(cand.ncm);
+                              setJustificativaInput((prev) => prev || cand.motivoSugestao);
+                            }}
+                            className="mini st-touch-target"
+                            style={{
+                              minHeight: '44px',
+                              textAlign: 'left',
+                              justifyContent: 'space-between',
+                              padding: '8px 10px',
+                              background: selecionado ? 'var(--accent-blue-subtle)' : 'var(--bg-card)',
+                              borderColor: selecionado ? 'var(--accent-blue)' : 'var(--border-muted)',
+                            }}
+                          >
+                            <div>
+                              <strong className="mono tabular-nums">{cand.ncmFormatado}</strong>{' '}
+                              <span style={{ fontSize: 11.5 }}>{cand.descricaoOficial}</span>
+                              <div className="muted" style={{ fontSize: 10.5 }}>
+                                {cand.regraRgiAplicada} · Score {cand.score}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <label className="field" style={{ marginBottom: 8 }}>
+                    <span>Digitar NCM de 8 dígitos (validado no Siscomex)</span>
+                    <input
+                      className="mono tabular-nums"
+                      value={ncmCandidatoInput}
+                      onChange={(e) => setNcmCandidatoInput(e.target.value)}
+                      placeholder="Ex.: 19059090"
+                      style={{ minHeight: '44px' }}
+                    />
+                  </label>
+                  {ncmCandidatoNorm.length === 8 && (
+                    <div style={{ fontSize: 11.5, marginBottom: 8 }}>
+                      {ncmCandidatoValidoSiscomex ? (
+                        <span style={{ color: 'var(--ok)' }}>
+                          ✓ Válido no Siscomex: {ncmCandidatoRecord?.desc || 'Confirmado'}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--bad)' }}>
+                          ⛔ NCM {formatarNcm(ncmCandidatoNorm)} não localizado na tabela oficial Siscomex.
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <label className="field">
+                    <span>Justificativa Pericial (registrada no laudo)</span>
+                    <textarea
+                      rows={2}
+                      value={justificativaInput}
+                      onChange={(e) => setJustificativaInput(e.target.value)}
+                      placeholder="Fundamente pela RGI 1 / RGI 3(a) / Nota Legal o motivo do saneamento de saída."
+                    />
+                  </label>
+                </div>
+
+                {impactoSimulado && (
+                  <div className="st-subcard">
+                    <h4 style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink)' }}>
+                      Simulação Antes × Depois (ICMS PR, ST, DIFAL, LC 214, CMV)
+                    </h4>
+                    <table className="tb tabular-nums" style={{ width: '100%', fontSize: 11.5 }}>
+                      <thead>
+                        <tr>
+                          <th>Indicador</th>
+                          <th className="is-right">XML Entrada</th>
+                          <th className="is-right">Saneado Saída</th>
+                          <th className="is-right">Delta</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>ICMS PR + FECOP</td>
+                          <td className="is-right">{impactoSimulado.antes.aliqIcmsPrPct}%+{impactoSimulado.antes.fecopPrPct}%</td>
+                          <td className="is-right">{impactoSimulado.depois.aliqIcmsPrPct}%+{impactoSimulado.depois.fecopPrPct}%</td>
+                          <td className="is-right">{impactoSimulado.deltaAliqIcmsPrPct >= 0 ? '+' : ''}{impactoSimulado.deltaAliqIcmsPrPct}%</td>
+                        </tr>
+                        <tr>
+                          <td>ST PR / MVA Orig.</td>
+                          <td className="is-right">{impactoSimulado.antes.sujeitoStPr ? `ST (${impactoSimulado.antes.mvaOriginalPrPct}%)` : impactoSimulado.antes.excluidoStPr ? 'Excluído ST' : 'Sem ST'}</td>
+                          <td className="is-right">{impactoSimulado.depois.sujeitoStPr ? `ST (${impactoSimulado.depois.mvaOriginalPrPct}%)` : impactoSimulado.depois.excluidoStPr ? 'Excluído ST' : 'Sem ST'}</td>
+                          <td className="is-right">—</td>
+                        </tr>
+                        <tr>
+                          <td>DIFAL PR + FECOP</td>
+                          <td className="is-right">{formatarBrl(impactoSimulado.antes.totalDifalRecolher)}</td>
+                          <td className="is-right">{formatarBrl(impactoSimulado.depois.totalDifalRecolher)}</td>
+                          <td className="is-right">{formatarBrl(impactoSimulado.deltaDifalTotal)}</td>
+                        </tr>
+                        <tr>
+                          <td>cClassTrib / Red.</td>
+                          <td className="is-right">{impactoSimulado.antes.cClassTrib || 'Pendente'} ({impactoSimulado.antes.reducaoIbsCbsPct}%)</td>
+                          <td className="is-right">{impactoSimulado.depois.cClassTrib || 'Pendente'} ({impactoSimulado.depois.reducaoIbsCbsPct}%)</td>
+                          <td className="is-right">—</td>
+                        </tr>
+                        <tr>
+                          <td><strong>CMV Líquido Unit.</strong></td>
+                          <td className="is-right">{formatarBrl(impactoSimulado.antes.cmvLiquidoUnitario)}</td>
+                          <td className="is-right">{formatarBrl(impactoSimulado.depois.cmvLiquidoUnitario)}</td>
+                          <td className="is-right" style={{ fontWeight: 700, color: impactoSimulado.deltaCmvUnitario > 0 ? 'var(--bad)' : impactoSimulado.deltaCmvUnitario < 0 ? 'var(--ok)' : 'var(--ink)' }}>
+                            {impactoSimulado.deltaCmvUnitario >= 0 ? '+' : ''}{formatarBrl(impactoSimulado.deltaCmvUnitario)}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div
+                  className="note atencao"
+                  style={{ fontSize: 11.5, margin: 0 }}
+                >
+                  <div className="t">Orientação Legal (CC-e vs. Entrada XML × Saída ERP)</div>
+                  <div className="x">
+                    {auditadoInspecionado?.saneamentoNcm?.orientacaoOperacional || ORIENTACAO_OPERACIONAL_CCE_NCM}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn primary st-touch-target"
+                    disabled={!onAplicarSaneamentoNcm || !ncmCandidatoValidoSiscomex || !auditadoInspecionado}
+                    onClick={handleAplicarSaneamentoClick}
+                    style={{ minHeight: '44px', flex: '1 1 auto' }}
+                  >
+                    Aplicar NCM Saneado (Saída/ERP/Precificação)
+                  </button>
+                  <button
+                    type="button"
+                    className="st-btn-secondary st-touch-target"
+                    disabled={!onReverterSaneamentoNcm || !auditadoInspecionado?.saneamentoNcm?.overrideAtivo}
+                    onClick={handleReverterSaneamentoClick}
+                    style={{ minHeight: '44px' }}
+                  >
+                    Reverter para NCM do XML
+                  </button>
+                </div>
+
+                <div role="status" aria-live="polite" style={{ minHeight: 20, fontSize: 12, color: 'var(--ok)', fontWeight: 600 }}>
+                  {statusSaneamentoMsg}
+                </div>
+              </div>
             )}
           </div>
         )}

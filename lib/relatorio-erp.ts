@@ -6,6 +6,7 @@
 
 import { esc } from './relatorio';
 import type { CustoCpc16Segregado } from './types/item-fiscal-auditado';
+import type { SaneamentoNcmAuditado } from './fiscal/saneamento-ncm';
 import {
   PORTELA_COPYRIGHT,
   PORTELA_FOOTER_CSS,
@@ -46,6 +47,7 @@ export interface ParametrosErpItem {
   permiteCredito?: boolean;
   instrucao?: string;
   custoCpc16?: CustoCpc16Segregado;
+  saneamentoNcm?: SaneamentoNcmAuditado;
 }
 
 function fmtBrlCpc(v?: number): string {
@@ -91,6 +93,39 @@ function renderBlocoCustoCpc16Html(custo?: CustoCpc16Segregado): string {
             </tr>
           </tbody>
         </table>
+      </div>`;
+}
+
+function renderBlocoSaneamentoNcmTxt(san?: SaneamentoNcmAuditado, ncmEntradaFallback?: string): string {
+  if (!san) return '';
+  if (!san.overrideAtivo && san.aderencia.statusAderencia === 'ADERENTE') return '';
+  const orig = ncmEntradaFallback || san.aderencia.ncmInformado || 'N/A';
+  let s = `  [DIVERGÊNCIAS DE CLASSIFICAÇÃO & SANEAMENTO NCM (ENTRADA XML × SAÍDA ERP)]\n`;
+  s += `    - Aderência xProd × NCM: ${san.aderencia.statusAderencia} (Score: ${san.aderencia.scoreAderencia}%)\n`;
+  s += `    - NCM Entrada XML (Imutável): ${orig} | NCM Saneado Saída: ${san.ncmSaneadoSaida || 'Não aplicado'}\n`;
+  if (san.justificativaPericial) {
+    s += `    - Justificativa Pericial: ${san.justificativaPericial}\n`;
+  }
+  if (san.impactoAntesDepois) {
+    const imp = san.impactoAntesDepois;
+    s += `    - Impacto Antes × Depois: Δ ICMS PR ${imp.deltaAliqIcmsPrPct >= 0 ? '+' : ''}${imp.deltaAliqIcmsPrPct}% | Δ DIFAL ${fmtBrlCpc(imp.deltaDifalTotal)} | Δ CMV Unit. ${fmtBrlCpc(imp.deltaCmvUnitario)}\n`;
+  }
+  s += `    - Orientação CC-e: ${san.orientacaoOperacional}\n`;
+  return s;
+}
+
+function renderBlocoSaneamentoNcmHtml(san?: SaneamentoNcmAuditado, ncmEntradaFallback?: string): string {
+  if (!san) return '';
+  if (!san.overrideAtivo && san.aderencia.statusAderencia === 'ADERENTE') return '';
+  const orig = ncmEntradaFallback || san.aderencia.ncmInformado || 'N/A';
+  const imp = san.impactoAntesDepois;
+  return `
+      <div style="margin: 12px 16px; padding: 12px 14px; background: #fffbeb; border: 1px solid #fcd34d; border-left: 4px solid #d97706; border-radius: 6px; font-size: 0.84rem;">
+        <div style="font-weight: 700; color: #92400e; margin-bottom: 6px;">Divergências de Classificação &amp; Saneamento NCM (Entrada XML × Saída ERP)</div>
+        <div><strong>Status Aderência:</strong> ${esc(san.aderencia.statusAderencia)} (${esc(String(san.aderencia.scoreAderencia))}%) &middot; <strong>Entrada XML:</strong> <span class="mono">${esc(orig)}</span> &middot; <strong>Saída Saneada:</strong> <span class="mono">${esc(san.ncmSaneadoSaida || 'Pendente')}</span></div>
+        ${san.justificativaPericial ? `<div style="margin-top: 4px;"><strong>Justificativa Pericial:</strong> ${esc(san.justificativaPericial)}</div>` : ''}
+        ${imp ? `<div style="margin-top: 4px;"><strong>Impacto Antes × Depois:</strong> Δ ICMS PR ${esc(String(imp.deltaAliqIcmsPrPct))}% &middot; Δ DIFAL ${esc(fmtBrlCpc(imp.deltaDifalTotal))} &middot; Δ CMV Unit. ${esc(fmtBrlCpc(imp.deltaCmvUnitario))}</div>` : ''}
+        <div style="margin-top: 6px; color: #78350f; font-size: 0.8rem;"><strong>Orientação Legal CC-e:</strong> ${esc(san.orientacaoOperacional)}</div>
       </div>`;
 }
 
@@ -289,6 +324,9 @@ export function gerarRelatorioErpResumidoTxt(payload: ParametrosErpPayload, agor
     if (item.custoCpc16) {
       txt += renderBlocoCustoCpc16Txt(item.custoCpc16);
     }
+    if (item.saneamentoNcm) {
+      txt += renderBlocoSaneamentoNcmTxt(item.saneamentoNcm, item.ncm);
+    }
     txt += `\n`;
   });
 
@@ -369,6 +407,7 @@ export function gerarRelatorioErpResumidoHtml(payload: ParametrosErpPayload, ago
         </tbody>
       </table>
       ${renderBlocoCustoCpc16Html(item.custoCpc16)}
+      ${renderBlocoSaneamentoNcmHtml(item.saneamentoNcm, item.ncm)}
       ${item.instrucao ? `<div class="instrucao"><strong>Instrução ERP:</strong> ${esc(item.instrucao)}</div>` : ''}
     </div>
     `;
@@ -421,6 +460,10 @@ export function gerarRelatorioErpDetalhadoTxt(payload: ParametrosErpPayload, ago
     }
     if (item.custoCpc16) {
       txt += renderBlocoCustoCpc16Txt(item.custoCpc16);
+      txt += `\n`;
+    }
+    if (item.saneamentoNcm) {
+      txt += renderBlocoSaneamentoNcmTxt(item.saneamentoNcm, item.ncm);
       txt += `\n`;
     }
   });
@@ -519,6 +562,7 @@ export function gerarRelatorioErpDetalhadoHtml(payload: ParametrosErpPayload, ag
           </div>
         `).join('')}
         ${renderBlocoCustoCpc16Html(item.custoCpc16)}
+        ${renderBlocoSaneamentoNcmHtml(item.saneamentoNcm, item.ncm)}
         ${item.instrucao ? `<div style="background: #ebf8ff; border-left: 4px solid #3182ce; padding: 12px; border-radius: 4px; font-size: 0.9rem; margin-top: 14px;"><strong>Parecer do Auditor:</strong> ${esc(item.instrucao)}</div>` : ''}
       </div>
       `;
