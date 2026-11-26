@@ -7,6 +7,7 @@ import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
 import NivelOperacionalSwitcher from '@/components/ui/NivelOperacionalSwitcher';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import type { PrecificacaoItemInput, ParametrizacaoItemInput } from '@/lib/extrator-nfe-types';
+import type { ItemFiscalAuditado } from '@/lib/types/item-fiscal-auditado';
 
 const CadastroEmpresas = dynamic(() => import('@/components/CadastroEmpresas'), { ssr: false });
 const Classificar = dynamic(() => import('@/components/Classificar'), { ssr: false });
@@ -59,6 +60,7 @@ export default function Home() {
   const [tab, setTab] = useState<TabId>('empresas');
   const [itensPrecificacao, setItensPrecificacao] = useState<PrecificacaoItemInput[]>([]);
   const [itensParametrizacao, setItensParametrizacao] = useState<ParametrizacaoItemInput[]>([]);
+  const [itensAuditados, setItensAuditados] = useState<ItemFiscalAuditado[]>([]);
   const [statusAnuncio, setStatusAnuncio] = useState<string>('');
   const [sidebarExpanded, setSidebarExpanded] = useState<boolean>(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -465,6 +467,9 @@ export default function Home() {
         if (detail.itensErp && Array.isArray(detail.itensErp)) {
           setItensParametrizacao(detail.itensErp);
         }
+        if (detail.itensAuditados && Array.isArray(detail.itensAuditados)) {
+          setItensAuditados(detail.itensAuditados);
+        }
         if (!detail.manterNaAbaAtual) {
           setTab(detail.tab);
           try {
@@ -716,9 +721,9 @@ export default function Home() {
                 {tab === 'classificar' && <Classificar />}
                 {tab === 'lote' && <Lote />}
                 {tab === 'consultar' && <Consultar />}
-                {tab === 'parametrizar' && <Parametrizar itensImportados={itensParametrizacao} />}
+                {tab === 'parametrizar' && <Parametrizar itensImportados={itensParametrizacao} itensAuditados={itensAuditados} />}
                 {tab === 'auditoria-entrada' && <AuditoriaEntrada />}
-                {tab === 'precificar' && <Precificar itensIniciais={itensPrecificacao} />}
+                {tab === 'precificar' && <Precificar itensIniciais={itensPrecificacao} itensAuditados={itensAuditados} />}
                 {tab === 'reforma' && <ReformaTab />}
                 {tab === 'regras' && <Regras />}
               </div>

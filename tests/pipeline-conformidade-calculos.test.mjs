@@ -388,7 +388,12 @@ test('DEP-6 cClassTrib oficial validado em reforma.json e remoção de 000001 co
     assert.ok(tab.has(l.cClassTrib), `NCM ${ncm}: cClassTrib ${l.cClassTrib} deve existir em reforma.json`);
     const v = validarClassTribOficial(l.cClassTrib, l.redIbsCbsPct);
     assert.equal(v.valido, true, v.motivo);
-    assert.notEqual(l.enquadramentoPendente, true);
+    if (ncm === '84322900') {
+      assert.equal(l.enquadramentoPendente, true);
+      assert.match(l.justificativaEnquadramento || '', /Anexo IX/i);
+    } else {
+      assert.notEqual(l.enquadramentoPendente, true);
+    }
   }
 
   const semRegra = erp('61091000');

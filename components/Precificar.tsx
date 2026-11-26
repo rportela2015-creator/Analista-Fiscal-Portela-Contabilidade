@@ -40,6 +40,10 @@ import {
   type CotacaoFornecedorPR,
 } from '@/lib/precificacao';
 import type { PrecificacaoItemInput } from '@/lib/extrator-nfe-types';
+import {
+  resolverContextoEmpresaNaData,
+  type ItemFiscalAuditado,
+} from '@/lib/types/item-fiscal-auditado';
 import { esc } from '@/lib/html';
 import { PORTELA_HEADER_CSS, renderHeaderPortela } from '@/lib/relatorio-header';
 import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
@@ -60,6 +64,7 @@ import { formatarCnpj } from '@/lib/fiscal/perfil-tributario';
 
 export interface PrecificarProps {
   itensIniciais?: PrecificacaoItemInput[];
+  itensAuditados?: ItemFiscalAuditado[];
 }
 
 const ITEM_PADRAO: PrecificacaoItemInput = {
@@ -87,7 +92,7 @@ const ITEM_PADRAO: PrecificacaoItemInput = {
   pesoBruto: 1.5,
 };
 
-export default function Precificar({ itensIniciais }: PrecificarProps) {
+export default function Precificar({ itensIniciais, itensAuditados }: PrecificarProps) {
   // ---------------------------------------------------------------------------
   // 1. HOOKS DE ESTADO (ORDEM ESTRITA NO TOPO ABSOLUTO - scripts/hookcheck.mjs)
   // ---------------------------------------------------------------------------
@@ -186,28 +191,49 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
   // ---------------------------------------------------------------------------
   // 2. EFEITOS DE CARGA E SINCRONIZAÇÃO
   // ---------------------------------------------------------------------------
+  // Sincronização automática do Regime da Empresa Ativa e Perfil Bitemporal na data dhEmi (preserva overrides manuais do usuário)
+  const itemAtivoSel = itens[itemIndex] || itens[0];
+  const dhEmiAtiva =
+    itemAtivoSel?.itemAuditado?.dhEmi ||
+    itensAuditados?.[itemIndex]?.dhEmi ||
+    itensAuditados?.[0]?.dhEmi;
   const perfilRegimeTributario = perfilAtivo?.regimeTributario;
   const perfilSimplesHibrido2027 = perfilAtivo?.simplesOptanteHibrido2027;
   const perfilRegimeEspecialSefaPr = perfilAtivo?.beneficiosParana?.regimeEspecialSefaPr;
   const perfilDiferimentoArt28 = perfilAtivo?.beneficiosParana?.diferimentoParcialArt28;
 
   useEffect(() => {
-    if (perfilRegimeTributario) {
-      let novoRegime: typeof regime = 'simples';
-      if (perfilRegimeTributario === 'SIMPLES_NACIONAL') {
-        novoRegime = perfilSimplesHibrido2027 ? 'simples_hibrido' : 'simples';
-      } else if (perfilRegimeTributario === 'LUCRO_PRESUMIDO') {
-        novoRegime = 'presumido';
-      } else if (perfilRegimeTributario === 'LUCRO_REAL') {
-        novoRegime = 'real';
-      }
-      setRegime((prev) => (prev === novoRegime ? prev : novoRegime));
+    if (empresaAtiva) {
+      const ctxEmpresa = resolverContextoEmpresaNaData({
+        empresaAtiva,
+        perfilFallback: perfilAtivo,
+        dataEmissao: dhEmiAtiva,
+      });
+      setRegime((prev) => (prev === ctxEmpresa.regimeMotor ? prev : ctxEmpresa.regimeMotor));
+      setTipoEstabelecimento((prev) =>
+        prev === ctxEmpresa.tipoEstabelecimento ? prev : ctxEmpresa.tipoEstabelecimento
+      );
 
       if (perfilRegimeEspecialSefaPr?.includes('48/2026') || perfilDiferimentoArt28) {
         setIncluirIbsCbsBcIcms((prev) => (prev ? prev : true));
       }
+    } else if (itemAtivoSel?.itemAuditado?.contextoEmpresa) {
+      const ctxAud = itemAtivoSel.itemAuditado.contextoEmpresa;
+      setRegime((prev) => (prev === ctxAud.regimeMotor ? prev : ctxAud.regimeMotor));
+      setTipoEstabelecimento((prev) =>
+        prev === ctxAud.tipoEstabelecimento ? prev : ctxAud.tipoEstabelecimento
+      );
     }
-  }, [perfilRegimeTributario, perfilSimplesHibrido2027, perfilRegimeEspecialSefaPr, perfilDiferimentoArt28]);
+  }, [
+    empresaAtiva,
+    perfilAtivo,
+    dhEmiAtiva,
+    perfilRegimeTributario,
+    perfilSimplesHibrido2027,
+    perfilRegimeEspecialSefaPr,
+    perfilDiferimentoArt28,
+    itemAtivoSel,
+  ]);
 
   useEffect(() => {
     let ativo = true;
@@ -272,12 +298,13 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
         setTipoEstabelecimento((prev) => (prev === t ? prev : t));
       }
       const itemAny = itemSel as any;
-      if (itemAny.ufOrigem) {
-        const uo = itemAny.ufOrigem;
+      const aud = itemSel.itemAuditado || itensAuditados?.[itemIndex];
+      if (aud?.ufOrigem || itemAny.ufOrigem) {
+        const uo = aud?.ufOrigem || itemAny.ufOrigem;
         setUfOrigem((prev) => (prev === uo ? prev : uo));
       }
-      if (itemAny.ufDestino) {
-        const ud = itemAny.ufDestino;
+      if (aud?.ufDestino || itemAny.ufDestino) {
+        const ud = aud?.ufDestino || itemAny.ufDestino;
         setUfDestino((prev) => (prev === ud ? prev : ud));
       }
       if (itemSel.modFrete === '0' || itemSel.modFrete === '1') {
@@ -285,7 +312,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
         setModFrete((prev) => (prev === m ? prev : m));
       }
     }
-  }, [itens, itemIndex]);
+  }, [itens, itemIndex, itensAuditados]);
 
   // ---------------------------------------------------------------------------
   // 3. MEMOS DE CÁLCULO E PROCESSAMENTO FISCAL
@@ -1443,7 +1470,7 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
         </div>
       </div>
 
-      {empresaAtiva && (
+      {empresaAtiva ? (
         <div
           style={{
             background: 'var(--panel)',
@@ -1463,10 +1490,30 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
             🏢 <b>Empresa Ativa:</b> {empresaAtiva.razaoSocial} &middot; CNPJ:{' '}
             <span className="mono">{formatarCnpj(empresaAtiva.cnpj)}</span> &middot; UF: <b>{empresaAtiva.uf}</b> &middot; Regime Sincronizado:{' '}
             <b>{perfilAtivo?.regimeTributario || 'Não configurado'}</b>
+            {itemAtual.itemAuditado?.contextoEmpresa?.cnaePrincipal && (
+              <> &middot; Atividade: <b>{itemAtual.itemAuditado.contextoEmpresa.perfilAtividade}</b></>
+            )}
           </div>
           <span style={{ fontSize: 11, background: '#1e3a5f', color: '#93c5fd', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-            Regime Ativo Conectado
+            Regime Ativo Conectado ({itemAtual.itemAuditado?.contextoEmpresa?.dataFatoGerador || 'vigente'})
           </span>
+        </div>
+      ) : (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            background: 'var(--accent-amber-subtle)',
+            border: '1px solid rgba(245, 158, 11, 0.45)',
+            color: 'var(--warn)',
+            borderRadius: 6,
+            padding: '8px 14px',
+            marginBottom: 16,
+            fontSize: 12.5,
+            fontWeight: 600,
+          }}
+        >
+          ⚠️ Nenhuma empresa ativa selecionada: simulação utilizando parâmetros manuais (alíquotas customizadas em useParametrosPrecificacao preservadas).
         </div>
       )}
       {/* CABEÇALHO EXECUTIVO */}
@@ -2121,6 +2168,51 @@ export default function Precificar({ itensIniciais }: PrecificarProps) {
                     <b>GLOSA DE CRÉDITO APLICADA:</b> {compCusto.motivoGlosa}
                   </div>
                 )}
+
+                {(() => {
+                  const audItem = itemAtual.itemAuditado || itensAuditados?.[itemIndex];
+                  if (!audItem) return null;
+                  const cp = audItem.custoCpc16;
+                  return (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: 12,
+                        borderRadius: 6,
+                        background: 'var(--bg-surface-subtle)',
+                        border: '1px solid var(--border-medium)',
+                        fontSize: 12,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+                        <strong style={{ color: 'var(--ok)' }}>
+                          🔗 Contrato Canônico CPC 16 R1 (Entrada → Precificação)
+                        </strong>
+                        <span className="badge blue mono tabular-nums" style={{ fontSize: 10.5 }}>
+                          ICMS PR Bitemporal: {audItem.tributacaoEstadual.aliqIcmsPrBitemporalPct}%
+                        </span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: 6 }} className="tabular-nums">
+                        <div>Frete NF-e: <b>R$ {cp.freteNfe.toFixed(2)}</b></div>
+                        <div>Frete CT-e FOB: <b>R$ {cp.freteCteFob.toFixed(2)}</b></div>
+                        <div>DIFAL / Antec.: <b>R$ {cp.tributosNaoRecuperaveis.difalOuAntecipacao.toFixed(2)}</b></div>
+                        <div>PIS/COFINS Lei 14.592: <b>-R$ {cp.creditosRecuperaveis.pisCofinsTotal.toFixed(2)}</b></div>
+                        <div>IPI Recup.: <b>-R$ {cp.creditosRecuperaveis.ipi.toFixed(2)}</b></div>
+                        <div>CMV Unit. Auditado: <b style={{ color: 'var(--ok)' }}>R$ {cp.cmvLiquidoUnitario.toFixed(2)}</b></div>
+                      </div>
+                      {audItem.destinacaoPendenteConfirmacao && audItem.alertaDestinacao && (
+                        <div style={{ marginTop: 6, color: 'var(--warn)', fontWeight: 600 }}>
+                          ⚠️ {audItem.alertaDestinacao}
+                        </div>
+                      )}
+                      {isSenior && cp.memoriaCalculo.length > 0 && (
+                        <pre className="mono" style={{ margin: '8px 0 0', padding: 8, background: 'var(--bg-card)', borderRadius: 4, fontSize: 10.5, whiteSpace: 'pre-wrap' }}>
+                          {cp.memoriaCalculo.join('\n')}
+                        </pre>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

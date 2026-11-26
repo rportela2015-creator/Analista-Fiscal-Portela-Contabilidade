@@ -107,6 +107,9 @@ const relatorioPayloadSchema = z.object({
   parecerTecnicoXml: z.string().optional().nullable(),
   parecerConformidade: z.string().optional().nullable(),
   itens: z.array(relatorioItemSchema).optional().nullable(),
+  itensAuditados: z.array(z.any()).optional().nullable(),
+  totaisCpc16: z.any().optional().nullable(),
+  cteFobResumo: z.any().optional().nullable(),
   resumoDifalEntrada: resumoDifalEntradaSchema,
   relatorioDifal: resumoDifalEntradaSchema,
   // Extensões Ciclo 6 (Sub-Etapas 19.5, 19.6 e 19.7)
@@ -704,6 +707,48 @@ export async function POST(req: Request) {
       <h2>Parametrização de ERP - Detalhamento de Itens</h2>
       ${itensHtml}` : '';
 
+      // 6b. Bloco de Segregação de Custos CPC 16 (R1) e Rateio CT-e FOB por Item
+      const itensAudLista = Array.isArray(data.itensAuditados) ? data.itensAuditados : [];
+      const cteResumo = data.cteFobResumo as any;
+      const totaisCpc = data.totaisCpc16 as any;
+      const cpc16Html = itensAudLista.length > 0 ? `
+      <div class="section">
+        <h2>Segregação de Custos de Entrada (CPC 16 R1) e Rateio CT-e FOB</h2>
+        ${cteResumo ? `<p style="font-size:0.86rem; margin-bottom:10px;"><strong>CT-e FOB (Mod. 57):</strong> Nº ${esc(String(cteResumo.numero || 's/n'))} | Chave <span class="monospace-sm">${esc(String(cteResumo.chaveAcesso || 'N/A'))}</span> | Prestação: <b>${fmtMoeda(cteResumo.vTPrest)}</b> | Status Rateio: <b>${cteResumo.aplicado ? 'Aplicado ao Custo' : esc(String(cteResumo.motivoBloqueio || 'Bloqueado'))}</b></p>` : ''}
+        <table class="tabela-dag">
+          <thead>
+            <tr>
+              <th>Item / Produto</th>
+              <th>NCM / Destinação</th>
+              <th style="text-align:right">vProd Líq.</th>
+              <th style="text-align:right">Frete NF-e</th>
+              <th style="text-align:right">Frete CT-e FOB</th>
+              <th style="text-align:right">Trib. Não Recup.</th>
+              <th style="text-align:right">Créditos Recup.</th>
+              <th style="text-align:right">CMV Líq. Unit.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itensAudLista.map((aud: any) => {
+              const cp = aud?.custoCpc16 || {};
+              const freteNfe = Number(cp.freteNfe || 0) + Number(cp.seguroNfe || 0) + Number(cp.outrasDespesasNfe || 0);
+              return `
+              <tr>
+                <td><strong>${esc(String(aud?.cProd || 'S/N'))}</strong> — ${esc(String(aud?.xProd || 'Produto'))}</td>
+                <td>${esc(String(aud?.ncm || '—'))} · ${esc(String(aud?.destinacaoExplicita || 'Pendente'))}</td>
+                <td style="text-align:right">${fmtMoeda(cp.valorProdutoLiquido)}</td>
+                <td style="text-align:right">${fmtMoeda(freteNfe)}</td>
+                <td style="text-align:right">${fmtMoeda(cp.freteCteFob)}</td>
+                <td style="text-align:right; color:#b91c1c;">+${fmtMoeda(cp.tributosNaoRecuperaveis?.total)}</td>
+                <td style="text-align:right; color:#15803d;">-${fmtMoeda(cp.creditosRecuperaveis?.total)}</td>
+                <td style="text-align:right; font-weight:700;">${fmtMoeda(cp.cmvLiquidoUnitario)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        ${totaisCpc ? `<p style="font-size:0.86rem; margin-top:10px;"><strong>Totais Consolidados:</strong> Produtos ${fmtMoeda(totaisCpc.valorProdutosBruto)} | Frete CT-e FOB ${fmtMoeda(totaisCpc.freteCteFobTotal)} | Trib. Não Recup. +${fmtMoeda(totaisCpc.tributosNaoRecuperaveisTotal)} | Créditos -${fmtMoeda(totaisCpc.creditosRecuperaveisTotal)} | <strong>CMV Líquido Total: ${fmtMoeda(totaisCpc.cmvLiquidoTotal)}</strong></p>` : ''}
+      </div>` : '';
+
       // 7. Rodapé Técnico de Governança Pericial
       const rodapeTecnicoHtml = `
       <div class="rodape-tecnico">
@@ -816,6 +861,7 @@ export async function POST(req: Request) {
     ${dagHtml}
     ${paridadeHtml}
     ${difalHtml}
+    ${cpc16Html}
     ${secaoItensHtml}
     ${rodapeTecnicoHtml}
   </div>
@@ -995,6 +1041,27 @@ export async function POST(req: Request) {
       txtContent += `- Total a Recolher: ${fmtMoeda(resumoDifal.totalGeralRecolher)}\n`;
       txtContent += `- Guias: ${resumoDifal.guiasNecessarias?.join(', ') || 'Nenhuma'}\n`;
       txtContent += `- Prazo Principal: ${resumoDifal.prazoPrincipal || 'N/A'}\n\n`;
+    }
+
+    // Seção CPC 16 (R1) + CT-e FOB TXT
+    if (Array.isArray(data.itensAuditados) && data.itensAuditados.length > 0) {
+      txtContent += `## Segregação de Custos CPC 16 (R1) e Rateio CT-e FOB por Item\n\n`;
+      if (data.cteFobResumo) {
+        const cr = data.cteFobResumo as any;
+        txtContent += `- CT-e FOB Nº ${cr.numero || 's/n'} (Chave ${cr.chaveAcesso || 'N/A'}) | Prestação: ${fmtMoeda(cr.vTPrest)} | Status: ${cr.aplicado ? 'Aplicado' : (cr.motivoBloqueio || 'Bloqueado')}\n\n`;
+      }
+      data.itensAuditados.forEach((aud: any, idx: number) => {
+        const cp = aud?.custoCpc16 || {};
+        const freteNfe = Number(cp.freteNfe || 0) + Number(cp.seguroNfe || 0) + Number(cp.outrasDespesasNfe || 0);
+        txtContent += `- Item ${idx + 1}: ${aud?.cProd || 'S/N'} - ${aud?.xProd || 'Produto'} (NCM ${aud?.ncm || '—'})\n`;
+        txtContent += `  vProd Líq: ${fmtMoeda(cp.valorProdutoLiquido)} | Frete NF-e: ${fmtMoeda(freteNfe)} | Frete CT-e FOB: ${fmtMoeda(cp.freteCteFob)}\n`;
+        txtContent += `  Trib. Não Recup.: +${fmtMoeda(cp.tributosNaoRecuperaveis?.total)} | Créditos Recup.: -${fmtMoeda(cp.creditosRecuperaveis?.total)} | CMV Líq. Unit.: ${fmtMoeda(cp.cmvLiquidoUnitario)}\n`;
+      });
+      if (data.totaisCpc16) {
+        const tc = data.totaisCpc16 as any;
+        txtContent += `- CMV Líquido Consolidado da Nota: ${fmtMoeda(tc.cmvLiquidoTotal)} (CT-e FOB: ${fmtMoeda(tc.freteCteFobTotal)})\n`;
+      }
+      txtContent += `\n--------------------------------------------------------------------------------\n\n`;
     }
 
     // Seção Itens Parametrização TXT

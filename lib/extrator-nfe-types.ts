@@ -16,6 +16,7 @@ import {
   type RegimeAdquirente,
   type StatusExtincaoDebitoFornecedor,
 } from './fiscal/credito-tributario';
+import type { CustoCpc16Segregado, ItemFiscalAuditado } from './types/item-fiscal-auditado';
 
 export class FiscalExtractionError extends Error {
   codigo: string;
@@ -427,6 +428,9 @@ export interface PrecificacaoItemInput {
     pIS?: number;
     vIS?: number;
   };
+  freteCteFobRateado?: number;
+  cmvLiquidoUnitarioAuditado?: number;
+  itemAuditado?: ItemFiscalAuditado;
 }
 
 /**
@@ -590,6 +594,8 @@ export interface ParametrizacaoItemInput {
   fcpPct: number;
   valorUnitario: number;
   quantidade: number;
+  itemAuditado?: ItemFiscalAuditado;
+  custoCpc16?: CustoCpc16Segregado;
 }
 
 /**

@@ -16,6 +16,7 @@ import type {
   MotivoSensibilidadeInfo,
 } from '@/lib/extrator-nfe-types';
 import { MOTIVOS_SENSIBILIDADE_MAP } from '@/lib/extrator-nfe-types';
+import type { ItemFiscalAuditado } from '@/lib/types/item-fiscal-auditado';
 import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
 import ItemDetailDrawer from '@/components/ui/ItemDetailDrawer';
 import LegalCitationBlock, { type NormativeCitation } from '@/components/ui/LegalCitationBlock';
@@ -66,6 +67,8 @@ export interface TabelaItensExtracaoProps {
   destinacaoPadrao?: 'comercializacao' | 'industrializacao' | 'uso_consumo' | 'ativo_imobilizado';
   /** Mapa de diagnósticos periciais de DIFAL por item */
   diagnosticosDifal?: Record<string | number, any>;
+  /** Contrato canônico por índice do item (CT-e FOB, CMV líquido CPC 16, pendências Anexo IX) */
+  itensAuditadosMap?: Record<number, ItemFiscalAuditado>;
 }
 
 /* =========================================================================
@@ -119,6 +122,7 @@ export default function TabelaItensExtracao({
   onAlterarDestinacaoItem,
   destinacaoPadrao = 'comercializacao',
   diagnosticosDifal,
+  itensAuditadosMap,
 }: TabelaItensExtracaoProps) {
   // ---- Hooks chamados estritamente no topo para cumprir scripts/hookcheck.mjs ----
   const { nivel, isGerencial, isSenior } = useNivelOperacional();
@@ -507,6 +511,7 @@ export default function TabelaItensExtracao({
               itensExibidos.map((item) => {
                 const isSelected = selectedSet.has(item.index);
                 const diag = diagnosticosDifal?.[item.index] || diagnosticosDifal?.[item.cProd];
+                const auditado = itensAuditadosMap?.[item.index];
                 const destinacaoItem =
                   destinacaoPorItem?.[item.index] ||
                   destinacaoPorItem?.[item.cProd] ||
@@ -557,6 +562,20 @@ export default function TabelaItensExtracao({
                         {item.sensivelParaAuditoria && (
                           <span className="badge media" style={{ fontSize: 10 }}>⚠️ Sensível</span>
                         )}
+                        {auditado?.tributacaoReforma?.requerConferenciaAnexoIX && (
+                          <span
+                            className="badge media"
+                            style={{ fontSize: 10 }}
+                            title={auditado.tributacaoReforma.observacaoNormativa}
+                          >
+                            Anexo IX pendente
+                          </span>
+                        )}
+                        {auditado?.cteFobVinculado && auditado.custoCpc16.freteCteFob > 0 && (
+                          <span className="badge blue tabular-nums" style={{ fontSize: 10 }}>
+                            CT-e FOB: +{formatarBrl(auditado.custoCpc16.freteCteFob)}
+                          </span>
+                        )}
                       </div>
                     </td>
 
@@ -604,6 +623,11 @@ export default function TabelaItensExtracao({
                       <div className="muted" style={{ fontSize: 11 }}>
                         {formatarQtd(item.qCom)} {item.uCom || 'UN'}
                       </div>
+                      {auditado && (
+                        <div className="mono tabular-nums" style={{ fontSize: 10.5, color: 'var(--ok)', fontWeight: 600 }}>
+                          CMV: {formatarBrl(auditado.custoCpc16.cmvLiquidoUnitario)}/un
+                        </div>
+                      )}
                     </td>
 
                     <td>
@@ -847,6 +871,59 @@ export default function TabelaItensExtracao({
                 <p className="muted" style={{ fontSize: 11, margin: '4px 0 0' }}>
                   Regra Art. 47 da LC nº 214/2025: Apropriação financeira de créditos de IBS/CBS condicionada à liquidação do fornecedor.
                 </p>
+
+                {itensAuditadosMap?.[itemInspecionado.index] && (() => {
+                  const aud = itensAuditadosMap[itemInspecionado.index];
+                  const cp = aud.custoCpc16;
+                  return (
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border-muted)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <h5 style={{ margin: 0, fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink)' }}>
+                        Segregação CPC 16 R1 &amp; CT-e FOB
+                      </h5>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span className="muted">Frete NF-e:</span>
+                        <span className="mono tabular-nums">{formatarBrl(cp.freteNfe)}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span className="muted">Frete CT-e FOB Rateado:</span>
+                        <span className="mono tabular-nums" style={{ color: cp.freteCteFob > 0 ? 'var(--accent-blue)' : 'var(--ink-2)' }}>
+                          {formatarBrl(cp.freteCteFob)}
+                        </span>
+                      </div>
+                      {cp.freteCteFob > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span className="muted">Crédito ICMS + PIS/COFINS do Frete:</span>
+                          <span className="mono tabular-nums" style={{ color: 'var(--ok)' }}>
+                            -{formatarBrl(cp.creditosRecuperaveis.icmsCteFob + cp.creditosRecuperaveis.pisCofinsCteFob)}
+                          </span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span className="muted">Tributos Não Recuperáveis:</span>
+                        <span className="mono tabular-nums" style={{ color: 'var(--bad)' }}>
+                          +{formatarBrl(cp.tributosNaoRecuperaveis.total)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span className="muted">Total Créditos Recuperáveis:</span>
+                        <span className="mono tabular-nums" style={{ color: 'var(--ok)', fontWeight: 700 }}>
+                          -{formatarBrl(cp.creditosRecuperaveis.total)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 4, borderTop: '1px dashed var(--border-muted)' }}>
+                        <strong>CMV Líquido Unitário:</strong>
+                        <strong className="mono tabular-nums" style={{ color: 'var(--ok)' }}>
+                          {formatarBrl(cp.cmvLiquidoUnitario)} / {aud.uCom}
+                        </strong>
+                      </div>
+                      {nivel === 'senior' && cp.memoriaCalculo.length > 0 && (
+                        <pre className="mono" style={{ margin: '6px 0 0', padding: 8, background: 'var(--bg-surface-card)', borderRadius: 6, fontSize: 10.5, whiteSpace: 'pre-wrap' }}>
+                          {cp.memoriaCalculo.join('\n')}
+                        </pre>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 

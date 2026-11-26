@@ -200,6 +200,7 @@ const ALL_TESTS = [
   'tests/precificacao-persistencia-aliquotas.test.mjs',
   'tests/empresas-persistencia-e-cnpj.test.mjs',
   'tests/pipeline-conformidade-calculos.test.mjs',
+  'tests/fluxo-canonico-item-auditado.test.mjs',
 ];
 
 // Suporte a execução de suíte única via CLI: node scripts/test.mjs tests/foo.test.mjs

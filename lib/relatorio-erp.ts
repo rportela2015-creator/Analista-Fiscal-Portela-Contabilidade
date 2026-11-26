@@ -5,6 +5,7 @@
  */
 
 import { esc } from './relatorio';
+import type { CustoCpc16Segregado } from './types/item-fiscal-auditado';
 import {
   PORTELA_COPYRIGHT,
   PORTELA_FOOTER_CSS,
@@ -44,6 +45,53 @@ export interface ParametrosErpItem {
   aliqIsAre?: string;
   permiteCredito?: boolean;
   instrucao?: string;
+  custoCpc16?: CustoCpc16Segregado;
+}
+
+function fmtBrlCpc(v?: number): string {
+  const n = Number(v || 0);
+  return `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function renderBlocoCustoCpc16Txt(custo?: CustoCpc16Segregado): string {
+  if (!custo) return '';
+  let s = `  [SEGREGAÇÃO DE CUSTOS CPC 16 (R1)]\n`;
+  s += `    - Valor Produtos Líquido (vProd - Desc): ${fmtBrlCpc(custo.valorProdutoLiquido)}\n`;
+  s += `    - Frete NF-e + Despesas: ${fmtBrlCpc(custo.freteNfe + custo.seguroNfe + custo.outrasDespesasNfe)} | Frete CT-e FOB Rateado: ${fmtBrlCpc(custo.freteCteFob)}\n`;
+  s += `    - Tributos Não Recuperáveis: ${fmtBrlCpc(custo.tributosNaoRecuperaveis.total)} (IPI: ${fmtBrlCpc(custo.tributosNaoRecuperaveis.ipi)}, ST: ${fmtBrlCpc(custo.tributosNaoRecuperaveis.icmsSt)}, DIFAL/Antec.: ${fmtBrlCpc(custo.tributosNaoRecuperaveis.difalOuAntecipacao)})\n`;
+  s += `    - Créditos Recuperáveis Deduzidos: -${fmtBrlCpc(custo.creditosRecuperaveis.total)} (ICMS: ${fmtBrlCpc(custo.creditosRecuperaveis.icmsTotal)}, PIS/COFINS: ${fmtBrlCpc(custo.creditosRecuperaveis.pisCofinsTotal)}, IPI: ${fmtBrlCpc(custo.creditosRecuperaveis.ipi)}, IBS/CBS: ${fmtBrlCpc(custo.creditosRecuperaveis.ibs + custo.creditosRecuperaveis.cbs)})\n`;
+  s += `    - CMV Líquido Total: ${fmtBrlCpc(custo.cmvLiquidoTotal)} | CMV Líquido Unitário (${esc(String(custo.quantidade))}): ${fmtBrlCpc(custo.cmvLiquidoUnitario)}\n`;
+  return s;
+}
+
+function renderBlocoCustoCpc16Html(custo?: CustoCpc16Segregado): string {
+  if (!custo) return '';
+  return `
+      <div style="margin: 12px 16px; padding: 10px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;">
+        <div style="font-weight: 700; color: #166534; font-size: 0.88rem; margin-bottom: 6px;">Segregação de Custos de Entrada (CPC 16 R1)</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.83rem;">
+          <thead>
+            <tr>
+              <th>vProd Líq.</th>
+              <th>Frete NF-e</th>
+              <th>Frete CT-e FOB</th>
+              <th>Tributos Não Recup.</th>
+              <th>Créditos Recup.</th>
+              <th>CMV Líquido Unit.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono">${esc(fmtBrlCpc(custo.valorProdutoLiquido))}</td>
+              <td class="mono">${esc(fmtBrlCpc(custo.freteNfe + custo.seguroNfe + custo.outrasDespesasNfe))}</td>
+              <td class="mono">${esc(fmtBrlCpc(custo.freteCteFob))}</td>
+              <td class="mono" style="color: #b91c1c;">+${esc(fmtBrlCpc(custo.tributosNaoRecuperaveis.total))}</td>
+              <td class="mono" style="color: #15803d;">-${esc(fmtBrlCpc(custo.creditosRecuperaveis.total))}</td>
+              <td class="mono" style="color: #166534;"><strong>${esc(fmtBrlCpc(custo.cmvLiquidoUnitario))}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
 }
 
 export interface ParametrosErpContexto {
@@ -238,6 +286,9 @@ export function gerarRelatorioErpResumidoTxt(payload: ParametrosErpPayload, agor
     if (item.instrucao) {
       txt += `\nINSTRUÇÃO ERP: ${item.instrucao}\n`;
     }
+    if (item.custoCpc16) {
+      txt += renderBlocoCustoCpc16Txt(item.custoCpc16);
+    }
     txt += `\n`;
   });
 
@@ -317,6 +368,7 @@ export function gerarRelatorioErpResumidoHtml(payload: ParametrosErpPayload, ago
           `).join('')}
         </tbody>
       </table>
+      ${renderBlocoCustoCpc16Html(item.custoCpc16)}
       ${item.instrucao ? `<div class="instrucao"><strong>Instrução ERP:</strong> ${esc(item.instrucao)}</div>` : ''}
     </div>
     `;
@@ -366,6 +418,10 @@ export function gerarRelatorioErpDetalhadoTxt(payload: ParametrosErpPayload, ago
 
     if (item.instrucao) {
       txt += `PARECER TÉCNICO DE CADASTRO:\n${item.instrucao}\n\n`;
+    }
+    if (item.custoCpc16) {
+      txt += renderBlocoCustoCpc16Txt(item.custoCpc16);
+      txt += `\n`;
     }
   });
 
@@ -462,6 +518,7 @@ export function gerarRelatorioErpDetalhadoHtml(payload: ParametrosErpPayload, ag
             </div>
           </div>
         `).join('')}
+        ${renderBlocoCustoCpc16Html(item.custoCpc16)}
         ${item.instrucao ? `<div style="background: #ebf8ff; border-left: 4px solid #3182ce; padding: 12px; border-radius: 4px; font-size: 0.9rem; margin-top: 14px;"><strong>Parecer do Auditor:</strong> ${esc(item.instrucao)}</div>` : ''}
       </div>
       `;

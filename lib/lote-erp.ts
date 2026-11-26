@@ -451,6 +451,12 @@ export function gerarParametrizacaoErpResumida(
       cClassTrib = checkCt.codigo;
       redIbsCbsPct = checkCt.reducaoOficialPct;
       cstIbsCbs = redIbsCbsPct === 100 ? '02' : checkCt.cstOficial || '01';
+      if (reducoes.reforma.enquadramentoPendente || reducoes.reforma.requerConferenciaAnexoIX) {
+        enquadramentoPendente = true;
+        justificativaEnquadramento =
+          reducoes.reforma.observacaoNormativa ||
+          'Posição 8432–8701 sujeita à conferência do subitem específico no Anexo IX da LC 214/2025 e vinculação ao Convênio ICMS 52/1991.';
+      }
     } else {
       enquadramentoPendente = true;
       justificativaEnquadramento =

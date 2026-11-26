@@ -12,6 +12,7 @@ import {
 } from '@/lib/lote-erp';
 import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
 import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
+import { resolverContextoEmpresaNaData } from '@/lib/types/item-fiscal-auditado';
 import {
   KpiStrip,
   StickyActionBar,
@@ -98,19 +99,15 @@ export default function Lote() {
   const [filtroTexto, setFiltroTexto] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sincronização inicial com Empresa Ativa
+  // Sincronização inicial com Empresa Ativa (bitemporal via resolverContextoEmpresaNaData)
   useEffect(() => {
     if (empresaAtiva) {
-      if (empresaAtiva.uf) setUfOrigem(empresaAtiva.uf);
-      if (perfilAtivo?.regimeTributario) {
-        if (perfilAtivo.regimeTributario === 'SIMPLES_NACIONAL' || perfilAtivo.regimeTributario === 'MEI') {
-          setRegimeSaida('simples');
-        } else if (perfilAtivo.regimeTributario === 'LUCRO_PRESUMIDO') {
-          setRegimeSaida('presumido');
-        } else if (perfilAtivo.regimeTributario === 'LUCRO_REAL') {
-          setRegimeSaida('real');
-        }
-      }
+      const ctxBitemporal = resolverContextoEmpresaNaData({
+        empresaAtiva,
+        perfilFallback: perfilAtivo,
+      });
+      if (ctxBitemporal.uf) setUfOrigem(ctxBitemporal.uf);
+      setRegimeSaida(ctxBitemporal.regimeMotor);
     }
   }, [empresaAtiva, perfilAtivo]);
 
@@ -529,6 +526,25 @@ export default function Lote() {
           </p>
         </div>
       </div>
+
+      {!empresaAtiva && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            background: 'var(--accent-amber-subtle)',
+            border: '1px solid rgba(245, 158, 11, 0.45)',
+            color: 'var(--warn)',
+            borderRadius: 6,
+            padding: '8px 14px',
+            marginBottom: 14,
+            fontSize: 12.5,
+            fontWeight: 600,
+          }}
+        >
+          ⚠️ Nenhuma empresa ativa selecionada: auditoria em lote operando com UF/regime padrão até a seleção cadastral.
+        </div>
+      )}
 
       <div style={{ marginBottom: 16 }}>
         <KpiStrip

@@ -41,6 +41,18 @@ import type { ResultadoAuditoriaNfse } from '@/lib/extrator-nfse-types';
 import { PainelNfseDanfse } from './PainelNfseDanfse';
 import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
 import {
+  extrairDadosXmlCte,
+  type ExtractedCteData,
+} from '@/lib/fiscal/extrator-cte';
+import {
+  resolverContextoEmpresaNaData,
+  construirNotaFiscalAuditadaSessao,
+  converterAuditadoParaPrecificacao,
+  converterAuditadoParaParametrizacao,
+  type ItemFiscalAuditado,
+  type NotaFiscalAuditadaSessao,
+} from '@/lib/types/item-fiscal-auditado';
+import {
   KpiStrip,
   StickyActionBar,
   ProgressiveSection,
@@ -182,6 +194,11 @@ export default function AuditoriaEntrada() {
   const [itemDifalSelecionado, setItemDifalSelecionado] = useState<ItemDemonstrativoDifalPR | null>(null);
   const [notasDifalSessao, setNotasDifalSessao] = useState<DemonstrativoConsolidadoDifalPR[]>([]);
 
+  // 7. Estado de CT-e FOB (Modelo 57 XML) para rateio CPC 16 por item
+  const [cteFobData, setCteFobData] = useState<ExtractedCteData | null>(null);
+  const [cteFobError, setCteFobError] = useState<string | null>(null);
+  const [cteFobNomeArquivo, setCteFobNomeArquivo] = useState<string>('');
+
   React.useEffect(() => {
     const novoCrt = regime.toLowerCase().includes('simples') ? '1' : regime.toLowerCase().includes('mei') ? '4' : '3';
     setCrtDestinatario((prev) => (prev === novoCrt ? prev : novoCrt));
@@ -290,34 +307,31 @@ export default function AuditoriaEntrada() {
       const todosIndices = new Set(result.itens.map((it) => it.index));
       setSelectedIndices(todosIndices);
 
-      // Sincronização automática silenciosa pós-extração (se habilitada)
+      // Sincronização automática silenciosa pós-extração (se habilitada) via contrato canônico ItemFiscalAuditado
       if (autoSync && result.itens && result.itens.length > 0) {
-        const itensPrec = result.itens.map((it) => converterItemExtracaoParaPrecificacao(it));
-        const regimeDest = regime.toLowerCase().includes('simples')
-          ? 'simples'
-          : regime.toLowerCase().includes('real')
-          ? 'real'
-          : 'presumido';
-        const dest = finalidade.toLowerCase().includes('ind')
-          ? 'industrializacao'
-          : finalidade.toLowerCase().includes('ativo')
-          ? 'ativo_imobilizado'
-          : finalidade.toLowerCase().includes('consumo')
-          ? 'uso_consumo'
-          : 'comercializacao';
-
-        const itensErp = result.itens.map((it) =>
-          converterItemExtracaoParaParametrizacao(it, {
-            ufOrigem: result.emitente?.uf,
-            ufDestino: result.destinatario?.uf || 'PR',
-            regimeDestinatario: regimeDest as any,
-            destinacao: dest as any,
-          })
-        );
+        const contextoEmpresa = resolverContextoEmpresaNaData({
+          empresaAtiva,
+          perfilFallback: perfilAtivo,
+          dataEmissao: result.identificacao?.dataEmissao,
+          regimeFallback: regime,
+          ufFallback: result.destinatario?.uf || 'PR',
+          inscritoEstadualPR: contribuinteInscritoPR,
+        });
+        const sessaoSync = construirNotaFiscalAuditadaSessao({
+          invoice: result,
+          contextoEmpresa,
+          destinacaoPadrao,
+          destinacaoPorItem,
+          cteFob: cteFobData,
+          statusExtincaoRtc,
+        });
+        const itensPrec = sessaoSync.itens.map((aud) => converterAuditadoParaPrecificacao(aud));
+        const itensErp = sessaoSync.itens.map((aud) => converterAuditadoParaParametrizacao(aud));
 
         try {
           sessionStorage.setItem('ncm-precificar-itens', JSON.stringify(itensPrec));
           sessionStorage.setItem('ncm-parametrizar-itens', JSON.stringify(itensErp));
+          sessionStorage.setItem('ncm-itens-auditados', JSON.stringify(sessaoSync.itens));
         } catch {
           /* fallback */
         }
@@ -328,6 +342,7 @@ export default function AuditoriaEntrada() {
               tab: 'parametrizar',
               itens: itensPrec,
               itensErp,
+              itensAuditados: sessaoSync.itens,
               manterNaAbaAtual: true,
             },
           })
@@ -376,6 +391,29 @@ export default function AuditoriaEntrada() {
     setAuditError(null);
     setOrquestracaoErro(null);
     setFile(null);
+    setCteFobData(null);
+    setCteFobError(null);
+    setCteFobNomeArquivo('');
+  };
+
+  const handleUploadCteFob = async (cteFile: File | null) => {
+    if (!cteFile) {
+      setCteFobData(null);
+      setCteFobError(null);
+      setCteFobNomeArquivo('');
+      return;
+    }
+    try {
+      setCteFobError(null);
+      const xmlText = await cteFile.text();
+      const extraido = extrairDadosXmlCte(xmlText);
+      setCteFobData(extraido);
+      setCteFobNomeArquivo(cteFile.name);
+    } catch (err: unknown) {
+      setCteFobData(null);
+      setCteFobNomeArquivo(cteFile.name);
+      setCteFobError(err instanceof Error ? err.message : 'Falha ao ler XML do CT-e FOB.');
+    }
   };
 
   const handleExecutarOrquestracaoCompleta = async () => {
@@ -423,9 +461,12 @@ export default function AuditoriaEntrada() {
   const handleEnviarCustoEfetivoParaPrecificacao = () => {
     if (!resultadoOrquestracao || !extractedInvoice || !extractedInvoice.itens) return;
     const itensParaEnviar = extractedInvoice.itens.map((it, idx) => {
-      const precItem = converterItemExtracaoParaPrecificacao(it);
+      const aud = auditadosPorMap[it.index];
+      const precItem = aud
+        ? converterAuditadoParaPrecificacao(aud)
+        : converterItemExtracaoParaPrecificacao(it);
       const itemCredito = resultadoOrquestracao.etapas.creditos.itensCredito[idx];
-      if (itemCredito) {
+      if (itemCredito && !aud) {
         const creditoEfetivado = itemCredito.classificacao.creditoEfetivadoCusto.total;
         const cmvLiquidoItem = Math.max(0.01, precItem.valorBrutoEntrada - creditoEfetivado);
         precItem.valorBrutoEntrada = cmvLiquidoItem;
@@ -437,6 +478,7 @@ export default function AuditoriaEntrada() {
       detail: {
         tab: 'precificar',
         itens: itensParaEnviar,
+        itensAuditados: notaAuditadaSessao?.itens || [],
       },
     });
     window.dispatchEvent(evt);
@@ -539,6 +581,18 @@ export default function AuditoriaEntrada() {
       const payloadRelatorio = {
         ...auditResult,
         itens: itensEnriquecidos,
+        itensAuditados: notaAuditadaSessao?.itens || undefined,
+        totaisCpc16: notaAuditadaSessao?.totaisCpc16 || undefined,
+        cteFobResumo: notaAuditadaSessao?.cteFob
+          ? {
+              chaveAcesso: notaAuditadaSessao.cteFob.chaveAcesso,
+              numero: notaAuditadaSessao.cteFob.numero,
+              vTPrest: notaAuditadaSessao.cteFob.valores.vTPrest,
+              vICMS: notaAuditadaSessao.cteFob.icms.vICMS,
+              aplicado: Boolean(notaAuditadaSessao.rateioCte?.aplicado),
+              motivoBloqueio: notaAuditadaSessao.rateioCte?.motivoBloqueio,
+            }
+          : undefined,
         resumoDifalEntrada: apuracaoDifalNota?.resumoDifalNota,
         orquestracaoDag: resultadoOrquestracao || undefined,
         sha256: (extractedInvoice as any)?.sha256 || resultadoOrquestracao?.sha256Xml || undefined,
@@ -649,6 +703,45 @@ export default function AuditoriaEntrada() {
     return consolidarMultiplasNotasDifalPR(notasDifalSessao);
   }, [notasDifalSessao]);
 
+  // ─── Sessão Canônica Unificada (Empresa Bitemporal dhEmi + CT-e FOB + CPC 16 R1) ───
+  const notaAuditadaSessao = React.useMemo<NotaFiscalAuditadaSessao | null>(() => {
+    if (!extractedInvoice || !extractedInvoice.itens || extractedInvoice.itens.length === 0) return null;
+    const ctxEmpresa = resolverContextoEmpresaNaData({
+      empresaAtiva,
+      perfilFallback: perfilAtivo,
+      dataEmissao: extractedInvoice.identificacao?.dataEmissao,
+      regimeFallback: regime,
+      ufFallback: extractedInvoice.destinatario?.uf || 'PR',
+      inscritoEstadualPR: contribuinteInscritoPR,
+    });
+    return construirNotaFiscalAuditadaSessao({
+      invoice: extractedInvoice,
+      contextoEmpresa: ctxEmpresa,
+      destinacaoPadrao,
+      destinacaoPorItem,
+      cteFob: cteFobData,
+      statusExtincaoRtc,
+    });
+  }, [
+    extractedInvoice,
+    empresaAtiva,
+    perfilAtivo,
+    regime,
+    contribuinteInscritoPR,
+    destinacaoPadrao,
+    destinacaoPorItem,
+    cteFobData,
+    statusExtincaoRtc,
+  ]);
+
+  const auditadosPorMap = React.useMemo<Record<number, ItemFiscalAuditado>>(() => {
+    const mapa: Record<number, ItemFiscalAuditado> = {};
+    for (const aud of notaAuditadaSessao?.itens || []) {
+      mapa[aud.nItem] = aud;
+    }
+    return mapa;
+  }, [notaAuditadaSessao]);
+
   const citacoesNormativasAuditoria = React.useMemo(() => {
     return obterFontesNormativasPorAba('auditoria');
   }, []);
@@ -713,9 +806,27 @@ export default function AuditoriaEntrada() {
   // ─── Transferência Direta para a Aba de Precificação (Etapa 3) ────────────
   const handleEnviarParaPrecificacao = (itensParaEnviar: ExtractedItem[]) => {
     if (!itensParaEnviar || itensParaEnviar.length === 0) return;
-    const convertidos = itensParaEnviar.map((it) => converterItemExtracaoParaPrecificacao(it));
+    const auditadosSelecionados = itensParaEnviar
+      .map((it) => auditadosPorMap[it.index])
+      .filter((x): x is ItemFiscalAuditado => Boolean(x));
+
+    const convertidos = itensParaEnviar.map((it) => {
+      const aud = auditadosPorMap[it.index];
+      if (aud) return converterAuditadoParaPrecificacao(aud);
+      const destItem =
+        destinacaoPorItem[it.index] || destinacaoPorItem[it.cProd] || destinacaoPadrao;
+      return converterItemExtracaoParaPrecificacao(it, {
+        destinacao: destItem,
+        ufOrigem: extractedInvoice?.emitente?.uf,
+        ufDestino: extractedInvoice?.destinatario?.uf || empresaAtiva?.uf || 'PR',
+        crtEmitente: it.crtEmitente || extractedInvoice?.emitente?.crt,
+      });
+    });
     try {
       sessionStorage.setItem('ncm-precificar-itens', JSON.stringify(convertidos));
+      if (auditadosSelecionados.length > 0) {
+        sessionStorage.setItem('ncm-itens-auditados', JSON.stringify(auditadosSelecionados));
+      }
     } catch {
       /* fallback */
     }
@@ -725,6 +836,7 @@ export default function AuditoriaEntrada() {
         detail: {
           tab: 'precificar',
           itens: convertidos,
+          itensAuditados: auditadosSelecionados,
         },
       })
     );
@@ -742,21 +854,30 @@ export default function AuditoriaEntrada() {
       ? 'industrializacao'
       : finalidade.toLowerCase().includes('ativo')
       ? 'ativo_imobilizado'
-      : finalidade.toLowerCase().includes('consumo')
+      : finalidade.toLowerCase().includes('consumo') || finalidade.toLowerCase().includes('uso')
       ? 'uso_consumo'
       : 'comercializacao';
 
-    const convertidos = itensParaEnviar.map((it) =>
-      converterItemExtracaoParaParametrizacao(it, {
+    const auditadosSelecionados = itensParaEnviar
+      .map((it) => auditadosPorMap[it.index])
+      .filter((x): x is ItemFiscalAuditado => Boolean(x));
+
+    const convertidos = itensParaEnviar.map((it) => {
+      const aud = auditadosPorMap[it.index];
+      if (aud) return converterAuditadoParaParametrizacao(aud);
+      return converterItemExtracaoParaParametrizacao(it, {
         ufOrigem: extractedInvoice?.emitente?.uf,
-        ufDestino: extractedInvoice?.destinatario?.uf || 'PR',
+        ufDestino: extractedInvoice?.destinatario?.uf || empresaAtiva?.uf || 'PR',
         regimeDestinatario,
-        destinacao,
-      })
-    );
+        destinacao: destinacaoPorItem[it.index] || destinacaoPorItem[it.cProd] || destinacao,
+      });
+    });
 
     try {
       sessionStorage.setItem('ncm-parametrizar-itens', JSON.stringify(convertidos));
+      if (auditadosSelecionados.length > 0) {
+        sessionStorage.setItem('ncm-itens-auditados', JSON.stringify(auditadosSelecionados));
+      }
     } catch {
       /* fallback */
     }
@@ -766,6 +887,7 @@ export default function AuditoriaEntrada() {
         detail: {
           tab: 'parametrizar',
           itensErp: convertidos,
+          itensAuditados: auditadosSelecionados,
           manterNaAbaAtual,
         },
       })
@@ -800,7 +922,7 @@ export default function AuditoriaEntrada() {
       {/* =========================================================================
        * ETAPA 1: Formulário de Upload e Extração Determinística Imediata
        * ========================================================================= */}
-      {empresaAtiva && (
+      {empresaAtiva ? (
         <div
           style={{
             background: 'var(--panel)',
@@ -819,11 +941,31 @@ export default function AuditoriaEntrada() {
           <div>
             🏢 <b>Empresa Ativa:</b> {empresaAtiva.razaoSocial} &middot; CNPJ:{' '}
             <span className="mono">{formatarCnpj(empresaAtiva.cnpj)}</span> &middot; UF: <b>{empresaAtiva.uf}</b> &middot; Regime:{' '}
-            <b>{perfilAtivo?.regimeTributario || 'Não configurado'}</b>
+            <b>{notaAuditadaSessao?.contextoEmpresa.regimeTributario || perfilAtivo?.regimeTributario || 'Não configurado'}</b>
+            {notaAuditadaSessao?.contextoEmpresa.cnaePrincipal && (
+              <> &middot; CNAE <span className="mono">{notaAuditadaSessao.contextoEmpresa.cnaePrincipal}</span> ({notaAuditadaSessao.contextoEmpresa.perfilAtividade})</>
+            )}
           </div>
           <span style={{ fontSize: 11, background: '#1e3a5f', color: '#93c5fd', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-            Perfil Bitemporal Sincronizado
+            Perfil Bitemporal Sincronizado ({notaAuditadaSessao?.contextoEmpresa.dataFatoGerador || 'hoje'})
           </span>
+        </div>
+      ) : (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            background: 'var(--accent-amber-subtle)',
+            border: '1px solid rgba(245, 158, 11, 0.45)',
+            color: 'var(--warn)',
+            borderRadius: 6,
+            padding: '10px 14px',
+            marginBottom: 16,
+            fontSize: 12.5,
+            fontWeight: 600,
+          }}
+        >
+          ⚠️ Nenhuma empresa ativa selecionada no cadastro: auditoria operando com parâmetros fallback (selecione uma empresa na aba Empresas para vigência bitemporal exata na data dhEmi e confronto do CT-e FOB).
         </div>
       )}
 
@@ -847,6 +989,25 @@ export default function AuditoriaEntrada() {
               accept=".xml,.pdf"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
             />
+          </label>
+
+          <label className="field">
+            <span>CT-e FOB Complementar Opcional (.xml Modelo 57)</span>
+            <input
+              type="file"
+              accept=".xml"
+              onChange={(e) => void handleUploadCteFob(e.target.files?.[0] || null)}
+            />
+            {cteFobData && (
+              <span className="small tabular-nums" style={{ color: 'var(--ok)', marginTop: 4 }}>
+                ✓ CT-e nº {cteFobData.numero || 's/n'} ({cteFobNomeArquivo}) · vTPrest {formatarBrl(cteFobData.valores.vTPrest)} · Tomador: {cteFobData.tomador.tipo}
+              </span>
+            )}
+            {cteFobError && (
+              <span className="small" style={{ color: 'var(--bad)', marginTop: 4 }}>
+                ⛔ {cteFobError}
+              </span>
+            )}
           </label>
 
           <label className="field">
@@ -1395,10 +1556,15 @@ export default function AuditoriaEntrada() {
                 </div>
 
                 <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #dcfce7' }}>
-                  <span style={{ color: 'var(--ink-2)', fontSize: '11px', display: 'block' }}>Frete/Seg/Outros:</span>
-                  <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>
+                  <span style={{ color: 'var(--ink-2)', fontSize: '11px', display: 'block' }}>Frete NF-e + Despesas:</span>
+                  <strong className="tabular-nums" style={{ fontSize: '13px', color: 'var(--ink)' }}>
                     + {consolidadoCPC16.freteSeguroTotais.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
+                  {notaAuditadaSessao && notaAuditadaSessao.totaisCpc16.freteCteFobTotal > 0 && (
+                    <span className="mono tabular-nums" style={{ display: 'block', fontSize: '10.5px', color: 'var(--accent-blue)', marginTop: 2 }}>
+                      + CT-e FOB: {notaAuditadaSessao.totaisCpc16.freteCteFobTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                  )}
                 </div>
 
                 <div style={{ background: 'var(--bg-card)', padding: '8px 12px', borderRadius: 6, border: '1px solid #fee2e2' }}>
@@ -1416,11 +1582,40 @@ export default function AuditoriaEntrada() {
                 </div>
 
                 <div style={{ background: 'var(--accent-emerald-glow)', padding: '8px 12px', borderRadius: 6, border: '1px solid #86efac' }}>
-                  <span style={{ color: 'var(--ok)', fontSize: '11px', display: 'block', fontWeight: 600 }}>Custo Real Líquido:</span>
-                  <strong style={{ fontSize: '14px', color: 'var(--ok)' }}>
-                    {consolidadoCPC16.custoTotalRealConsolidado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  <span style={{ color: 'var(--ok)', fontSize: '11px', display: 'block', fontWeight: 600 }}>Custo Real Líquido (CPC 16):</span>
+                  <strong className="tabular-nums" style={{ fontSize: '14px', color: 'var(--ok)' }}>
+                    {(notaAuditadaSessao?.totaisCpc16.cmvLiquidoTotal ?? consolidadoCPC16.custoTotalRealConsolidado).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </strong>
                 </div>
+              </div>
+
+              {/* Painel Inline de Vínculo / Rateio CT-e FOB na Etapa 2 */}
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ fontSize: '12px', color: 'var(--ink-2)' }}>
+                  <strong>CT-e FOB (Modelo 57):</strong>{' '}
+                  {cteFobData ? (
+                    notaAuditadaSessao?.rateioCte?.aplicado ? (
+                      <span className="tabular-nums" style={{ color: 'var(--ok)', fontWeight: 600 }}>
+                        ✓ CT-e nº {cteFobData.numero || 's/n'} aplicado ({formatarBrl(notaAuditadaSessao.rateioCte.somaRateadaFrete)} rateado · ICMS CT-e {formatarBrl(notaAuditadaSessao.rateioCte.somaRateadaIcms)})
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--warn)', fontWeight: 600 }}>
+                        ⚠️ {notaAuditadaSessao?.rateioCte?.motivoBloqueio || 'CT-e bloqueado para rateio FOB'}
+                      </span>
+                    )
+                  ) : (
+                    <span>Nenhum CT-e FOB vinculado (anexe XML mod. 57 para incorporar frete FOB e crédito ICMS/PIS/COFINS do transporte).</span>
+                  )}
+                </div>
+                <label className="mini st-touch-target" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', minHeight: '36px' }}>
+                  📎 {cteFobData ? 'Trocar CT-e FOB (.xml)' : '+ Anexar CT-e FOB (.xml)'}
+                  <input
+                    type="file"
+                    accept=".xml"
+                    style={{ display: 'none' }}
+                    onChange={(e) => void handleUploadCteFob(e.target.files?.[0] || null)}
+                  />
+                </label>
               </div>
             </div>
           )}
@@ -1889,6 +2084,7 @@ export default function AuditoriaEntrada() {
             onAlterarDestinacaoItem={handleAlterarDestinacaoItem}
             destinacaoPadrao={destinacaoPadrao}
             diagnosticosDifal={apuracaoDifalNota?.itensDiagnostico}
+            itensAuditadosMap={auditadosPorMap}
           />
 
           {/* Painel Dual Engine Selector (Seletor de Motor Duplo) */}

@@ -33,6 +33,9 @@ export interface MapeamentoNcmReformaOficial {
   reducaoIbsCbsPct: number;
   convenioIcmsCorrelato?: string;
   normaId: string;
+  enquadramentoPendente?: boolean;
+  requerConferenciaAnexoIX?: boolean;
+  observacaoNormativa?: string;
 }
 
 const TABELA_CLASSTRIB = new Map<string, ClassTribOficialEntry>();
@@ -81,6 +84,10 @@ const MAPA_NCM_OFICIAL: Record<string, Omit<MapeamentoNcmReformaOficial, 'ncmPre
     reducaoIbsCbsPct: 60.0,
     convenioIcmsCorrelato: 'CONV-ICMS-52-1991',
     normaId: 'LC214-ANEXOS-REDUCOES',
+    enquadramentoPendente: true,
+    requerConferenciaAnexoIX: true,
+    observacaoNormativa:
+      'Posição 8432 sujeita à conferência do subitem específico no Anexo IX da LC 214/2025 e vinculação ao Convênio ICMS 52/1991.',
   },
   '8433': {
     tema: 'Máquinas de Colheita e Debulha (Anexo IX LC 214/2025)',
@@ -89,6 +96,10 @@ const MAPA_NCM_OFICIAL: Record<string, Omit<MapeamentoNcmReformaOficial, 'ncmPre
     reducaoIbsCbsPct: 60.0,
     convenioIcmsCorrelato: 'CONV-ICMS-52-1991',
     normaId: 'LC214-ANEXOS-REDUCOES',
+    enquadramentoPendente: true,
+    requerConferenciaAnexoIX: true,
+    observacaoNormativa:
+      'Posição 8433 sujeita à conferência do subitem específico no Anexo IX da LC 214/2025 e vinculação ao Convênio ICMS 52/1991.',
   },
   '8436': {
     tema: 'Outras Máquinas Agrícolas (Anexo IX LC 214/2025)',
@@ -97,6 +108,10 @@ const MAPA_NCM_OFICIAL: Record<string, Omit<MapeamentoNcmReformaOficial, 'ncmPre
     reducaoIbsCbsPct: 60.0,
     convenioIcmsCorrelato: 'CONV-ICMS-52-1991',
     normaId: 'LC214-ANEXOS-REDUCOES',
+    enquadramentoPendente: true,
+    requerConferenciaAnexoIX: true,
+    observacaoNormativa:
+      'Posição 8436 sujeita à conferência do subitem específico no Anexo IX da LC 214/2025 e vinculação ao Convênio ICMS 52/1991.',
   },
   '8437': {
     tema: 'Máquinas para Seleção de Grãos (Anexo IX LC 214/2025)',
@@ -105,6 +120,10 @@ const MAPA_NCM_OFICIAL: Record<string, Omit<MapeamentoNcmReformaOficial, 'ncmPre
     reducaoIbsCbsPct: 60.0,
     convenioIcmsCorrelato: 'CONV-ICMS-52-1991',
     normaId: 'LC214-ANEXOS-REDUCOES',
+    enquadramentoPendente: true,
+    requerConferenciaAnexoIX: true,
+    observacaoNormativa:
+      'Posição 8437 sujeita à conferência do subitem específico no Anexo IX da LC 214/2025 e vinculação ao Convênio ICMS 52/1991.',
   },
   '8701': {
     tema: 'Tratores Agrícolas (Anexo IX LC 214/2025)',
@@ -113,6 +132,10 @@ const MAPA_NCM_OFICIAL: Record<string, Omit<MapeamentoNcmReformaOficial, 'ncmPre
     reducaoIbsCbsPct: 60.0,
     convenioIcmsCorrelato: 'CONV-ICMS-52-1991',
     normaId: 'LC214-ANEXOS-REDUCOES',
+    enquadramentoPendente: true,
+    requerConferenciaAnexoIX: true,
+    observacaoNormativa:
+      'Posição 8701 sujeita à conferência do subitem específico (uso agrícola x rodoviário) no Anexo IX da LC 214/2025 e Convênio ICMS 52/1991.',
   },
   '3004': {
     tema: 'Medicamentos Registrados na Anvisa (LC 214/2025)',

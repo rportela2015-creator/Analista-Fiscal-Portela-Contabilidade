@@ -23,6 +23,11 @@ import {
 import { useNivelOperacional } from '@/lib/hooks/useNivelOperacional';
 import { useEmpresaAtiva } from '@/lib/hooks/useEmpresaAtiva';
 import { ProgressiveSection, LegalCitationBlock, type NormativeCitation } from '@/components/ui';
+import {
+  resolverContextoEmpresaNaData,
+  type CustoCpc16Segregado,
+  type ItemFiscalAuditado,
+} from '@/lib/types/item-fiscal-auditado';
 
 function baixarArquivo(conteudo: string, nomeArquivo: string, mime: string) {
   if (typeof window === 'undefined' || !window.URL?.createObjectURL) return;
@@ -50,6 +55,7 @@ function extrairPayloadErp(
   p: XmlParam | null,
   texto: string,
   emitenteNome?: string,
+  custoCpc16?: CustoCpc16Segregado,
 ): ParametrosErpPayload {
   const camposProd = p?.campos.find((b) => b.tag === 'prod')?.campos || [];
   const camposIcms = p?.campos.find((b) => b.grupo.startsWith('ICMS'))?.campos || [];
@@ -97,6 +103,7 @@ function extrairPayloadErp(
     cstIs: cstIs,
     aliqIsAdv: aliqIsAdv,
     instrucao: p?.resumo || 'Parametrização gerada conforme regras oficiais.',
+    ...(custoCpc16 ? { custoCpc16 } : {}),
   };
 
   return {
@@ -136,11 +143,12 @@ const FONTES: Record<string, string> = { 'tabela oficial': 'selo-oficial', 'regr
 
 export interface ParametrizarProps {
   itensImportados?: ParametrizacaoItemInput[];
+  itensAuditados?: ItemFiscalAuditado[];
 }
 
-export default function Parametrizar({ itensImportados }: ParametrizarProps = {}) {
+export default function Parametrizar({ itensImportados, itensAuditados }: ParametrizarProps = {}) {
   const { nivel, isSenior } = useNivelOperacional();
-  const { empresaAtiva } = useEmpresaAtiva();
+  const { empresaAtiva, perfilAtivo } = useEmpresaAtiva();
   const [ds, setDs] = useState<Dataset | null>(null);
   const [reforma, setReforma] = useState<Reforma | null>(null);
   const [erp, setErp] = useState<ErpTabela | null>(null);
@@ -161,6 +169,7 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
   const [formatoModal, setFormatoModal] = useState<'html' | 'txt'>('html');
   const [relatorioCopiado, setRelatorioCopiado] = useState('');
   const [loteItens, setLoteItens] = useState<ParametrizacaoItemInput[]>(itensImportados || []);
+  const [loteAuditados, setLoteAuditados] = useState<ItemFiscalAuditado[]>(itensAuditados || []);
   const [itemLoteAtivo, setItemLoteAtivo] = useState<number | null>(null);
 
   useEffect(() => {
@@ -176,12 +185,77 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
   }, [itensImportados]);
 
   useEffect(() => {
+    if (itensAuditados && itensAuditados.length > 0) {
+      setLoteAuditados(itensAuditados);
+    } else {
+      try {
+        const salvoAud = sessionStorage.getItem('ncm-itens-auditados');
+        if (salvoAud) {
+          const parsedAud = JSON.parse(salvoAud);
+          if (Array.isArray(parsedAud) && parsedAud.length > 0) {
+            setLoteAuditados(parsedAud);
+          }
+        }
+      } catch { /* sem storage */ }
+    }
+  }, [itensAuditados]);
+
+  useEffect(() => {
+    const auditRef =
+      loteAuditados[itemLoteAtivo ?? 0] ||
+      loteItens[itemLoteAtivo ?? 0]?.itemAuditado;
+    const ctxEmpresa = resolverContextoEmpresaNaData({
+      empresaAtiva,
+      perfilFallback: perfilAtivo,
+      dataEmissao: auditRef?.dhEmi,
+      regimeFallback: auditRef?.contextoEmpresa?.regimeMotor,
+      ufFallback: auditRef?.contextoEmpresa?.uf,
+      tipoEstabelecimentoFallback: auditRef?.contextoEmpresa?.tipoEstabelecimento,
+      cnaeFallback: auditRef?.contextoEmpresa?.cnaePrincipal,
+    });
+    if (empresaAtiva) {
+      const regimeXml: Regime =
+        ctxEmpresa.regimeMotor === 'real'
+          ? 'real'
+          : ctxEmpresa.regimeMotor === 'presumido'
+          ? 'presumido'
+          : 'simples';
+      setCtx((c) => ({
+        ...c,
+        cnpj: empresaAtiva.cnpj || c.cnpj,
+        ie: empresaAtiva.inscricaoEstadual || c.ie,
+        municipioIbge: empresaAtiva.municipioIbge || c.municipioIbge,
+        ufEmi: ctxEmpresa.uf || c.ufEmi,
+        regime: regimeXml,
+        industrial: ctxEmpresa.tipoEstabelecimento === 'industria',
+        regApIBSCBSSN:
+          ctxEmpresa.regimeTributario === 'SN_HIBRIDO' ? '1' : c.regApIBSCBSSN,
+      }));
+    } else if (auditRef?.contextoEmpresa) {
+      const regimeXml: Regime =
+        ctxEmpresa.regimeMotor === 'real'
+          ? 'real'
+          : ctxEmpresa.regimeMotor === 'presumido'
+          ? 'presumido'
+          : 'simples';
+      setCtx((c) => ({
+        ...c,
+        regime: regimeXml,
+        industrial: ctxEmpresa.tipoEstabelecimento === 'industria',
+      }));
+    }
+  }, [empresaAtiva, perfilAtivo, loteAuditados, loteItens, itemLoteAtivo]);
+
+  useEffect(() => {
     const aplicarParametrizacao = (dados: any) => {
       if (!dados) return;
       if (dados.ncm) setNcmManual(dados.ncm);
       if (dados.descricao) setTexto(dados.descricao);
       if (dados.itensErp && Array.isArray(dados.itensErp)) {
         setLoteItens(dados.itensErp);
+      }
+      if (dados.itensAuditados && Array.isArray(dados.itensAuditados)) {
+        setLoteAuditados(dados.itensAuditados);
       }
       setCtx((c) => ({
         ...c,
@@ -302,15 +376,27 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
     setTexto(item.descricao);
     setNcmManual(item.ncm);
     setItemLoteAtivo(idx);
+    const aud = item.itemAuditado || loteAuditados[idx];
     setCtx((c) => ({
       ...c,
-      cClassTribForcado: item.cClassTribSugerido || c.cClassTribForcado,
-      st: (item.cfopEntradaSugerido && ['1403', '2403'].includes(item.cfopEntradaSugerido)) || c.st,
+      cClassTribForcado:
+        aud?.tributacaoReforma?.enquadramentoPendente
+          ? item.cClassTribSugerido || ''
+          : item.cClassTribSugerido || c.cClassTribForcado,
+      st:
+        Boolean(aud?.tributacaoEstadual?.sujeitoStPr) ||
+        (item.cfopEntradaSugerido && ['1403', '2403'].includes(item.cfopEntradaSugerido)) ||
+        c.st,
+      industrial:
+        aud?.contextoEmpresa?.tipoEstabelecimento === 'industria'
+          ? true
+          : c.industrial,
     }));
   };
 
   const limparLote = () => {
     setLoteItens([]);
+    setLoteAuditados([]);
     setItemLoteAtivo(null);
     try {
       sessionStorage.removeItem('ncm-parametrizar-itens');
@@ -342,6 +428,25 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
           </p>
         </div>
       </div>
+
+      {!empresaAtiva && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            background: 'var(--accent-amber-subtle)',
+            border: '1px solid rgba(245, 158, 11, 0.45)',
+            color: 'var(--warn)',
+            borderRadius: 6,
+            padding: '8px 14px',
+            marginBottom: 14,
+            fontSize: 12.5,
+            fontWeight: 600,
+          }}
+        >
+          ⚠️ Nenhuma empresa ativa selecionada: parametrização ERP usando cenário manual/fallback (selecione uma empresa na aba Empresas para propagar CNPJ, CNAE e regime vigentes).
+        </div>
+      )}
 
       {/* ---------------- PAINEL EXECUTIVO: LOTE DE ENTRADA (NF-E) ---------------- */}
       {loteItens && loteItens.length > 0 && (
@@ -453,9 +558,19 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
                         </span>
                       </td>
                       <td>
-                        <span className="badge tabular-nums" style={{ background: 'var(--accent-emerald-glow)', color: 'var(--ok)', borderColor: 'var(--border-emerald-glow)', fontSize: 10.5 }}>
-                          {it.cClassTribSugerido || '000001'} {it.reducaoIbsCbsPct > 0 ? `(-${it.reducaoIbsCbsPct}%)` : ''}
-                        </span>
+                        {it.itemAuditado?.tributacaoReforma?.enquadramentoPendente ? (
+                          <span
+                            className="badge media tabular-nums"
+                            style={{ fontSize: 10.5 }}
+                            title={it.itemAuditado.tributacaoReforma.observacaoNormativa || 'Conferir enquadramento no Anexo IX LC 214/2025'}
+                          >
+                            {it.cClassTribSugerido ? `${it.cClassTribSugerido} · Anexo IX pendente` : 'Pendente Anexo IX'}
+                          </span>
+                        ) : (
+                          <span className="badge tabular-nums" style={{ background: 'var(--accent-emerald-glow)', color: 'var(--ok)', borderColor: 'var(--border-emerald-glow)', fontSize: 10.5 }}>
+                            {it.cClassTribSugerido || '—'} {it.reducaoIbsCbsPct > 0 ? `(-${it.reducaoIbsCbsPct}%)` : ''}
+                          </span>
+                        )}
                       </td>
                       <td>
                         {diag.bloqueantes.length > 0 ? (
@@ -783,7 +898,21 @@ export default function Parametrizar({ itensImportados }: ParametrizarProps = {}
       )}
 
       {modalRelatorio.aberto && (() => {
-        const payloadRelatorio = extrairPayloadErp(ctx, rec, p, texto, empresaAtiva?.razaoSocial);
+        const audAtivo =
+          (itemLoteAtivo !== null
+            ? loteItens[itemLoteAtivo]?.itemAuditado || loteAuditados[itemLoteAtivo]
+            : loteItens[0]?.itemAuditado || loteAuditados[0]);
+        const custoCpc16Ativo =
+          (itemLoteAtivo !== null ? loteItens[itemLoteAtivo]?.custoCpc16 : loteItens[0]?.custoCpc16) ||
+          audAtivo?.custoCpc16;
+        const payloadRelatorio = extrairPayloadErp(
+          ctx,
+          rec,
+          p,
+          texto,
+          empresaAtiva?.razaoSocial,
+          custoCpc16Ativo
+        );
         const relatorioHtml = modalRelatorio.modo === 'resumido'
           ? gerarRelatorioErpResumidoHtml(payloadRelatorio)
           : gerarRelatorioErpDetalhadoHtml(payloadRelatorio);

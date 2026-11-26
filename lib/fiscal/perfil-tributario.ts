@@ -150,6 +150,8 @@ export interface Empresa {
   uf: string;
   municipioIbge?: string | null;
   ativo: boolean;
+  cnaePrincipal?: string | { codigo?: string; descricao?: string } | null;
+  cnaesSecundarios?: Array<string | { codigo?: string; descricao?: string }> | null;
   metadata?: Record<string, unknown> | null;
   criadoEm: string;
   atualizadoEm: string;

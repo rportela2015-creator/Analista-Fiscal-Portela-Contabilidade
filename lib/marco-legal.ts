@@ -667,6 +667,9 @@ export type ReducoesFiscaisPorNcm = {
     cClassTrib: string;
     tema: string;
     normaId: string;
+    enquadramentoPendente?: boolean;
+    requerConferenciaAnexoIX?: boolean;
+    observacaoNormativa?: string;
   };
   icms?: {
     convenioCorrelato?: string;
@@ -748,6 +751,11 @@ export function detectarReducoesFiscaisPorNcm(
       cClassTrib: checkFinal.codigo,
       tema: regraEncontrada.tema,
       normaId: 'LC214-ANEXOS-REDUCOES',
+      ...(mapeamentoOficial?.enquadramentoPendente ? { enquadramentoPendente: true } : {}),
+      ...(mapeamentoOficial?.requerConferenciaAnexoIX ? { requerConferenciaAnexoIX: true } : {}),
+      ...(mapeamentoOficial?.observacaoNormativa
+        ? { observacaoNormativa: mapeamentoOficial.observacaoNormativa }
+        : {}),
     },
   };
 
