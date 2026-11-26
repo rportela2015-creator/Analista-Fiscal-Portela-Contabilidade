@@ -1,13 +1,13 @@
 {
   "schemaVersion": "1.0.0",
-  "updatedAt": "2026-11-26T15:12:04.763Z",
+  "updatedAt": "2026-11-26T18:08:36.547Z",
   "maxAgeDays": 30,
   "metaVersao": "ab057930",
-  "metaGeradoEm": "2026-11-26T15:12:04.763Z",
+  "metaGeradoEm": "2026-11-26T18:08:36.547Z",
   "ncmVigente": "Vigente em 09/09/2026",
   "ncmAto": "Resolução Gecex nº 926/2026",
   "manifestVersao": "1.0.0",
-  "snapshotSha256": "7898e5c1aa48826c04e3254554c0094a7b5d811dafa00257025b3dd2d63c7b7d",
+  "snapshotSha256": "8f2ce0a6567912e76a41db0413dc6ed19deda7fdeac7c3fb4635e12158eb2aae",
   "normasVigentes": {
     "ntNfe": "NT 2025.002 v1.52 / NT 2026.008 v1.01",
     "ricmsPr": "Dec. 7.871/2017 + Dec. 6.048/2024 + Dec. 12.828/2026",
@@ -16,9 +16,9 @@
   "files": [
     {
       "file": "public/data/reforma.json",
-      "bytes": 261586,
-      "records": 164,
-      "sha256": "80df224e25c2b3bdd1f3c35b382f539e7c6dc8224762cfddb885a85e41fca88b"
+      "bytes": 294870,
+      "records": 173,
+      "sha256": "be0102a602be7b55133e9337f0b3ca7f3dfa6c4f1e2880be1924fe90b55d4cf3"
     },
     {
       "file": "public/data/ncm.json",
@@ -48,7 +48,7 @@
       "file": "public/data/meta.json",
       "bytes": 2279,
       "records": 8,
-      "sha256": "76ac155d063de44bd4f749a6f16e18e823f865a2812f779e38b4d6a0a94512ec"
+      "sha256": "d5fcd69eba24c0bf789062415e2b75b94e248312065c9a61ca147aee0a59df0b"
     }
   ]
 }

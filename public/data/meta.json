@@ -1,7 +1,7 @@
 {
  "versao": "ab057930",
  "aviso_fontes": null,
- "gerado_em": "2026-11-26T15:12:04.763Z",
+ "gerado_em": "2026-11-26T18:08:36.547Z",
  "ncm_vigente": "Vigente em 09/09/2026",
  "ncm_ato": "Resolução Gecex nº 926/2026",
  "fontes": {
@@ -37,7 +37,7 @@
    "nome": "Dados abertos — Calculadora de Tributos do Consumo (RFB): CST-IBS/CBS, cClassTrib, IS e alíquotas",
    "api": "https://consumo.tributos.gov.br/servico/calcular-tributos-consumo/api/calculadora/dados-abertos",
    "status": "fonte primária oficial",
-   "linhas": 164
+   "linhas": 173
   },
   "cfop": {
    "nome": "Tabela CFOP (Ajuste SINIEF 23/2023)",
@@ -61,7 +61,7 @@
   "ncs_citados_nas_regras": 77,
   "invalidos": 0,
   "regras_sem_codigo_inexistente": true,
-  "reform_classes": 164,
+  "reform_classes": 173,
   "reform_is": 99,
   "fontes_oficiais_ok": true
  }
